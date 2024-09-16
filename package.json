@@ -1,0 +1,47 @@
+{
+  "name": "vulticonnect",
+  "displayName": "Vulticonnect",
+  "version": "0.0.1",
+  "description": "VultiConnect is a Chrome extension that integrates Vultisig into web applications, enabling users to securely sign transactions.",
+  "author": "https://vultisig.com",
+  "scripts": {
+    "dev": "plasmo dev",
+    "build": "plasmo build",
+    "package": "plasmo package"
+  },
+  "dependencies": {
+    "antd": "^5.20.6",
+    "axios": "^1.7.7",
+    "i18next": "^23.15.1",
+    "keymirror": "^0.1.1",
+    "plasmo": "0.89.2",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-i18next": "^15.0.1",
+    "react-router-dom": "^6.26.2",
+    "uuid": "^10.0.0",
+    "zxing-wasm": "^1.2.12"
+  },
+  "devDependencies": {
+    "@types/chrome": "0.0.258",
+    "@types/keymirror": "^0.1.4",
+    "@types/node": "20.11.5",
+    "@types/react": "18.2.48",
+    "@types/react-dom": "18.2.18",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.45",
+    "sass": "^1.78.0",
+    "typescript": "5.3.3"
+  },
+  "manifest": {
+    "content_security_policy": {
+      "extension_pages": "script-src 'self' 'wasm-unsafe-eval' http://localhost;object-src 'self';"
+    },
+    "host_permissions": [
+      "https://*/*"
+    ],
+    "permissions": [
+      "storage"
+    ]
+  }
+}

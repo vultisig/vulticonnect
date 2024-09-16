@@ -1,0 +1,260 @@
+@import "~/styles/_normalize";
+@import "~/styles/_montserrat";
+@import "~/styles/_variables";
+@import "~/styles/_customize";
+
+@import "~/popup/pages/currency";
+@import "~/popup/pages/delete-vault";
+@import "~/popup/pages/import";
+@import "~/popup/pages/language";
+@import "~/popup/pages/landing";
+@import "~/popup/pages/main";
+@import "~/popup/pages/rename-vault";
+@import "~/popup/pages/vault-settings";
+@import "~/popup/pages/vaults";
+
+.layout {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  position: relative;
+
+  > .header {
+    background-color: $blue-dark;
+    border-bottom: solid rem(1) rgba($color: $gray-1, $alpha: 0.1);
+    height: rem(56);
+    position: relative;
+
+    .heading {
+      font-size: rem(16);
+      font-weight: 700;
+      left: 50%;
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+
+    .logo-shape {
+      height: rem(32);
+      left: rem(22);
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: rem(32);
+    }
+
+    .logo-type {
+      font-size: rem(22);
+      font-weight: 600;
+      left: rem(62);
+      line-height: rem(32);
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    .icon {
+      background-color: transparent;
+      border-radius: rem(12);
+      cursor: pointer;
+      fill: $gray-1;
+      height: rem(32);
+      padding: rem(4);
+      position: absolute;
+      top: 50%;
+      transition: background-color 0.3s;
+      transform: translateY(-50%);
+      width: rem(32);
+
+      &-left {
+        left: rem(18);
+      }
+
+      &-right {
+        right: rem(18);
+      }
+
+      &:hover {
+        background-color: $blue-light;
+      }
+    }
+  }
+
+  > .content {
+    flex: 1;
+    overflow-x: hidden;
+    padding: rem(24);
+    position: relative;
+
+    .divider {
+      color: $gray-6;
+      display: block;
+      font-size: rem(12);
+      font-weight: 600;
+      line-height: rem(22);
+      margin: rem(20) 0 rem(12);
+    }
+
+    .list {
+      border-radius: rem(12);
+      overflow: hidden;
+
+      .list-item {
+        background-color: $blue-base;
+        color: $gray-1;
+        display: block;
+        line-height: rem(24);
+        padding: rem(16) rem(20);
+        position: relative;
+        transition: background-color 0.3s;
+
+        .action {
+          fill: $gray-1;
+          height: rem(16);
+          position: absolute;
+          right: rem(20);
+          top: 50%;
+          transform: translateY(-50%);
+          width: rem(16);
+        }
+
+        .icon {
+          fill: $gray-1;
+          height: rem(24);
+          left: rem(20);
+          position: absolute;
+          top: 50%;
+          transform: translateY(-50%);
+          width: rem(24);
+        }
+
+        .extra {
+          color: $gray-6;
+          line-height: rem(24);
+          position: absolute;
+          right: rem(20);
+          top: 50%;
+          transform: translateY(-50%);
+        }
+
+        .label {
+          color: $gray-1;
+          font-weight: 500;
+          line-height: rem(24);
+        }
+
+        + .list-item {
+          &::before {
+            background-color: $blue-light;
+            content: "";
+            height: rem(1);
+            left: rem(20);
+            position: absolute;
+            right: rem(20);
+            top: 0;
+            transition: background-color 0.3s;
+          }
+        }
+      }
+
+      .success {
+        color: $cyan-base;
+
+        .action {
+          fill: $cyan-base;
+        }
+
+        .extra {
+          color: $cyan-base;
+        }
+
+        .icon {
+          fill: $cyan-base;
+        }
+
+        .label {
+          color: $cyan-base;
+        }
+      }
+
+      .warning {
+        color: $yellow-base;
+
+        .action {
+          fill: $yellow-base;
+        }
+
+        .extra {
+          color: $yellow-base;
+        }
+
+        .icon {
+          fill: $yellow-base;
+        }
+
+        .label {
+          color: $yellow-base;
+        }
+      }
+    }
+
+    .list-arrow {
+      .list-item {
+        padding-right: rem(40);
+
+        .extra {
+          right: rem(40);
+        }
+      }
+    }
+
+    .list-action {
+      .list-item {
+        cursor: pointer;
+
+        &:hover {
+          background-color: $blue-light;
+
+          &::before {
+            background-color: transparent;
+          }
+
+          + .list-item {
+            &::before {
+              background-color: transparent;
+            }
+          }
+        }
+      }
+    }
+
+    .list-icon {
+      .list-item {
+        padding-left: rem(52);
+      }
+    }
+
+    &::-webkit-scrollbar {
+      background-color: $blue-base;
+      width: rem(8);
+    }
+
+    &::-webkit-scrollbar-corner {
+      background-color: $blue-base;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      background-color: $blue-light;
+    }
+  }
+
+  > .footer {
+    background-color: $blue-dark;
+    bottom: 0;
+    left: 0;
+    padding: rem(24);
+    position: sticky;
+    right: 0;
+    z-index: 1;
+  }
+}
