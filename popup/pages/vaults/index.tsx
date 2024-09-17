@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { getStoredVaults, setStoredVaults } from "~utils/storage";
 import type { VaultProps } from "~utils/interfaces";
-import useGoBack from "~utils/custom-back";
+import useGoBack from "~hooks/go-back";
 import messageKeys from "~utils/message-keys";
 import routeKeys from "~utils/route-keys";
 
@@ -23,6 +23,8 @@ const Component: FC = () => {
   const { vault, vaults } = state;
   const navigate = useNavigate();
   const goBack = useGoBack();
+
+  console.log(vaults);
 
   const handleSelect = (uid: string) => {
     setStoredVaults(
@@ -67,7 +69,11 @@ const Component: FC = () => {
               {vaults
                 .filter(({ uid }) => uid !== vault.uid)
                 .map(({ name, uid }) => (
-                  <div onClick={() => handleSelect(uid)} className="list-item">
+                  <div
+                    key={uid}
+                    onClick={() => handleSelect(uid)}
+                    className="list-item"
+                  >
                     <span className="label">{name}</span>
                     <ChevronRight className="action" />
                   </div>
