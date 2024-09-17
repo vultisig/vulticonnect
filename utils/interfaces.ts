@@ -1,4 +1,12 @@
-import { Currency, Language } from "utils/constants";
+import { ChainKey, Currency, Language } from "utils/constants";
+
+export interface ChainProps {
+  address: string;
+  chain: ChainKey;
+  decimals: number;
+  isDefault: boolean;
+  ticker: string;
+}
 
 export interface CurrencyRef {
   [Currency.AUD]: string;
@@ -26,6 +34,7 @@ export interface LanguageRef {
 
 export interface VaultProps {
   active: boolean;
+  chains: ChainProps[];
   hexChainCode: string;
   name: string;
   publicKeyEcdsa: string;

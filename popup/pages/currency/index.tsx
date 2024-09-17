@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 
 import { getStoredCurrency, setStoredCurrency } from "~utils/storage";
 import { Currency, currencyName } from "~utils/constants";
-import useGoBack from "~utils/custom-back";
+import useGoBack from "~hooks/go-back";
 import messageKeys from "~utils/message-keys";
 import routeKeys from "~utils/route-keys";
 

@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 
 import { getStoredCurrency, getStoredLanguage } from "~utils/storage";
 import { Currency, Language, languageName } from "~utils/constants";
-import useGoBack from "~utils/custom-back";
+import useGoBack from "~hooks/go-back";
 import messageKeys from "~utils/message-keys";
 import routeKeys from "~utils/route-keys";
 

@@ -5,10 +5,10 @@ import { Button, Upload, type UploadProps } from "antd";
 import { readBarcodesFromImageFile, type ReaderOptions } from "zxing-wasm";
 
 import { toCamelCase } from "~utils/case-converter";
-import { errorKey } from "~utils/constants";
+import { ChainKey, chains, errorKey } from "~utils/constants";
 import { getStoredVaults, setStoredVaults } from "~utils/storage";
 import type { VaultProps } from "~utils/interfaces";
-import useGoBack from "~utils/custom-back";
+import useGoBack from "~hooks/go-back";
 import messageKeys from "~utils/message-keys";
 import routerKeys from "~utils/route-keys";
 
@@ -19,6 +19,7 @@ import qrErrorImgUrl from "raw:~/assets/images/qr-error.png";
 import qrSuccessImgUrl from "raw:~/assets/images/qr-success.png";
 import uploadImgUrl from "raw:~/assets/images/upload.png";
 import routeKeys from "~utils/route-keys";
+import useAddress from "~hooks/get-address";
 
 interface InitialState {
   file?: File;
@@ -34,27 +35,47 @@ const Component: FC = () => {
   const { file, loading, status, vault } = state;
   const location = useLocation();
   const navigate = useNavigate();
+  const getAddress = useAddress();
   const goBack = useGoBack();
 
   const handleStart = (): void => {
     if (!loading && vault && status === "success") {
       getStoredVaults().then((vaults) => {
-        const existed = vaults.find(({ uid }) => uid === vault.uid);
+        const defChains = chains.filter(({ isDefault }) => isDefault);
+        const promises = defChains.map(({ chain }) => getAddress(chain, vault));
 
-        const modifiedVaults = existed
-          ? vaults.map((vault) => ({
-              ...vault,
-              active: vault.uid === existed.uid,
-            }))
-          : [
-              { ...vault, active: true },
-              ...vaults
-                .filter(({ uid }) => uid !== vault.uid)
-                .map((vault) => ({ ...vault, active: false })),
-            ];
+        setState((prevState) => ({ ...prevState, loading: true }));
 
-        setStoredVaults(modifiedVaults).then(() => {
-          navigate(routerKeys.main, { state: true });
+        Promise.all(promises).then((addresses) => {
+          vault.chains = defChains.map((chain, index) => ({
+            ...chain,
+            address: addresses[index],
+          }));
+
+          const existed = vaults.find(({ uid }) => uid === vault.uid);
+
+          const modifiedVaults = existed
+            ? vaults.map((item) =>
+                item.uid === existed.uid
+                  ? {
+                      ...vault,
+                      active: true,
+                      name: item.name,
+                    }
+                  : { ...item, active: false }
+              )
+            : [
+                { ...vault, active: true },
+                ...vaults
+                  .filter(({ uid }) => uid !== vault.uid)
+                  .map((vault) => ({ ...vault, active: false })),
+              ];
+
+          setStoredVaults(modifiedVaults).then(() => {
+            setState((prevState) => ({ ...prevState, loading: false }));
+
+            navigate(routerKeys.main, { state: true });
+          });
         });
       });
     }
@@ -115,7 +136,7 @@ const Component: FC = () => {
 
               setState((prevState) => ({
                 ...prevState,
-                vault: toCamelCase(vault),
+                vault: { ...toCamelCase(vault), chains: [] },
                 status: "success",
               }));
             } catch {
@@ -198,6 +219,7 @@ const Component: FC = () => {
           shape="round"
           type="primary"
           disabled={status !== "success"}
+          loading={loading}
           onClick={handleStart}
           block
         >

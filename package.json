@@ -10,6 +10,8 @@
     "package": "plasmo package"
   },
   "dependencies": {
+    "@plasmohq/messaging": "^0.6.2",
+    "@trustwallet/wallet-core": "4.1.8-rc1",
     "antd": "^5.20.6",
     "axios": "^1.7.7",
     "i18next": "^23.15.1",
@@ -41,7 +43,19 @@
       "https://*/*"
     ],
     "permissions": [
-      "storage"
+      "activeTab",
+      "storage",
+      "tabs"
+    ],
+    "web_accessible_resources": [
+      {
+        "resources": [
+          "wallet-core.wasm"
+        ],
+        "matches": [
+          "<all_urls>"
+        ]
+      }
     ]
   }
 }
