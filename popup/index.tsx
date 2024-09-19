@@ -1,6 +1,7 @@
 import { useEffect, type FC } from "react";
-import { ConfigProvider, theme } from "antd";
+import { ConfigProvider } from "antd";
 
+import { themeConfig } from "~utils/constants";
 import { getStoredLanguage } from "~utils/storage";
 import i18n from "~i18n/config";
 
@@ -18,17 +19,7 @@ const Component: FC = () => {
   useEffect(componentDidMount, []);
 
   return (
-    <ConfigProvider
-      theme={{
-        algorithm: theme.darkAlgorithm,
-        token: {
-          borderRadius: 12,
-          colorPrimary: "#33e6bf",
-          colorTextLightSolid: "#02122b",
-          fontFamily: "Montserrat",
-        },
-      }}
-    >
+    <ConfigProvider theme={themeConfig}>
       <Routing />
     </ConfigProvider>
   );

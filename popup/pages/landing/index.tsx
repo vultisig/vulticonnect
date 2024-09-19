@@ -6,8 +6,6 @@ import { Button } from "antd";
 import messageKeys from "~utils/message-keys";
 import routeKeys from "~utils/route-keys";
 
-import imageUrl from "raw:~/assets/images/landing.png";
-
 const Component: FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -15,7 +13,7 @@ const Component: FC = () => {
   return (
     <div className="layout landing-page">
       <div className="content">
-        <img src={imageUrl} alt="logo" className="logo" />
+        <img src="/assets/images/landing.png" alt="logo" className="logo" />
         <span className="title">{t(messageKeys.VULTISIG_CONNECT)}</span>
         <span className="desc">{t(messageKeys.VULTISIG_SLOGAN)}</span>
       </div>

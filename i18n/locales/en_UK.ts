@@ -6,7 +6,9 @@ export default {
   [messageKeys.ADD_NEW_VAULT]: "Add New Vault",
   [messageKeys.ADD_VAULT_QRCODE]: "Add Vault QR Code",
   // C
+  [messageKeys.CANCEL]: "Cancel",
   [messageKeys.CHOOSE_VAULT]: "Choose Vault",
+  [messageKeys.CONNECT]: "Connect",
   [messageKeys.CONNECTED_DAPPS]: "Connected Apps",
   [messageKeys.CURRENCY]: "Currency",
   // D

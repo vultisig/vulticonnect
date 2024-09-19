@@ -5,21 +5,15 @@ import { Button, Upload, type UploadProps } from "antd";
 import { readBarcodesFromImageFile, type ReaderOptions } from "zxing-wasm";
 
 import { toCamelCase } from "~utils/case-converter";
-import { ChainKey, chains, errorKey } from "~utils/constants";
+import { chains, errorKey } from "~utils/constants";
 import { getStoredVaults, setStoredVaults } from "~utils/storage";
 import type { VaultProps } from "~utils/interfaces";
+import useAddress from "~hooks/get-address";
 import useGoBack from "~hooks/go-back";
 import messageKeys from "~utils/message-keys";
-import routerKeys from "~utils/route-keys";
+import routeKeys from "~utils/route-keys";
 
 import { ChevronLeft, CrossShapeBold } from "~icons";
-
-import qrCodeImgUrl from "raw:~/assets/images/qr-code.png";
-import qrErrorImgUrl from "raw:~/assets/images/qr-error.png";
-import qrSuccessImgUrl from "raw:~/assets/images/qr-success.png";
-import uploadImgUrl from "raw:~/assets/images/upload.png";
-import routeKeys from "~utils/route-keys";
-import useAddress from "~hooks/get-address";
 
 interface InitialState {
   file?: File;
@@ -74,7 +68,7 @@ const Component: FC = () => {
           setStoredVaults(modifiedVaults).then(() => {
             setState((prevState) => ({ ...prevState, loading: false }));
 
-            navigate(routerKeys.main, { state: true });
+            navigate(routeKeys.main, { state: true });
           });
         });
       });
@@ -183,7 +177,7 @@ const Component: FC = () => {
       <div className="content">
         <Upload.Dragger {...props} className={status}>
           <div className="state state-default">
-            <img src={qrCodeImgUrl} className="icon" />
+            <img src="/assets/images/qr-code.png" className="icon" />
             <span className="title">{t(messageKeys.ADD_VAULT_QRCODE)}</span>
             <span className="desc">
               {t(messageKeys.DROP_FILE_HERE_OR)}{" "}
@@ -191,7 +185,7 @@ const Component: FC = () => {
             </span>
           </div>
           <div className="state state-hover">
-            <img src={uploadImgUrl} className="icon" />
+            <img src="/assets/images/upload.png" className="icon" />
             <span className="title">{t(messageKeys.DROP_FILE_HERE)}</span>
           </div>
           <div className="state state-done">
@@ -201,7 +195,11 @@ const Component: FC = () => {
                 : t(messageKeys.IMPORT_SUCCESSED)}
             </span>
             <img
-              src={status === "error" ? qrErrorImgUrl : qrSuccessImgUrl}
+              src={
+                status === "error"
+                  ? "/assets/images/qr-error.png"
+                  : "/assets/images/qr-success.png"
+              }
               className="image"
             />
             {file?.name && <span className="name">{file.name}</span>}

@@ -4,7 +4,7 @@ body {
   height: rem(600) !important;
   font-family: $font-primary;
   margin: 0 auto;
-  overflow-x: hidden;
+  overflow: hidden;
   width: rem(360) !important;
 
   #__plasmo {
@@ -31,6 +31,16 @@ body {
   height: rem(44);
 }
 
+.ant-btn-default {
+  background-color: $blue-dark !important;
+  border-color: $cyan-base;
+  color: $cyan-base;
+
+  &:hover {
+    box-shadow: 0 0 rem(8) rgba($color: $cyan-base, $alpha: 0.2);
+  }
+}
+
 .ant-btn-primary {
   border: none;
 
@@ -52,5 +62,53 @@ body {
 .ant-form {
   .ant-btn {
     display: none;
+  }
+}
+
+.ant-checkbox-group {
+  border-radius: rem(12);
+  max-width: 100%;
+  overflow: hidden;
+
+  .ant-checkbox-wrapper {
+    background-color: $blue-base;
+    line-height: rem(24);
+    padding: rem(16) rem(20);
+    position: relative;
+    transition: background-color 0.3s;
+    width: 100%;
+
+    .ant-checkbox-input {
+      height: rem(20);
+      width: rem(20);
+    }
+
+    .ant-checkbox-inner {
+      background-color: transparent;
+      border-color: $blue-light;
+      border-width: rem(2);
+      height: rem(20);
+      width: rem(20);
+    }
+
+    .ant-checkbox-checked {
+      .ant-checkbox-inner {
+        background-color: $cyan-base;
+        border-color: $cyan-base;
+      }
+    }
+
+    + .ant-checkbox-wrapper {
+      &::before {
+        background-color: $blue-light;
+        content: "";
+        height: rem(1);
+        left: rem(20);
+        position: absolute;
+        right: rem(20);
+        top: 0;
+        transition: background-color 0.3s;
+      }
+    }
   }
 }
