@@ -13,7 +13,7 @@ const Component: FC = () => {
   return (
     <div className="layout landing-page">
       <div className="content">
-        <img src="/assets/images/landing.png" alt="logo" className="logo" />
+        <img src="/static/images/landing.png" alt="logo" className="logo" />
         <span className="title">{t(messageKeys.VULTISIG_CONNECT)}</span>
         <span className="desc">{t(messageKeys.VULTISIG_SLOGAN)}</span>
       </div>

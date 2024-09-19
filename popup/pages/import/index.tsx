@@ -177,7 +177,7 @@ const Component: FC = () => {
       <div className="content">
         <Upload.Dragger {...props} className={status}>
           <div className="state state-default">
-            <img src="/assets/images/qr-code.png" className="icon" />
+            <img src="/static/images/qr-code.png" className="icon" />
             <span className="title">{t(messageKeys.ADD_VAULT_QRCODE)}</span>
             <span className="desc">
               {t(messageKeys.DROP_FILE_HERE_OR)}{" "}
@@ -185,7 +185,7 @@ const Component: FC = () => {
             </span>
           </div>
           <div className="state state-hover">
-            <img src="/assets/images/upload.png" className="icon" />
+            <img src="/static/images/upload.png" className="icon" />
             <span className="title">{t(messageKeys.DROP_FILE_HERE)}</span>
           </div>
           <div className="state state-done">
@@ -197,8 +197,8 @@ const Component: FC = () => {
             <img
               src={
                 status === "error"
-                  ? "/assets/images/qr-error.png"
-                  : "/assets/images/qr-success.png"
+                  ? "/static/images/qr-error.png"
+                  : "/static/images/qr-success.png"
               }
               className="image"
             />
