@@ -1,14 +1,42 @@
 import type { VaultProps } from "~utils/interfaces";
-import { Currency, Language } from "~utils/constants";
+import { ChainKey, Currency, Language } from "~utils/constants";
 import i18n from "~i18n/config";
 
+export interface StoredAccounts {
+  addresses: string[];
+  chain: ChainKey;
+  favicon: string;
+  origin: string;
+}
+
 export interface LocalStorage {
+  accounts?: StoredAccounts;
   currency?: Currency;
   language?: Language;
   vaults?: VaultProps[];
 }
 
 export type LocalStorageKeys = keyof LocalStorage;
+
+export const setStoredAccounts = (accounts: StoredAccounts): Promise<void> => {
+  const vals: LocalStorage = { accounts };
+
+  return new Promise((resolve) => {
+    chrome.storage.local.set(vals, () => {
+      resolve();
+    });
+  });
+};
+
+export const getStoredAccounts = (): Promise<StoredAccounts> => {
+  const keys: LocalStorageKeys[] = ["accounts"];
+
+  return new Promise((resolve, reject) => {
+    chrome.storage.local.get(keys, (res: LocalStorage) => {
+      res.accounts ? resolve(res.accounts) : reject();
+    });
+  });
+};
 
 export const setStoredCurrency = (currency: Currency): Promise<void> => {
   const vals: LocalStorage = { currency };

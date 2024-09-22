@@ -7,7 +7,9 @@ export default keyMirror({
   ADD_VAULT_QRCODE: true,
   // B
   // C
+  CANCEL: true,
   CHOOSE_VAULT: true,
+  CONNECT: true,
   CONNECTED_DAPPS: true,
   CURRENCY: true,
   // D

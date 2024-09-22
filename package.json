@@ -50,6 +50,14 @@
     "web_accessible_resources": [
       {
         "resources": [
+          "static/*/**"
+        ],
+        "matches": [
+          "<all_urls>"
+        ]
+      },
+      {
+        "resources": [
           "wallet-core.wasm"
         ],
         "matches": [

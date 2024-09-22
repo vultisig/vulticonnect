@@ -24,8 +24,6 @@ const Component: FC = () => {
   const navigate = useNavigate();
   const goBack = useGoBack();
 
-  console.log(vaults);
-
   const handleSelect = (uid: string) => {
     setStoredVaults(
       vaults.map((vault) => ({ ...vault, active: vault.uid === uid }))

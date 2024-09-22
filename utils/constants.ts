@@ -1,3 +1,4 @@
+import { theme } from "antd";
 import keyMirror from "keymirror";
 
 import type { ChainProps, CurrencyRef, LanguageRef } from "~utils/interfaces";
@@ -255,3 +256,13 @@ export const chains: ChainProps[] = [
     ticker: "RUNE",
   },
 ];
+
+export const themeConfig = {
+  algorithm: theme.darkAlgorithm,
+  token: {
+    borderRadius: 12,
+    colorPrimary: "#33e6bf",
+    colorTextLightSolid: "#02122b",
+    fontFamily: "inherit",
+  },
+};

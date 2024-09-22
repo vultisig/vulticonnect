@@ -9,7 +9,7 @@ export const config: PlasmoCSConfig = {
 
 relay(
   {
-    name: "eth-accounts" as const,
+    name: "get-accounts" as const,
   },
   async (req) => {
     const openResult = await sendToBackground(req);

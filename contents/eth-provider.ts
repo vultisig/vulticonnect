@@ -1,5 +1,6 @@
 import type { PlasmoCSConfig } from "plasmo";
 import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
+import { ChainKey } from "~utils/constants";
 
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
@@ -66,7 +67,10 @@ const ethereumProvider: EthereumProvider = {
     return new Promise((resolve, reject) => {
       switch (method) {
         case Method.REQUEST_ACCOUNTS: {
-          sendToBackgroundViaRelay({ name: "eth-accounts" })
+          sendToBackgroundViaRelay({
+            name: "get-accounts",
+            body: { chain: ChainKey.ETHEREUM },
+          })
             .then((accounts) => {
               ethereumProvider._state.accounts = accounts;
 
