@@ -1,13 +1,13 @@
 @font-face {
   font-family: "Montserrat";
-  src: url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-regular-webfont.eot");
-  src: url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-regular-webfont.eot?#iefix")
+  src: url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-regular.eot");
+  src: url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-regular.eot?#iefix")
       format("embedded-opentype"),
-    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-regular-webfont.woff2")
+    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-regular.woff2")
       format("woff2"),
-    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-regular-webfont.woff")
+    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-regular.woff")
       format("woff"),
-    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-regular-webfont.ttf")
+    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-regular.ttf")
       format("truetype");
   font-weight: 400;
   font-style: normal;
@@ -15,14 +15,14 @@
 
 @font-face {
   font-family: "Montserrat";
-  src: url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-bold-webfont.eot");
-  src: url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-bold-webfont.eot?#iefix")
+  src: url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-bold.eot");
+  src: url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-bold.eot?#iefix")
       format("embedded-opentype"),
-    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-bold-webfont.woff2")
+    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-bold.woff2")
       format("woff2"),
-    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-bold-webfont.woff")
+    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-bold.woff")
       format("woff"),
-    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-bold-webfont.ttf")
+    url("chrome-extension://__MSG_@@extension_id__/static/fonts/montserrat-bold.ttf")
       format("truetype");
   font-weight: 700;
   font-style: normal;
