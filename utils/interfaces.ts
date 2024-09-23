@@ -4,7 +4,7 @@ export interface ChainProps {
   address: string;
   chain: ChainKey;
   decimals: number;
-  isDefault: boolean;
+  id: string;
   ticker: string;
 }
 

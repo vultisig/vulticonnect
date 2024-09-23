@@ -30,13 +30,17 @@ const Component: FC = () => {
   const { sender, vaults } = state;
   const [form] = Form.useForm();
 
+  const handleClose = () => {
+    window.close();
+  };
+
   const handleSubmit = () => {
     form
       .validateFields()
       .then(({ addresses }: FormProps) => {
         getStoredAccounts().then((accounts) => {
           setStoredAccounts({ ...accounts, addresses }).then(() => {
-            window.close();
+            handleClose();
           });
         });
       })
@@ -88,7 +92,7 @@ const Component: FC = () => {
           </Form>
         </div>
         <div className="footer">
-          <Button shape="round" block>
+          <Button onClick={handleClose} shape="round" block>
             {t(messageKeys.CANCEL)}
           </Button>
           <Button onClick={handleSubmit} type="primary" shape="round" block>
