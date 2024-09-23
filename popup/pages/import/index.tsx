@@ -4,7 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button, Upload, type UploadProps } from "antd";
 import { readBarcodesFromImageFile, type ReaderOptions } from "zxing-wasm";
 
-import { toCamelCase } from "~utils/case-converter";
+import { toCamelCase } from "~utils/functions";
 import { chains, errorKey } from "~utils/constants";
 import { getStoredVaults, setStoredVaults } from "~utils/storage";
 import type { VaultProps } from "~utils/interfaces";
@@ -35,13 +35,12 @@ const Component: FC = () => {
   const handleStart = (): void => {
     if (!loading && vault && status === "success") {
       getStoredVaults().then((vaults) => {
-        const defChains = chains.filter(({ isDefault }) => isDefault);
-        const promises = defChains.map(({ chain }) => getAddress(chain, vault));
+        const promises = chains.map(({ chain }) => getAddress(chain, vault));
 
         setState((prevState) => ({ ...prevState, loading: true }));
 
         Promise.all(promises).then((addresses) => {
-          vault.chains = defChains.map((chain, index) => ({
+          vault.chains = chains.map((chain, index) => ({
             ...chain,
             address: addresses[index],
           }));
@@ -130,7 +129,7 @@ const Component: FC = () => {
 
               setState((prevState) => ({
                 ...prevState,
-                vault: { ...toCamelCase(vault), chains: [] },
+                vault: { ...toCamelCase(vault), chains: [], transactions: [] },
                 status: "success",
               }));
             } catch {

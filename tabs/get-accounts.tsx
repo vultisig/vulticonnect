@@ -5,14 +5,17 @@ import { Button, Checkbox, ConfigProvider, Form } from "antd";
 import { themeConfig } from "~utils/constants";
 import {
   getStoredAccounts,
+  getStoredLanguage,
   getStoredVaults,
   setStoredAccounts,
 } from "~utils/storage";
+import i18n from "~i18n/config";
 import messageKeys from "~utils/message-keys";
 
 import { Vultisig } from "~icons";
 
-import "./get-accounts.scss";
+import "~styles/index.scss";
+import "~tabs/get-accounts.scss";
 
 interface FormProps {
   addresses: string[];
@@ -48,22 +51,27 @@ const Component: FC = () => {
   };
 
   const componentDidMount = (): void => {
-    getStoredAccounts()
-      .then((accounts) => {
-        getStoredVaults().then((vaults) => {
-          setState((prevState) => ({
-            ...prevState,
-            vaults: vaults.map((vault) => ({
-              address:
-                vault.chains.find(({ chain }) => chain === accounts.chain)
-                  ?.address ?? "",
-              name: vault.name,
-            })),
-            sender: accounts.origin,
-          }));
-        });
-      })
-      .catch(() => {});
+    getStoredLanguage().then((language) => {
+      i18n.changeLanguage(language);
+
+      getStoredAccounts()
+        .then((accounts) => {
+          getStoredVaults().then((vaults) => {
+            setState((prevState) => ({
+              ...prevState,
+              vaults: vaults.map((vault) => ({
+                address:
+                  vault.chains.find(
+                    ({ chain }) => chain === accounts.chain?.chain
+                  )?.address ?? "",
+                name: vault.name,
+              })),
+              sender: accounts.sender,
+            }));
+          });
+        })
+        .catch(() => {});
+    });
   };
 
   useEffect(componentDidMount, []);
@@ -72,8 +80,8 @@ const Component: FC = () => {
     <ConfigProvider theme={themeConfig}>
       <div className="layout">
         <div className="header">
-          <Vultisig className="icon" />
-          <span className="title">Connect with Vultisig</span>
+          <Vultisig className="logo" />
+          <span className="title">{t(messageKeys.CONNECT_WITH_VULTISIG)}</span>
           <span className="origin">{sender}</span>
         </div>
         <div className="content">

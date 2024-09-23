@@ -35,7 +35,7 @@ const Component: FC = () => {
   return vault ? (
     <div className="layout main-page">
       <div className="header">
-        <Vultisig className="logo-shape" />
+        <Vultisig className="logo" />
         <span className="logo-type">{t(messageKeys.VULTISIG)}</span>
         <SettingsGear
           className="icon icon-right"
@@ -43,10 +43,12 @@ const Component: FC = () => {
         />
       </div>
       <div className="content">
-        <Link to={routeKeys.vaults} state={true} className="vault">
-          <span className="name">{vault.name}</span>
-          <ChevronRight className="icon" />
-        </Link>
+        <div className="list list-action list-arrow">
+          <Link to={routeKeys.vaults} state={true} className="list-item">
+            <span className="label">{vault.name}</span>
+            <ChevronRight className="action" />
+          </Link>
+        </div>
         <span className="divider">{t(messageKeys.CONNECTED_DAPPS)}</span>
         <div className="apps">
           <div className="action">

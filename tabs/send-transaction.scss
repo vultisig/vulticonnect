@@ -1,0 +1,40 @@
+@import "~/styles/_variables";
+
+.layout {
+  > .header {
+    .progress {
+      background-image: linear-gradient(
+        100deg,
+        $cyan-base 15%,
+        $blue-sharp 140%
+      );
+      bottom: rem(-0.5);
+      height: rem(2);
+      left: 0;
+      position: absolute;
+    }
+  }
+
+  > .content {
+    .address {
+      color: $cyan-base;
+      display: block;
+      font-size: rem(13);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .extra {
+      color: $gray-1 !important;
+      font-size: rem(14);
+      font-weight: 600;
+    }
+
+    .label {
+      color: $gray-6 !important;
+      font-size: rem(12);
+      font-weight: 600;
+    }
+  }
+}

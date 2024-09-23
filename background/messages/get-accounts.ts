@@ -1,19 +1,16 @@
 import type { PlasmoMessaging } from "@plasmohq/messaging";
 
-import { ChainKey } from "~utils/constants";
 import { getStoredAccounts, setStoredAccounts } from "~utils/storage";
+import type { Messaging } from "~utils/interfaces";
 
-export type RequestBody = { chain: ChainKey };
-
-const handler: PlasmoMessaging.MessageHandler<RequestBody> = async (
-  req,
-  res
-) => {
+const handler: PlasmoMessaging.MessageHandler<
+  Messaging.GetAccounts.Request,
+  Messaging.GetAccounts.Response
+> = async (req, res) => {
   setStoredAccounts({
     addresses: [],
     chain: req.body.chain,
-    favicon: req.sender.tab.favIconUrl,
-    origin: req.sender.origin,
+    sender: req.sender.origin,
   }).then(() => {
     let createdWindowId: number;
 
@@ -21,8 +18,10 @@ const handler: PlasmoMessaging.MessageHandler<RequestBody> = async (
       {
         url: chrome.runtime.getURL("tabs/get-accounts.html"),
         type: "popup",
+        height: 639,
+        left: req.body.screen.width - 376,
+        top: 0,
         width: 376,
-        height: 600,
       },
       (window) => {
         createdWindowId = window.id;
@@ -33,10 +32,10 @@ const handler: PlasmoMessaging.MessageHandler<RequestBody> = async (
       if (closedWindowId === createdWindowId) {
         getStoredAccounts()
           .then((accounts) => {
-            res.send(accounts.addresses);
+            res.send({ accounts: accounts.addresses });
           })
           .catch(() => {
-            res.send([]);
+            res.send({ accounts: [] });
           });
       }
     });
