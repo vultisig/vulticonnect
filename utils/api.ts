@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import { toCamelCase, toSnakeCase } from "~utils/case-converter";
+import { toCamelCase, toSnakeCase } from "~utils/functions";
 
 const api = axios.create({
   headers: { accept: "application/json" },

@@ -1,29 +1,7 @@
-@import "~/styles/_normalize";
-@import "~/styles/_montserrat";
 @import "~/styles/_variables";
-@import "~/styles/_customize";
 
 .layout {
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  position: relative;
-
   > .header {
-    background-color: $blue-dark;
-    border-bottom: solid rem(1) rgba($color: $gray-1, $alpha: 0.1);
-    height: rem(86);
-    position: relative;
-
-    .icon {
-      height: rem(36);
-      left: rem(22);
-      position: absolute;
-      top: 50%;
-      transform: translateY(-50%);
-      width: rem(36);
-    }
-
     .title {
       font-size: rem(16);
       font-weight: 700;
@@ -49,11 +27,6 @@
   }
 
   > .content {
-    flex: 1;
-    overflow-x: hidden;
-    padding: rem(24);
-    position: relative;
-
     .ant-checkbox {
       + span {
         width: 100%;
@@ -78,30 +51,5 @@
         }
       }
     }
-
-    &::-webkit-scrollbar {
-      background-color: $blue-base;
-      width: rem(8);
-    }
-
-    &::-webkit-scrollbar-corner {
-      background-color: $blue-base;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      background-color: $blue-light;
-    }
-  }
-
-  > .footer {
-    background-color: $blue-dark;
-    bottom: 0;
-    display: flex;
-    gap: rem(8);
-    left: 0;
-    padding: rem(24);
-    position: sticky;
-    right: 0;
-    z-index: 1;
   }
 }

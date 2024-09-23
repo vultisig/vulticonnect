@@ -5,11 +5,13 @@ export default keyMirror({
   ACTIVE: true,
   ADD_NEW_VAULT: true,
   ADD_VAULT_QRCODE: true,
+  AMOUNT: true,
   // B
   // C
   CANCEL: true,
   CHOOSE_VAULT: true,
   CONNECT: true,
+  CONNECT_WITH_VULTISIG: true,
   CONNECTED_DAPPS: true,
   CURRENCY: true,
   // D
@@ -20,6 +22,7 @@ export default keyMirror({
   // F
   FAQ: true,
   FIND_YOUR_QRCODE: true,
+  FROM: true,
   // G
   // H
   // I
@@ -31,6 +34,7 @@ export default keyMirror({
   // L
   LANGUAGE: true,
   // M
+  MEMO: true,
   // N
   NAME: true,
   // O
@@ -42,13 +46,18 @@ export default keyMirror({
   RENAME_VAULT: true,
   // S
   SAVE: true,
+  SIGN: true,
   START: true,
   SETTINGS: true,
+  // T
+  TO: true,
+  TRANSACTION_DETAILS: true,
   // U
   UNLINK: true,
   UPLOAD_IT: true,
   // V
   VAULT_SETTINGS: true,
+  VERIFY_SEND: true,
   VULT_TOKEN: true,
   VULTISIG: true,
   VULTISIG_CONNECT: true,

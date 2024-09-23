@@ -1,24 +1,18 @@
-import type { VaultProps } from "~utils/interfaces";
-import { ChainKey, Currency, Language } from "~utils/constants";
+import { ChainKey, chains, Currency, Language } from "~utils/constants";
+import type { AccountsProps, ChainProps, VaultProps } from "~utils/interfaces";
 import i18n from "~i18n/config";
 
-export interface StoredAccounts {
-  addresses: string[];
-  chain: ChainKey;
-  favicon: string;
-  origin: string;
-}
-
 export interface LocalStorage {
-  accounts?: StoredAccounts;
+  accounts?: AccountsProps;
+  chains?: ChainProps[];
   currency?: Currency;
   language?: Language;
   vaults?: VaultProps[];
 }
-
+const defaultChain = chains.find(({ chain }) => chain === ChainKey.ETHEREUM);
 export type LocalStorageKeys = keyof LocalStorage;
 
-export const setStoredAccounts = (accounts: StoredAccounts): Promise<void> => {
+export const setStoredAccounts = (accounts: AccountsProps): Promise<void> => {
   const vals: LocalStorage = { accounts };
 
   return new Promise((resolve) => {
@@ -28,12 +22,32 @@ export const setStoredAccounts = (accounts: StoredAccounts): Promise<void> => {
   });
 };
 
-export const getStoredAccounts = (): Promise<StoredAccounts> => {
+export const getStoredAccounts = (): Promise<AccountsProps> => {
   const keys: LocalStorageKeys[] = ["accounts"];
 
   return new Promise((resolve, reject) => {
     chrome.storage.local.get(keys, (res: LocalStorage) => {
       res.accounts ? resolve(res.accounts) : reject();
+    });
+  });
+};
+
+export const setStoredChains = (chains: ChainProps[]): Promise<void> => {
+  const vals: LocalStorage = { chains };
+
+  return new Promise((resolve) => {
+    chrome.storage.local.set(vals, () => {
+      resolve();
+    });
+  });
+};
+
+export const getStoredChains = (): Promise<ChainProps[]> => {
+  const keys: LocalStorageKeys[] = ["chains"];
+
+  return new Promise((resolve) => {
+    chrome.storage.local.get(keys, (res: LocalStorage) => {
+      resolve(res.chains ?? [{ ...defaultChain, active: true }]);
     });
   });
 };
@@ -63,7 +77,7 @@ export const setStoredLanguage = (language: Language): Promise<void> => {
 
   return new Promise((resolve) => {
     chrome.storage.local.set(vals, () => {
-      i18n.changeLanguage(language);
+      i18n.changeLanguage(language ?? Language.ENGLISH);
 
       resolve();
     });

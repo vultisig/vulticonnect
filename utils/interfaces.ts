@@ -1,6 +1,38 @@
 import { ChainKey, Currency, Language } from "utils/constants";
 
+export namespace Messaging {
+  export namespace GetAccounts {
+    export type Request = { chain: ChainProps; screen: ScreenProps };
+    export type Response = { accounts: string[] };
+  }
+
+  export namespace GetChains {
+    export type Request = any;
+    export type Response = { chains: ChainProps[] };
+  }
+
+  export namespace SendTransaction {
+    export type Request = {
+      screen: ScreenProps;
+      transaction: TransactionProps;
+    };
+    export type Response = { transactionHash: string };
+  }
+
+  export namespace SetChains {
+    export type Request = { chains: ChainProps[] };
+    export type Response = any;
+  }
+}
+
+export interface AccountsProps {
+  addresses: string[];
+  chain: ChainProps;
+  sender: string;
+}
+
 export interface ChainProps {
+  active?: boolean;
   address: string;
   chain: ChainKey;
   decimals: number;
@@ -32,6 +64,24 @@ export interface LanguageRef {
   [Language.SPANISH]: string;
 }
 
+export interface ScreenProps {
+  height: number;
+  width: number;
+}
+
+export interface TransactionProps {
+  data: string;
+  from: string;
+  id: string;
+  status: "default" | "error" | "pending" | "success";
+  to: string;
+  value: string;
+  gas?: string;
+  gasPrice?: string;
+  maxFeePerGas?: string;
+  maxPriorityFeePerGas?: string;
+}
+
 export interface VaultProps {
   active: boolean;
   chains: ChainProps[];
@@ -39,5 +89,6 @@ export interface VaultProps {
   name: string;
   publicKeyEcdsa: string;
   publicKeyEddsa: string;
+  transactions: TransactionProps[];
   uid: string;
 }

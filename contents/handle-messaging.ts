@@ -13,6 +13,40 @@ relay(
   },
   async (req) => {
     const openResult = await sendToBackground(req);
+
+    return openResult;
+  }
+);
+
+relay(
+  {
+    name: "get-chains" as const,
+  },
+  async (req) => {
+    const openResult = await sendToBackground(req);
+
+    return openResult;
+  }
+);
+
+relay(
+  {
+    name: "send-transaction" as const,
+  },
+  async (req) => {
+    const openResult = await sendToBackground(req);
+
+    return openResult;
+  }
+);
+
+relay(
+  {
+    name: "set-chains" as const,
+  },
+  async (req) => {
+    const openResult = await sendToBackground(req);
+
     return openResult;
   }
 );

@@ -7,6 +7,7 @@ import i18n from "~i18n/config";
 
 import Routing from "~popup/routes";
 
+import "~styles/index.scss";
 import "~popup/index.scss";
 
 const Component: FC = () => {
