@@ -112,7 +112,7 @@ export const chains: ChainProps[] = [
     address: "",
     chain: ChainKey.ARBITRUM,
     decimals: 18,
-    id: "0x1",
+    id: "0xa4b1",
     ticker: "ETH",
   },
   {
