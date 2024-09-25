@@ -16,11 +16,13 @@ export default keyMirror({
   CURRENCY: true,
   // D
   DELETE_VAULT: true,
+  DONE: true,
   DROP_FILE_HERE: true,
   DROP_FILE_HERE_OR: true,
   // E
   // F
   FAQ: true,
+  FAST_SIGN: true,
   FIND_YOUR_QRCODE: true,
   FROM: true,
   // G
@@ -47,11 +49,13 @@ export default keyMirror({
   // S
   SAVE: true,
   SIGN: true,
+  SIGN_TRANSACTION: true,
   START: true,
   SETTINGS: true,
   // T
   TO: true,
   TRANSACTION_DETAILS: true,
+  TRANSACTION_SUCCESSFUL: true,
   // U
   UNLINK: true,
   UPLOAD_IT: true,

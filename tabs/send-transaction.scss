@@ -15,26 +15,70 @@
     }
   }
 
-  > .content {
-    .address {
-      color: $cyan-base;
-      display: block;
-      font-size: rem(13);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+  &.step-1 {
+    > .content {
+      .address {
+        color: $cyan-base;
+        display: block;
+        font-size: rem(13);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .extra {
+        color: $gray-1 !important;
+        font-size: rem(14);
+        font-weight: 600;
+      }
+
+      .label {
+        color: $gray-6 !important;
+        font-size: rem(12);
+        font-weight: 600;
+      }
+    }
+  }
+
+  &.step-2 {
+    > .content {
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+
+      .hint {
+        font-size: rem(16);
+        font-weight: 700;
+        line-height: rem(24);
+        margin-bottom: rem(16);
+      }
+
+      .ant-qrcode {
+        padding: rem(24);
+      }
     }
 
-    .extra {
-      color: $gray-1 !important;
-      font-size: rem(14);
-      font-weight: 600;
+    > .footer {
+      flex-direction: column;
+      gap: rem(12);
     }
+  }
 
-    .label {
-      color: $gray-6 !important;
-      font-size: rem(12);
-      font-weight: 600;
+  &.step-3 {
+    > .content {
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+
+      .message {
+        font-family: $font-secondary;
+        font-size: rem(16);
+        font-weight: 700;
+        line-height: rem(24);
+        margin-top: rem(16);
+      }
     }
   }
 }

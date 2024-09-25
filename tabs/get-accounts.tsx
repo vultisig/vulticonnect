@@ -61,9 +61,8 @@ const Component: FC = () => {
               ...prevState,
               vaults: vaults.map((vault) => ({
                 address:
-                  vault.chains.find(
-                    ({ chain }) => chain === accounts.chain?.chain
-                  )?.address ?? "",
+                  vault.chains.find(({ name }) => name === accounts.chain)
+                    ?.address ?? "",
                 name: vault.name,
               })),
               sender: accounts.sender,

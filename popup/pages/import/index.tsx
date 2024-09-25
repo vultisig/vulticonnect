@@ -35,12 +35,15 @@ const Component: FC = () => {
   const handleStart = (): void => {
     if (!loading && vault && status === "success") {
       getStoredVaults().then((vaults) => {
-        const promises = chains.map(({ chain }) => getAddress(chain, vault));
+        const modifiedChains = chains.filter(({ id }) => !!id);
+        const promises = modifiedChains.map(({ name }) =>
+          getAddress(name, vault)
+        );
 
         setState((prevState) => ({ ...prevState, loading: true }));
 
         Promise.all(promises).then((addresses) => {
-          vault.chains = chains.map((chain, index) => ({
+          vault.chains = modifiedChains.map((chain, index) => ({
             ...chain,
             address: addresses[index],
           }));
