@@ -2,7 +2,7 @@ import { ChainKey, Currency, Language } from "utils/constants";
 
 export namespace Messaging {
   export namespace GetAccounts {
-    export type Request = { chain: ChainProps; screen: ScreenProps };
+    export type Request = { chain: ChainKey; screen: ScreenProps };
     export type Response = { accounts: string[] };
   }
 
@@ -27,17 +27,29 @@ export namespace Messaging {
 
 export interface AccountsProps {
   addresses: string[];
-  chain: ChainProps;
+  chain: ChainKey;
   sender: string;
 }
 
 export interface ChainProps {
   active?: boolean;
-  address: string;
-  chain: ChainKey;
+  address?: string;
   decimals: number;
   id: string;
+  name: ChainKey;
   ticker: string;
+}
+
+export interface ChainRpcRef {
+  [ChainKey.ARBITRUM]: string;
+  [ChainKey.AVALANCHE]: string;
+  [ChainKey.BASE]: string;
+  [ChainKey.BLAST]: string;
+  [ChainKey.BSCCHAIN]: string;
+  [ChainKey.CRONOSCHAIN]: string;
+  [ChainKey.ETHEREUM]: string;
+  [ChainKey.POLYGON]: string;
+  [ChainKey.ZKSYNC]: string;
 }
 
 export interface CurrencyRef {
@@ -76,10 +88,13 @@ export interface TransactionProps {
   status: "default" | "error" | "pending" | "success";
   to: string;
   value: string;
+  chain?: ChainKey;
+  decimals?: number;
   gas?: string;
   gasPrice?: string;
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
+  ticker?: string;
 }
 
 export interface VaultProps {

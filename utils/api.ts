@@ -37,9 +37,22 @@ namespace Derivation {
 }
 
 export default {
+  transaction: {
+    get: async (status: "" | "start" | "complete", uuid: string) => {
+      return await api.get<string[]>(
+        `https://api.vultisig.com/router/${status ? `${status}/` : ""}${uuid}`
+      );
+    },
+    set: async (devices: string[], uuid: string) => {
+      return await api.post(
+        `https://api.vultisig.com/router/start/${uuid}`,
+        devices
+      );
+    },
+  },
   derivePublicKey: async (params: Derivation.Params) => {
     return await api.post<Derivation.Props>(
-      "https://airdrop.odindex.io/api/derive-public-key",
+      "https://web.vultisig.com/api/derive-public-key",
       toSnakeCase(params)
     );
   },

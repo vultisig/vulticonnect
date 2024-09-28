@@ -9,18 +9,7 @@ export interface LocalStorage {
   language?: Language;
   vaults?: VaultProps[];
 }
-const defaultChain = chains.find(({ chain }) => chain === ChainKey.ETHEREUM);
 export type LocalStorageKeys = keyof LocalStorage;
-
-export const setStoredAccounts = (accounts: AccountsProps): Promise<void> => {
-  const vals: LocalStorage = { accounts };
-
-  return new Promise((resolve) => {
-    chrome.storage.local.set(vals, () => {
-      resolve();
-    });
-  });
-};
 
 export const getStoredAccounts = (): Promise<AccountsProps> => {
   const keys: LocalStorageKeys[] = ["accounts"];
@@ -32,8 +21,8 @@ export const getStoredAccounts = (): Promise<AccountsProps> => {
   });
 };
 
-export const setStoredChains = (chains: ChainProps[]): Promise<void> => {
-  const vals: LocalStorage = { chains };
+export const setStoredAccounts = (accounts: AccountsProps): Promise<void> => {
+  const vals: LocalStorage = { accounts };
 
   return new Promise((resolve) => {
     chrome.storage.local.set(vals, () => {
@@ -47,13 +36,13 @@ export const getStoredChains = (): Promise<ChainProps[]> => {
 
   return new Promise((resolve) => {
     chrome.storage.local.get(keys, (res: LocalStorage) => {
-      resolve(res.chains ?? [{ ...defaultChain, active: true }]);
+      resolve(res.chains ?? []);
     });
   });
 };
 
-export const setStoredCurrency = (currency: Currency): Promise<void> => {
-  const vals: LocalStorage = { currency };
+export const setStoredChains = (chains: ChainProps[]): Promise<void> => {
+  const vals: LocalStorage = { chains };
 
   return new Promise((resolve) => {
     chrome.storage.local.set(vals, () => {
@@ -72,13 +61,11 @@ export const getStoredCurrency = (): Promise<Currency> => {
   });
 };
 
-export const setStoredLanguage = (language: Language): Promise<void> => {
-  const vals: LocalStorage = { language };
+export const setStoredCurrency = (currency: Currency): Promise<void> => {
+  const vals: LocalStorage = { currency };
 
   return new Promise((resolve) => {
     chrome.storage.local.set(vals, () => {
-      i18n.changeLanguage(language ?? Language.ENGLISH);
-
       resolve();
     });
   });
@@ -94,11 +81,13 @@ export const getStoredLanguage = (): Promise<Language> => {
   });
 };
 
-export const setStoredVaults = (vaults: VaultProps[]): Promise<void> => {
-  const vals: LocalStorage = { vaults };
+export const setStoredLanguage = (language: Language): Promise<void> => {
+  const vals: LocalStorage = { language };
 
   return new Promise((resolve) => {
     chrome.storage.local.set(vals, () => {
+      i18n.changeLanguage(language ?? Language.ENGLISH);
+
       resolve();
     });
   });
@@ -112,4 +101,19 @@ export const getStoredVaults = (): Promise<VaultProps[]> => {
       resolve(res.vaults ?? []);
     });
   });
+};
+
+export const setStoredVaults = (vaults: VaultProps[]): Promise<void> => {
+  const vals: LocalStorage = { vaults };
+
+  return new Promise((resolve) => {
+    chrome.storage.local.set(vals, () => {
+      resolve();
+    });
+  });
+};
+
+export const clearStorage = (): void => {
+  setStoredChains([]);
+  setStoredVaults([]);
 };
