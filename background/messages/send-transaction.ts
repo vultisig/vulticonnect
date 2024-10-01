@@ -20,10 +20,8 @@ const handler: PlasmoMessaging.MessageHandler<
       const transaction: TransactionProps = {
         ...req.body.transaction,
         chain: activeChain.name,
-        decimals: activeChain.decimals,
         id: uuidv4(),
         status: "default",
-        ticker: activeChain.ticker,
       };
 
       activeVault.transactions = [transaction, ...activeVault.transactions];

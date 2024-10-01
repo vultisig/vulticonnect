@@ -1,14 +1,13 @@
 import type { PlasmoMessaging } from "@plasmohq/messaging";
 
-import { getStoredAccounts, setStoredAccounts } from "~utils/storage";
+import { getStoredVaults, setStoredRequest } from "~utils/storage";
 import type { Messaging } from "~utils/interfaces";
 
 const handler: PlasmoMessaging.MessageHandler<
   Messaging.GetAccounts.Request,
   Messaging.GetAccounts.Response
 > = async (req, res) => {
-  setStoredAccounts({
-    addresses: [],
+  setStoredRequest({
     chain: req.body.chain,
     sender: req.sender.origin,
   }).then(() => {
@@ -30,9 +29,19 @@ const handler: PlasmoMessaging.MessageHandler<
 
     chrome.windows.onRemoved.addListener((closedWindowId) => {
       if (closedWindowId === createdWindowId) {
-        getStoredAccounts()
-          .then((accounts) => {
-            res.send({ accounts: accounts.addresses });
+        getStoredVaults()
+          .then((vaults) => {
+            res.send({
+              accounts: vaults.flatMap(({ apps, chains }) =>
+                chains
+                  .filter(
+                    ({ name }) =>
+                      name === req.body.chain &&
+                      apps.indexOf(req.sender.origin) >= 0
+                  )
+                  .map(({ address }) => address)
+              ),
+            });
           })
           .catch(() => {
             res.send({ accounts: [] });

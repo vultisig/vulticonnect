@@ -28,7 +28,7 @@ const useEncoder = (): ((data: Uint8Array) => Promise<string>) => {
     });
   };
 
-  const encodeData = (data: Uint8Array): Promise<string> => {
+  const dataEncoder = (data: Uint8Array): Promise<string> => {
     return new Promise((resolve, reject) => {
       if (compressor) {
         encoding(compressor, data).then(resolve);
@@ -46,7 +46,7 @@ const useEncoder = (): ((data: Uint8Array) => Promise<string>) => {
     });
   };
 
-  return encodeData;
+  return dataEncoder;
 };
 
 export default useEncoder;

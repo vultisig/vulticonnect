@@ -11,6 +11,7 @@ export default {
   [messageKeys.CHOOSE_VAULT]: "Choose Vault",
   [messageKeys.CONNECT]: "Connect",
   [messageKeys.CONNECTED_DAPPS]: "Connected Apps",
+  [messageKeys.COPY_TX]: "COPY TX",
   [messageKeys.CURRENCY]: "Currency",
   // D
   [messageKeys.DELETE_VAULT]: "Delete Vault",
@@ -44,6 +45,7 @@ export default {
   [messageKeys.START]: "Start",
   // T
   [messageKeys.TO]: "To",
+  [messageKeys.TRANSACTION]: "Transaction",
   [messageKeys.TRANSACTION_DETAILS]: "Transaction Details",
   [messageKeys.TRANSACTION_SUCCESSFUL]: "Transaction Successful",
   // U
@@ -52,6 +54,7 @@ export default {
   // V
   [messageKeys.VAULT_SETTINGS]: "Vault Settings",
   [messageKeys.VERIFY_SEND]: "Verify Send",
+  [messageKeys.VIEW_TX]: "VIEW TX",
   [messageKeys.VULT_TOKEN]: "The $VULT Token",
   [messageKeys.VULTISIG]: "Vultisig",
   [messageKeys.CONNECT_WITH_VULTISIG]: "Connect With Vultisig",
