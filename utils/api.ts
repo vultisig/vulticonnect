@@ -74,7 +74,7 @@ export default {
   },
   derivePublicKey: async (params: Derivation.Params) => {
     return await api.post<Derivation.Props>(
-      "https://airdrop.odindex.io/api/derive-public-key",
+      "https://web.vultisig.com/api/derive-public-key",
       toSnakeCase(params)
     );
   },
