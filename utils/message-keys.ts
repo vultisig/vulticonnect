@@ -13,6 +13,7 @@ export default keyMirror({
   CONNECT: true,
   CONNECT_WITH_VULTISIG: true,
   CONNECTED_DAPPS: true,
+  COPY_TX: true,
   CURRENCY: true,
   // D
   DELETE_VAULT: true,
@@ -54,6 +55,7 @@ export default keyMirror({
   SETTINGS: true,
   // T
   TO: true,
+  TRANSACTION: true,
   TRANSACTION_DETAILS: true,
   TRANSACTION_SUCCESSFUL: true,
   // U
@@ -62,6 +64,7 @@ export default keyMirror({
   // V
   VAULT_SETTINGS: true,
   VERIFY_SEND: true,
+  VIEW_TX: true,
   VULT_TOKEN: true,
   VULTISIG: true,
   VULTISIG_CONNECT: true,

@@ -62,8 +62,8 @@ const Component: FC = () => {
       title: currencyName[Currency.RUB],
     },
     {
-      key: Currency.GPB,
-      title: currencyName[Currency.GPB],
+      key: Currency.GBP,
+      title: currencyName[Currency.GBP],
     },
     {
       key: Currency.JPY,
@@ -92,6 +92,7 @@ const Component: FC = () => {
         <div className="list list-action">
           {data.map(({ key, title }) => (
             <div
+              key={key}
               className={`list-item${key === currency ? " active" : ""}`}
               onClick={() => changeLanguage(key)}
             >

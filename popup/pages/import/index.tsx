@@ -35,44 +35,47 @@ const Component: FC = () => {
   const handleStart = (): void => {
     if (!loading && vault && status === "success") {
       getStoredVaults().then((vaults) => {
-        const modifiedChains = chains.filter(({ id }) => !!id);
-        const promises = modifiedChains.map(({ name }) =>
-          getAddress(name, vault)
-        );
+        const existed = vaults.findIndex(({ uid }) => uid === vault.uid) >= 0;
 
         setState((prevState) => ({ ...prevState, loading: true }));
 
-        Promise.all(promises).then((addresses) => {
-          vault.chains = modifiedChains.map((chain, index) => ({
-            ...chain,
-            address: addresses[index],
+        if (existed) {
+          const modifiedVaults = vaults.map((item) => ({
+            ...item,
+            active: item.uid === vault.uid,
           }));
-
-          const existed = vaults.find(({ uid }) => uid === vault.uid);
-
-          const modifiedVaults = existed
-            ? vaults.map((item) =>
-                item.uid === existed.uid
-                  ? {
-                      ...vault,
-                      active: true,
-                      name: item.name,
-                    }
-                  : { ...item, active: false }
-              )
-            : [
-                { ...vault, active: true },
-                ...vaults
-                  .filter(({ uid }) => uid !== vault.uid)
-                  .map((vault) => ({ ...vault, active: false })),
-              ];
 
           setStoredVaults(modifiedVaults).then(() => {
             setState((prevState) => ({ ...prevState, loading: false }));
 
             navigate(routeKeys.main, { state: true });
           });
-        });
+        } else {
+          const modifiedChains = chains.filter(({ id }) => !!id);
+          const promises = modifiedChains.map(({ name }) =>
+            getAddress(name, vault)
+          );
+
+          Promise.all(promises).then((props) => {
+            vault.chains = modifiedChains.map((chain, index) => ({
+              ...chain,
+              ...props[index],
+            }));
+
+            const modifiedVaults = [
+              { ...vault, active: true },
+              ...vaults
+                .filter(({ uid }) => uid !== vault.uid)
+                .map((vault) => ({ ...vault, active: false })),
+            ];
+
+            setStoredVaults(modifiedVaults).then(() => {
+              setState((prevState) => ({ ...prevState, loading: false }));
+
+              navigate(routeKeys.main, { state: true });
+            });
+          });
+        }
       });
     }
   };
@@ -132,7 +135,12 @@ const Component: FC = () => {
 
               setState((prevState) => ({
                 ...prevState,
-                vault: { ...toCamelCase(vault), chains: [], transactions: [] },
+                vault: {
+                  ...toCamelCase(vault),
+                  apps: [],
+                  chains: [],
+                  transactions: [],
+                },
                 status: "success",
               }));
             } catch {

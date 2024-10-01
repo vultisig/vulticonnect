@@ -2,35 +2,38 @@ import { useEffect, useState, type FC } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Checkbox, ConfigProvider, Form } from "antd";
 
-import { themeConfig } from "~utils/constants";
+import { ChainKey, themeConfig } from "~utils/constants";
 import {
-  getStoredAccounts,
   getStoredLanguage,
+  getStoredRequest,
   getStoredVaults,
-  setStoredAccounts,
+  setStoredVaults,
 } from "~utils/storage";
+import type { VaultProps } from "~utils/interfaces";
 import i18n from "~i18n/config";
 import messageKeys from "~utils/message-keys";
 
 import { Vultisig } from "~icons";
+import MiddleTruncate from "~components/middle-truncate";
 
 import "~styles/index.scss";
 import "~tabs/get-accounts.scss";
 
 interface FormProps {
-  addresses: string[];
+  uids: string[];
 }
 
 interface InitialState {
+  chain?: ChainKey;
   sender?: string;
-  vaults: { address: string; name: string }[];
+  vaults: VaultProps[];
 }
 
 const Component: FC = () => {
   const { t } = useTranslation();
   const initialState: InitialState = { vaults: [] };
   const [state, setState] = useState(initialState);
-  const { sender, vaults } = state;
+  const { chain, sender, vaults } = state;
   const [form] = Form.useForm();
 
   const handleClose = () => {
@@ -40,9 +43,17 @@ const Component: FC = () => {
   const handleSubmit = () => {
     form
       .validateFields()
-      .then(({ addresses }: FormProps) => {
-        getStoredAccounts().then((accounts) => {
-          setStoredAccounts({ ...accounts, addresses }).then(() => {
+      .then(({ uids }: FormProps) => {
+        getStoredVaults().then((vaults) => {
+          setStoredVaults(
+            vaults.map((vault) => ({
+              ...vault,
+              apps:
+                uids.indexOf(vault.uid) >= 0
+                  ? [sender, ...vault.apps.filter((app) => app !== sender)]
+                  : vault.apps,
+            }))
+          ).then(() => {
             handleClose();
           });
         });
@@ -54,19 +65,16 @@ const Component: FC = () => {
     getStoredLanguage().then((language) => {
       i18n.changeLanguage(language);
 
-      getStoredAccounts()
-        .then((accounts) => {
+      getStoredRequest()
+        .then(({ chain, sender }) => {
           getStoredVaults().then((vaults) => {
-            setState((prevState) => ({
-              ...prevState,
-              vaults: vaults.map((vault) => ({
-                address:
-                  vault.chains.find(({ name }) => name === accounts.chain)
-                    ?.address ?? "",
-                name: vault.name,
-              })),
-              sender: accounts.sender,
-            }));
+            setState((prevState) => ({ ...prevState, chain, sender, vaults }));
+
+            form.setFieldsValue({
+              uids: vaults
+                .filter(({ apps }) => apps.indexOf(sender) >= 0)
+                .map(({ uid }) => uid),
+            });
           });
         })
         .catch(() => {});
@@ -85,12 +93,16 @@ const Component: FC = () => {
         </div>
         <div className="content">
           <Form form={form} onFinish={handleSubmit}>
-            <Form.Item<FormProps> name="addresses" rules={[{ required: true }]}>
+            <Form.Item<FormProps> name="uids" rules={[{ required: true }]}>
               <Checkbox.Group>
-                {vaults.map(({ address, name }) => (
-                  <Checkbox key={address} value={address}>
+                {vaults.map(({ chains, name, uid }) => (
+                  <Checkbox key={uid} value={uid}>
                     <span className="name">{name}</span>
-                    <span className="address">{address}</span>
+                    <MiddleTruncate
+                      text={
+                        chains.find(({ name }) => name === chain)?.address ?? ""
+                      }
+                    />
                   </Checkbox>
                 ))}
               </Checkbox.Group>

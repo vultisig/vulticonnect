@@ -15,15 +15,12 @@
     }
   }
 
-  &.step-1 {
+  &.step-1,
+  &.step-4 {
     > .content {
-      .address {
+      .middle-truncate {
         color: $cyan-base;
-        display: block;
         font-size: rem(13);
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
       }
 
       .extra {
@@ -51,11 +48,28 @@
         font-size: rem(16);
         font-weight: 700;
         line-height: rem(24);
-        margin-bottom: rem(16);
+        margin-bottom: rem(12);
+      }
+
+      .border {
+        bottom: 0;
+        fill: $cyan-base;
+        left: 0;
+        position: absolute;
+        right: 0;
+        top: 0;
       }
 
       .ant-qrcode {
+        border: none;
         padding: rem(24);
+      }
+
+      .qrcode {
+        height: rem(312);
+        overflow: hidden;
+        position: relative;
+        width: rem(312);
       }
     }
 
@@ -79,6 +93,38 @@
         line-height: rem(24);
         margin-top: rem(16);
       }
+    }
+  }
+
+  &.step-4 {
+    .btn {
+      align-items: center;
+      background-color: $blue-light;
+      border-radius: rem(8);
+      color: $gray-1;
+      cursor: pointer;
+      display: flex;
+      gap: rem(6);
+      height: rem(36);
+      justify-content: center;
+      transition: background-color 0.3s;
+      width: 100%;
+
+      svg {
+        fill: $gray-6;
+        height: rem(18);
+        width: rem(18);
+      }
+
+      &:hover {
+        background-color: $blue-dark;
+      }
+    }
+
+    .actions {
+      display: flex;
+      gap: rem(8);
+      margin-top: rem(16);
     }
   }
 }

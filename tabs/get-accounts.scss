@@ -29,6 +29,7 @@
   > .content {
     .ant-checkbox {
       + span {
+        padding-right: 0;
         width: 100%;
 
         .name {
@@ -40,14 +41,10 @@
           white-space: nowrap;
         }
 
-        .address {
+        .middle-truncate {
           color: $gray-6;
-          display: block;
           font-size: rem(12);
           line-height: rem(16);
-          overflow: hidden;
-          text-overflow: ellipsis;
-          white-space: nowrap;
         }
       }
     }

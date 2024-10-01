@@ -1,4 +1,4 @@
-import { ChainKey, chains, Currency, Language } from "~utils/constants";
+import { Currency, Language } from "~utils/constants";
 import type { AccountsProps, ChainProps, VaultProps } from "~utils/interfaces";
 import i18n from "~i18n/config";
 
@@ -11,7 +11,7 @@ export interface LocalStorage {
 }
 export type LocalStorageKeys = keyof LocalStorage;
 
-export const getStoredAccounts = (): Promise<AccountsProps> => {
+export const getStoredRequest = (): Promise<AccountsProps> => {
   const keys: LocalStorageKeys[] = ["accounts"];
 
   return new Promise((resolve, reject) => {
@@ -21,7 +21,7 @@ export const getStoredAccounts = (): Promise<AccountsProps> => {
   });
 };
 
-export const setStoredAccounts = (accounts: AccountsProps): Promise<void> => {
+export const setStoredRequest = (accounts: AccountsProps): Promise<void> => {
   const vals: LocalStorage = { accounts };
 
   return new Promise((resolve) => {
@@ -111,9 +111,4 @@ export const setStoredVaults = (vaults: VaultProps[]): Promise<void> => {
       resolve();
     });
   });
-};
-
-export const clearStorage = (): void => {
-  setStoredChains([]);
-  setStoredVaults([]);
 };

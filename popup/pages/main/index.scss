@@ -28,9 +28,16 @@
       }
 
       .item {
+        align-items: center;
+        display: flex;
         height: rem(70);
+        gap: rem(8);
         padding: rem(16) 0;
         position: relative;
+
+        .name {
+          font-weight: 600;
+        }
 
         .btn {
           align-items: center;

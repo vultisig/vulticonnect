@@ -3,6 +3,8 @@
 @import "~/styles/_montserrat";
 @import "~/styles/_normalize";
 
+@import "~/components/middle-truncate";
+
 @keyframes loading-after {
   0% {
     left: rem(20);
@@ -99,7 +101,7 @@ body {
 
 .ant-checkbox-group {
   border-radius: rem(12);
-  max-width: 100%;
+  display: flex;
   overflow: hidden;
 
   .ant-checkbox-wrapper {
@@ -145,12 +147,26 @@ body {
   }
 }
 
+.ant-modal {
+  .ant-modal-content {
+    background-color: $blue-dark;
+  }
+}
+
 .ant-spin {
   &.center {
     left: 50%;
     position: absolute;
     top: 50%;
     transform: translate(-50%, -50%);
+  }
+}
+
+.ant-message {
+  .ant-message-notice-wrapper {
+    .ant-message-notice-content {
+      background-color: $blue-base;
+    }
   }
 }
 

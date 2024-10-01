@@ -26,7 +26,6 @@ export namespace Messaging {
 }
 
 export interface AccountsProps {
-  addresses: string[];
   chain: ChainKey;
   sender: string;
 }
@@ -34,10 +33,37 @@ export interface AccountsProps {
 export interface ChainProps {
   active?: boolean;
   address?: string;
+  cmcId: number;
   decimals: number;
+  derivationKey?: string;
   id: string;
   name: ChainKey;
   ticker: string;
+}
+
+export interface ChainExplorerRef {
+  [ChainKey.ARBITRUM]: string;
+  [ChainKey.AVALANCHE]: string;
+  [ChainKey.BASE]: string;
+  [ChainKey.BITCOIN]: string;
+  [ChainKey.BITCOINCASH]: string;
+  [ChainKey.BLAST]: string;
+  [ChainKey.BSCCHAIN]: string;
+  [ChainKey.CRONOSCHAIN]: string;
+  [ChainKey.DASH]: string;
+  [ChainKey.DOGECOIN]: string;
+  [ChainKey.DYDX]: string;
+  [ChainKey.ETHEREUM]: string;
+  [ChainKey.GAIACHAIN]: string;
+  [ChainKey.KUJIRA]: string;
+  [ChainKey.LITECOIN]: string;
+  [ChainKey.MAYACHAIN]: string;
+  [ChainKey.OPTIMISM]: string;
+  [ChainKey.POLKADOT]: string;
+  [ChainKey.POLYGON]: string;
+  [ChainKey.SOLANA]: string;
+  [ChainKey.THORCHAIN]: string;
+  [ChainKey.ZKSYNC]: string;
 }
 
 export interface ChainRpcRef {
@@ -57,12 +83,20 @@ export interface CurrencyRef {
   [Currency.CAD]: string;
   [Currency.CNY]: string;
   [Currency.EUR]: string;
-  [Currency.GPB]: string;
+  [Currency.GBP]: string;
   [Currency.JPY]: string;
   [Currency.RUB]: string;
   [Currency.SEK]: string;
   [Currency.SGD]: string;
   [Currency.USD]: string;
+}
+
+export interface SignatureProps {
+  Msg: string;
+  R: string;
+  S: string;
+  DerSignature: string;
+  RecoveryID: string;
 }
 
 export interface LanguageRef {
@@ -89,16 +123,15 @@ export interface TransactionProps {
   to: string;
   value: string;
   chain?: ChainKey;
-  decimals?: number;
   gas?: string;
   gasPrice?: string;
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
-  ticker?: string;
 }
 
 export interface VaultProps {
   active: boolean;
+  apps?: string[];
   chains: ChainProps[];
   hexChainCode: string;
   name: string;
