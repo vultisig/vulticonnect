@@ -2,7 +2,8 @@ import { type FC } from "react";
 import {
   Navigate,
   RouterProvider,
-  createBrowserRouter,
+  //createBrowserRouter,
+  createHashRouter,
   type RouteObject,
 } from "react-router-dom";
 
@@ -117,7 +118,7 @@ const processRoutes = (routes: RouteConfig[]): RouteObject[] => {
   );
 };
 
-const router = createBrowserRouter(processRoutes(routes), {
+const router = createHashRouter(processRoutes(routes), {
   basename: routerKeys.basePath,
 });
 

@@ -10,15 +10,17 @@
     "package": "plasmo package"
   },
   "dependencies": {
-    "7z-wasm": "^1.1.0",
     "@plasmohq/messaging": "^0.6.2",
     "@trustwallet/wallet-core": "4.1.8-rc1",
+    "7z-wasm": "^1.1.0",
     "antd": "^5.20.6",
     "axios": "^1.7.7",
     "ethers": "^6.13.2",
     "i18next": "^23.15.1",
     "keymirror": "^0.1.1",
+    "nvm": "^0.0.4",
     "plasmo": "0.89.2",
+    "pnpm": "^9.11.0",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-i18next": "^15.0.1",
@@ -56,15 +58,9 @@
     "web_accessible_resources": [
       {
         "resources": [
-          "static/*/**"
-        ],
-        "matches": [
-          "<all_urls>"
-        ]
-      },
-      {
-        "resources": [
-          "wallet-core.wasm"
+          "static/*/**",
+          "wallet-core.wasm",
+          "tabs/wallet-core.wasm"
         ],
         "matches": [
           "<all_urls>"

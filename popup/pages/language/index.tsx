@@ -84,6 +84,7 @@ const Component: FC = () => {
         <div className="list list-action">
           {data.map(({ key, title }) => (
             <div
+              key={key}
               className={`list-item${key === language ? " active" : ""}`}
               onClick={() => changeLanguage(key)}
             >
