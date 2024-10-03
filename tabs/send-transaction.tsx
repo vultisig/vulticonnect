@@ -1,25 +1,22 @@
 import { useEffect, useState, type FC } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, ConfigProvider, QRCode, message } from "antd";
+import { Button, QRCode, message } from "antd";
 import { formatUnits, toUtf8String } from "ethers";
 
 import type { KeysignPayload } from "~protos/keysign_message_pb";
 
-import { Currency, explorerUrl, themeConfig } from "~utils/constants";
+import { errorKey, explorerUrl } from "~utils/constants";
 import {
   getStoredCurrency,
   getStoredLanguage,
   getStoredVaults,
-  setStoredVaults,
+  setStoredTransaction,
 } from "~utils/storage";
-import type {
-  ChainProps,
-  TransactionProps,
-  VaultProps,
-} from "~utils/interfaces";
+import type { TransactionProps, VaultProps } from "~utils/interfaces";
 import i18n from "~i18n/config";
 import api from "~utils/api";
 import SignAPI from "~utils/sign-api";
+import useEncoder from "~hooks/encode-data";
 import useWalletCore from "~hooks/get-wallet-core";
 import messageKeys from "~utils/message-keys";
 
@@ -29,47 +26,44 @@ import {
   SquareArrow,
   SquareBehindSquare,
 } from "~icons";
+import ConfigProvider from "~components/config-provider";
 import MiddleTruncate from "~components/middle-truncate";
+import VultiLoading from "~components/vulti-loading";
 
 import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
-import useEncoder from "~hooks/encode-data";
 
 interface InitialState {
   signAPI?: SignAPI;
-  chain?: ChainProps;
-  currency?: Currency;
-  gasPrice?: number;
-  loading: boolean;
+  fastSign?: boolean;
+  loaded?: boolean;
+  loading?: boolean;
   sendKey?: string;
   step: number;
   transaction?: TransactionProps;
-  txHash?: string;
   vault?: VaultProps;
 }
 
 const Component: FC = () => {
   const { t } = useTranslation();
-  const initialState: InitialState = { loading: false, step: 1 };
+  const initialState: InitialState = { step: 1 };
   const [state, setState] = useState(initialState);
   const {
-    chain,
-    currency,
-    gasPrice,
+    fastSign,
+    loaded,
     loading,
     sendKey,
     signAPI,
     step,
     transaction,
-    txHash,
     vault,
   } = state;
   const [messageApi, contextHolder] = message.useMessage();
   const dataEncoder = useEncoder();
   const getWalletCore = useWalletCore();
 
-  const handleApp = () => {
+  const handleApp = (): void => {
     window.open(sendKey, "_self");
   };
 
@@ -77,35 +71,43 @@ const Component: FC = () => {
     window.close();
   };
 
-  const handleCopy = (data: string) => {
+  const handleCopy = (): void => {
     navigator.clipboard
-      .writeText(data)
+      .writeText(transaction.txHash)
       .then(() => {
         messageApi.open({
           type: "success",
-          content: "Transaction link copied to clipboard",
+          content: t(messageKeys.SUCCESSFUL_COPY_LINK),
         });
       })
       .catch(() => {
         messageApi.open({
           type: "error",
-          content: "Failed to copy transaction link",
+          content: t(messageKeys.UNSUCCESSFUL_COPY_LINK),
         });
       });
   };
 
-  const handlePending = (preSignedImageHash: string) => {
+  const handlePending = (preSignedImageHash: string): void => {
     api.transaction
       .getComplete(transaction.id, preSignedImageHash)
       .then(({ data }) => {
         signAPI
           .getSignedTransaction(transaction, data)
           .then((txHash) => {
-            handleStatus("success").then(() => {
-              setState((prevState) => ({ ...prevState, step: 4, txHash }));
+            setStoredTransaction({
+              ...transaction,
+              status: "success",
+              txHash,
+            }).then(() => {
+              setState((prevState) => ({
+                ...prevState,
+                step: 4,
+                transaction: { ...transaction, txHash },
+              }));
             });
           })
-          .catch((error) => {});
+          .catch(() => {});
       })
       .catch(({ status }) => {
         if (status === 404) {
@@ -113,32 +115,34 @@ const Component: FC = () => {
             handlePending(preSignedImageHash);
           }, 1000);
         } else {
-          handleStatus("error").then(() => {
+          setStoredTransaction({ ...transaction, status: "error" }).then(() => {
             handleClose();
           });
         }
       });
   };
 
-  const handleStart = (keysignPayload: KeysignPayload) => {
+  const handleStart = (keysignPayload: KeysignPayload): void => {
     api.transaction
       .getDevices(transaction.id)
       .then(({ data }) => {
         if (data?.length > 1) {
           api.transaction.setStart(transaction.id, data).then(() => {
-            handleStatus("pending").then(() => {
-              signAPI
-                .getPreSignedInputData(keysignPayload)
-                .then((preSignedInputData) => {
-                  signAPI
-                    .getPreSignedImageHash(preSignedInputData)
-                    .then((preSignedImageHash) => {
-                      setState((prevState) => ({ ...prevState, step: 3 }));
+            setStoredTransaction({ ...transaction, status: "pending" }).then(
+              () => {
+                signAPI
+                  .getPreSignedInputData(keysignPayload)
+                  .then((preSignedInputData) => {
+                    signAPI
+                      .getPreSignedImageHash(preSignedInputData)
+                      .then((preSignedImageHash) => {
+                        setState((prevState) => ({ ...prevState, step: 3 }));
 
-                      handlePending(preSignedImageHash);
-                    });
-                });
-            });
+                        handlePending(preSignedImageHash);
+                      });
+                  });
+              }
+            );
           });
         } else {
           setTimeout(() => {
@@ -147,28 +151,10 @@ const Component: FC = () => {
         }
       })
       .catch(() => {
-        handleStatus("error").then(() => {
+        setStoredTransaction({ ...transaction, status: "error" }).then(() => {
           handleClose();
         });
       });
-  };
-
-  const handleStatus = (
-    status: "error" | "pending" | "success"
-  ): Promise<void> => {
-    return new Promise((resolve) => {
-      getStoredVaults().then((vaults) => {
-        setStoredVaults(
-          vaults.map((vault) => ({
-            ...vault,
-            transactions: vault.transactions.map((item) => ({
-              ...item,
-              status: item.id === transaction.id ? status : item.status,
-            })),
-          }))
-        ).then(resolve);
-      });
-    });
   };
 
   const handleStep = (step: number): void => {
@@ -189,14 +175,17 @@ const Component: FC = () => {
                   transaction.id
                 )
                 .then((sendKey) => {
-                  setState((prevState) => ({
-                    ...prevState,
-                    loading: false,
-                    sendKey,
-                    step,
-                  }));
+                  api.checkVaultExist(vault.publicKeyEcdsa).then((fastSign) => {
+                    setState((prevState) => ({
+                      ...prevState,
+                      fastSign,
+                      loading: false,
+                      sendKey,
+                      step,
+                    }));
 
-                  handleStart(keysignPayload);
+                    handleStart(keysignPayload);
+                  });
                 })
                 .catch(() => {
                   setState((prevState) => ({ ...prevState, loading: false }));
@@ -219,55 +208,60 @@ const Component: FC = () => {
 
   const componentDidMount = (): void => {
     getStoredLanguage().then((language) => {
-      i18n.changeLanguage(language);
-
       getStoredCurrency().then((currency) => {
         getStoredVaults().then((vautls) => {
           const vault = vautls.find(({ active }) => active);
           const [transaction] = vault?.transactions ?? [];
 
+          i18n.changeLanguage(language);
+
           if (transaction) {
-            const chain = vault.chains.find(
-              ({ name }) => name === transaction.chain
-            );
-
-            api
-              .cryptoCurrency(chain.cmcId, currency)
-              .then(({ data }) => {
-                let price = 1;
-
-                if (
-                  data?.data &&
-                  data.data[chain.cmcId]?.quote &&
-                  data.data[chain.cmcId].quote[currency]?.price
-                )
-                  price = data.data[chain.cmcId].quote[currency].price;
-
-                getWalletCore().then(({ core, chainRef }) => {
+            if (transaction.status === "success") {
+              setState((prevState) => ({
+                ...prevState,
+                loaded: true,
+                step: 4,
+                transaction,
+              }));
+            } else {
+              getWalletCore()
+                .then(({ core, chainRef }) => {
                   const signAPI = new SignAPI(
-                    chain,
+                    transaction.chain.name,
                     chainRef,
                     dataEncoder,
                     core
                   );
 
-                  signAPI
-                    .getEstimateTransactionFee()
-                    .then((gasPrice) => {
-                      setState((prevState) => ({
-                        ...prevState,
-                        chain,
-                        currency,
-                        gasPrice: parseInt(gasPrice) * 1e-9 * price,
-                        signAPI,
-                        transaction,
-                        vault,
-                      }));
-                    })
-                    .catch(() => {});
+                  signAPI.getEstimateTransactionFee().then((gasPrice) => {
+                    api
+                      .cryptoCurrency(transaction.chain.cmcId, currency)
+                      .then((price) => {
+                        transaction.gasPrice = (
+                          parseInt(gasPrice) *
+                          1e-9 *
+                          price
+                        ).toValueFormat(currency);
+
+                        setStoredTransaction(transaction).then(() => {
+                          setState((prevState) => ({
+                            ...prevState,
+                            currency,
+                            loaded: true,
+                            signAPI,
+                            transaction,
+                            vault,
+                          }));
+                        });
+                      });
+                  });
+                })
+                .catch((error) => {
+                  console.log(error);
                 });
-              })
-              .catch(() => {});
+            }
+          } else {
+            console.error(errorKey.FAIL_TO_GET_TRANSACTION);
           }
         });
       });
@@ -277,8 +271,8 @@ const Component: FC = () => {
   useEffect(componentDidMount, []);
 
   return (
-    <ConfigProvider theme={themeConfig}>
-      {transaction && (
+    <ConfigProvider>
+      {loaded ? (
         <div className={`layout step-${step}`}>
           <div className="header">
             <span className="heading">
@@ -320,10 +314,10 @@ const Component: FC = () => {
                     <span className="label">{t(messageKeys.AMOUNT)}</span>
                     <span className="extra">{`${formatUnits(
                       transaction.value,
-                      chain.decimals
-                    )} ${chain.ticker}`}</span>
+                      transaction.chain.decimals
+                    )} ${transaction.chain.ticker}`}</span>
                   </div>
-                  {transaction.data && (
+                  {transaction.data?.length > 2 && (
                     <div className="list-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
                       <span className="extra">
@@ -332,10 +326,8 @@ const Component: FC = () => {
                     </div>
                   )}
                   <div className="list-item">
-                    <span className="label">Est. Network Fee</span>
-                    <span className="extra">
-                      {gasPrice.toValueFormat(currency)}
-                    </span>
+                    <span className="label">{t(messageKeys.NETWORK_FEE)}</span>
+                    <span className="extra">{transaction.gasPrice}</span>
                   </div>
                 </div>
               </div>
@@ -354,26 +346,28 @@ const Component: FC = () => {
           ) : step === 2 ? (
             <>
               <div className="content">
-                <span className="hint">Scan QR code with pair device</span>
+                <span className="hint">
+                  {t(messageKeys.SCAN_QR_WITH_DEVICE)}
+                </span>
                 <div className="qrcode">
                   <QRCodeBorder className="border" />
                   <QRCode size={312} value={sendKey} />
                 </div>
               </div>
               <div className="footer">
-                <Button type="primary" shape="round" block>
+                <Button type="primary" shape="round" disabled={!fastSign} block>
                   {t(messageKeys.FAST_SIGN)}
                 </Button>
                 <Button onClick={handleApp} type="default" shape="round" block>
-                  Open Desktop App
+                  {t(messageKeys.OPEN_DESKTOP_APP)}
                 </Button>
               </div>
             </>
           ) : step === 3 ? (
             <>
               <div className="content">
-                <div className="vulti-loading" />
-                <span className="message">Signing</span>
+                <VultiLoading />
+                <span className="message">{t(messageKeys.SIGNING)}</span>
               </div>
             </>
           ) : (
@@ -382,10 +376,12 @@ const Component: FC = () => {
                 <div className="list">
                   <div className="list-item">
                     <span className="label">{t(messageKeys.TRANSACTION)}</span>
-                    <MiddleTruncate text={txHash} />
+                    <MiddleTruncate text={transaction.txHash} />
                     <div className="actions">
                       <a
-                        href={`${explorerUrl[chain.name]}/tx/${txHash}`}
+                        href={`${explorerUrl[transaction.chain.name]}/tx/${
+                          transaction.txHash
+                        }`}
                         rel="noopener noreferrer"
                         target="_blank"
                         className="btn"
@@ -393,7 +389,7 @@ const Component: FC = () => {
                         <SquareArrow />
                         {t(messageKeys.VIEW_TX)}
                       </a>
-                      <span className="btn" onClick={()=>handleCopy(txHash)}>
+                      <span className="btn" onClick={() => handleCopy()}>
                         <SquareBehindSquare />
                         {t(messageKeys.COPY_TX)}
                       </span>
@@ -407,10 +403,10 @@ const Component: FC = () => {
                     <span className="label">{t(messageKeys.AMOUNT)}</span>
                     <span className="extra">{`${formatUnits(
                       transaction.value,
-                      chain.decimals
-                    )} ${chain.ticker}`}</span>
+                      transaction.chain.decimals
+                    )} ${transaction.chain.ticker}`}</span>
                   </div>
-                  {transaction.data && (
+                  {transaction.data?.length > 2 && (
                     <div className="list-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
                       <span className="extra">
@@ -419,10 +415,8 @@ const Component: FC = () => {
                     </div>
                   )}
                   <div className="list-item">
-                    <span className="label">Est. Network Fee</span>
-                    <span className="extra">
-                      {gasPrice.toValueFormat(currency)}
-                    </span>
+                    <span className="label">{t(messageKeys.NETWORK_FEE)}</span>
+                    <span className="extra">{transaction.gasPrice}</span>
                   </div>
                 </div>
               </div>
@@ -439,6 +433,8 @@ const Component: FC = () => {
             </>
           )}
         </div>
+      ) : (
+        <VultiLoading />
       )}
 
       {contextHolder}

@@ -24,7 +24,6 @@ import {
 
 import { ChainKey, rpcUrl } from "~utils/constants";
 import type {
-  ChainProps,
   SignatureProps,
   TransactionProps,
   VaultProps,
@@ -59,12 +58,12 @@ export default class SignAPI {
   private nonce: bigint;
 
   constructor(
-    private chain: ChainProps,
+    private chainKey: ChainKey,
     private chainRef: ChainRef,
     private dataEncoder: (data: Uint8Array) => Promise<string>,
     private walletCore: WalletCore
   ) {
-    this.chain = chain;
+    this.chainKey = chainKey;
     this.chainRef = chainRef;
     this.dataEncoder = dataEncoder;
     this.walletCore = walletCore;
@@ -72,7 +71,7 @@ export default class SignAPI {
 
   private fetchAPI = <T>(payload: RpcPayload): Promise<T> => {
     return new Promise((resolve, reject) => {
-      const url = rpcUrl[this.chain.name];
+      const url = rpcUrl[this.chainKey];
 
       fetch(url, {
         method: "POST",
@@ -88,7 +87,7 @@ export default class SignAPI {
   };
 
   private getGasLimit = (): number => {
-    switch (this.chain.name) {
+    switch (this.chainKey) {
       case ChainKey.ARBITRUM:
         return 300000;
       default:
@@ -233,7 +232,9 @@ export default class SignAPI {
 
           resolve(estimatedFeeInGwei);
         })
-        .catch(() => {});
+        .catch(() => {
+          resolve("0");
+        });
     });
   };
 
@@ -243,13 +244,13 @@ export default class SignAPI {
   ): Promise<KeysignPayload> => {
     return new Promise((resolve, reject) => {
       const coin = create(CoinSchema, {
-        chain: this.chain.name,
-        ticker: this.chain.ticker,
-        address: this.chain.address,
-        decimals: this.chain.decimals,
+        chain: transaction.chain.name,
+        ticker: transaction.chain.ticker,
+        address: transaction.from,
+        decimals: transaction.chain.decimals,
         hexPublicKey: vault.hexChainCode,
         isNativeToken: true,
-        logo: this.chain.ticker.toLowerCase(),
+        logo: transaction.chain.ticker.toLowerCase(),
       });
 
       Promise.all([
@@ -295,7 +296,7 @@ export default class SignAPI {
   ): Promise<string> => {
     return new Promise((resolve, reject) => {
       const preHashes = this.walletCore.TransactionCompiler.preImageHashes(
-        this.chainRef[this.chain.name],
+        this.chainRef[this.chainKey],
         preSignedInputData
       );
 
@@ -334,7 +335,7 @@ export default class SignAPI {
         blockchainSpecific.value;
 
       const chainId: bigint = BigInt(
-        this.walletCore.CoinTypeExt.chainId(this.chainRef[this.chain.name])
+        this.walletCore.CoinTypeExt.chainId(this.chainRef[this.chainKey])
       );
 
       const chainIdHex = Buffer.from(
@@ -442,7 +443,7 @@ export default class SignAPI {
       let tx = {};
 
       const props = {
-        chainId: parseInt(this.chain.id).toString(),
+        chainId: parseInt(transaction.chain.id).toString(),
         nonce: Number(this.nonce),
         gasLimit: this.getGasLimit().toString(),
         maxFeePerGas: (BigInt(this.gasPrice) * BigInt(3)) / BigInt(2),

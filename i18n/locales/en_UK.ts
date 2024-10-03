@@ -34,15 +34,24 @@ export default {
   [messageKeys.MEMO]: "Memo",
   // N
   [messageKeys.NAME]: "Name",
+  [messageKeys.NETWORK_FEE]: "Est. Network Fee",
   // O
+  [messageKeys.OPEN_DESKTOP_APP]: "Open Desktop App",
   [messageKeys.OTHER]: "Other",
   [messageKeys.OTHER_VAULTS]: "Other Vaults",
+  // R
+  [messageKeys.REMOVING_VAULT_WARNING]: "You are removing Vault",
   [messageKeys.RENAME_VAULT]: "Rename Vault",
   // S
+  [messageKeys.SAVE]: "Save",
+  [messageKeys.SCAN_QR_WITH_DEVICE]: "Scan QR code with pair device",
   [messageKeys.SETTINGS]: "Settings",
   [messageKeys.SIGN]: "Sign",
+  [messageKeys.SIGNING]: "Signing",
   [messageKeys.SIGN_TRANSACTION]: "Sign Transaction",
   [messageKeys.START]: "Start",
+  [messageKeys.SUCCESSFUL_COPY_LINK]: "Link copied to clipboard",
+  [messageKeys.SUCCESSFUL_COPY_TEXT]: "Text copied to clipboard",
   // T
   [messageKeys.TO]: "To",
   [messageKeys.TRANSACTION]: "Transaction",
@@ -50,6 +59,8 @@ export default {
   [messageKeys.TRANSACTION_SUCCESSFUL]: "Transaction Successful",
   // U
   [messageKeys.UNLINK]: "Unlink",
+  [messageKeys.UNSUCCESSFUL_COPY_LINK]: "Failed to copy link",
+  [messageKeys.UNSUCCESSFUL_COPY_TEXT]: "Failed to copy text",
   [messageKeys.UPLOAD_IT]: "upload it",
   // V
   [messageKeys.VAULT_SETTINGS]: "Vault Settings",

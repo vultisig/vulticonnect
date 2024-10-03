@@ -67,10 +67,39 @@ export default {
       );
     },
   },
-  cryptoCurrency: async (cmcId: number, currency: Currency) => {
-    return await api.get<CryptoCurrency.Props>(
-      `https://api.vultisig.com/cmc/v2/cryptocurrency/quotes/latest?id=${cmcId}&aux=platform&convert=${currency}`
-    );
+  checkVaultExist: (ecdsa: string): Promise<boolean> => {
+    return new Promise((resolve) => {
+      api
+        .get(`https://api.vultisig.com/vault/exist/${ecdsa}`)
+        .then(() => {
+          resolve(true);
+        })
+        .catch(() => {
+          resolve(false);
+        });
+    });
+  },
+  cryptoCurrency: (cmcId: number, currency: Currency): Promise<number> => {
+    return new Promise((resolve) => {
+      api
+        .get<CryptoCurrency.Props>(
+          `https://api.vultisig.com/cmc/v2/cryptocurrency/quotes/latest?id=${cmcId}&aux=platform&convert=${currency}`
+        )
+        .then(({ data }) => {
+          if (
+            data?.data &&
+            data.data[cmcId]?.quote &&
+            data.data[cmcId].quote[currency]?.price
+          ) {
+            resolve(data.data[cmcId].quote[currency].price);
+          } else {
+            resolve(0);
+          }
+        })
+        .catch(() => {
+          resolve(0);
+        });
+    });
   },
   derivePublicKey: async (params: Derivation.Params) => {
     return await api.post<Derivation.Props>(

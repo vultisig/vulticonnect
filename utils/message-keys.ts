@@ -40,19 +40,26 @@ export default keyMirror({
   MEMO: true,
   // N
   NAME: true,
+  NETWORK_FEE: true,
   // O
+  OPEN_DESKTOP_APP: true,
   OTHER: true,
   OTHER_VAULTS: true,
   // P
   // Q
   // R
+  REMOVING_VAULT_WARNING: true,
   RENAME_VAULT: true,
   // S
   SAVE: true,
+  SCAN_QR_WITH_DEVICE: true,
+  SETTINGS: true,
   SIGN: true,
+  SIGNING: true,
   SIGN_TRANSACTION: true,
   START: true,
-  SETTINGS: true,
+  SUCCESSFUL_COPY_LINK: true,
+  SUCCESSFUL_COPY_TEXT: true,
   // T
   TO: true,
   TRANSACTION: true,
@@ -60,6 +67,8 @@ export default keyMirror({
   TRANSACTION_SUCCESSFUL: true,
   // U
   UNLINK: true,
+  UNSUCCESSFUL_COPY_LINK: true,
+  UNSUCCESSFUL_COPY_TEXT: true,
   UPLOAD_IT: true,
   // V
   VAULT_SETTINGS: true,

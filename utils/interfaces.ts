@@ -116,17 +116,19 @@ export interface ScreenProps {
 }
 
 export interface TransactionProps {
+  chain: ChainProps;
+  contract?: string;
   data: string;
   from: string;
   id: string;
   status: "default" | "error" | "pending" | "success";
   to: string;
   value: string;
-  chain?: ChainKey;
   gas?: string;
   gasPrice?: string;
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
+  txHash?: string;
 }
 
 export interface VaultProps {

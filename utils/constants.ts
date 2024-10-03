@@ -1,4 +1,3 @@
-import { theme } from "antd";
 import keyMirror from "keymirror";
 
 import type {
@@ -66,8 +65,10 @@ export const storageKey = keyMirror({
 });
 
 export const errorKey = keyMirror({
+  FAIL_TO_GET_ACCOUNTS: true,
   FAIL_TO_GET_ADDRESS: true,
   FAIL_TO_GET_VAULT: true,
+  FAIL_TO_GET_TRANSACTION: true,
   FAIL_TO_INIT_WASM: true,
   INVALID_CHAIN: true,
   INVALID_EXTENSION: true,
@@ -299,13 +300,3 @@ export const chains: ChainProps[] = [
     ticker: "RUNE",
   },
 ];
-
-export const themeConfig = {
-  algorithm: theme.darkAlgorithm,
-  token: {
-    borderRadius: 12,
-    colorPrimary: "#33e6bf",
-    colorTextLightSolid: "#02122b",
-    fontFamily: "inherit",
-  },
-};
