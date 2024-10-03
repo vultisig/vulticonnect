@@ -1,33 +1,30 @@
-This is a [Plasmo extension](https://docs.plasmo.com/) project bootstrapped with [`plasmo init`](https://www.npmjs.com/package/plasmo).
+# VultiConnect
 
-## Getting Started
+## What is VultiConnect
+VultiConnect is a Chrome extension similar to MetaMask but much safer. It does not store any critical information such as private keys or passwords. Instead, it allows you to connect your Vultisig app to DeFi applications, enabling you to interact with them and sign transactions on your devices.
 
-First, run the development server:
+## How Safe is VultiConnect
+You only need to import public keys and vault information into VultiConnect. Unlike MetaMask, if someone hacks your Chrome or the extension, they cannot execute transactions without your approval on your Vultisig devices, as they only have access to public information.
 
-```bash
-pnpm dev
-# or
-npm run dev
-```
+## Requirements
+Before building VultiConnect, ensure you have the following installed:
+- `Node.js` (version 18.10.0 or later)
+- `pnpm` (for managing packages)
+- `npm` (if you need it for specific tasks)
 
-Open your browser and load the appropriate development build. For example, if you are developing for the chrome browser, using manifest v3, use: `build/chrome-mv3-dev`.
+## How to Build the VultiConnect Extension
+To build the VultiConnect extension, follow these steps:
+1. Clone the repository:
+   `git clone https://github.com/vultisig/vulticonnect.git`
+2. Navigate to the project directory:
+   `cd vulticonnect`
+3. Install the necessary dependencies using pnpm:
+   `pnpm install`
+4. Build the project for production:
+   `pnpm run build`
 
-You can start editing the popup by modifying `popup.tsx`. It should auto-update as you make changes. To add an options page, simply add a `options.tsx` file to the root of the project, with a react component default exported. Likewise to add a content page, add a `content.ts` file to the root of the project, importing some module and do some logic, then reload the extension on your browser.
-
-For further guidance, [visit our Documentation](https://docs.plasmo.com/)
-
-## Making production build
-
-Run the following:
-
-```bash
-pnpm build
-# or
-npm run build
-```
-
-This should create a production bundle for your extension, ready to be zipped and published to the stores.
-
-## Submit to the webstores
-
-The easiest way to deploy your Plasmo extension is to use the built-in [bpp](https://bpp.browser.market) GitHub action. Prior to using this action however, make sure to build your extension and upload the first version to the store to establish the basic credentials. Then, simply follow [this setup instruction](https://docs.plasmo.com/framework/workflows/submit) and you should be on your way for automated submission!
+## How to Install it in Chrome
+1. Open Chrome and go to `chrome://extensions`.
+2. Enable `Developer mode` by toggling the switch in the top right corner.
+3. Click on `Load unpacked` and select the *dist* folder from the VultiConnect project directory.
+4. Your extension should now be installed and ready to use.
