@@ -64,7 +64,9 @@ const Component: FC = () => {
       </div>
       <div className="content">
         <WarningShape className="icon" />
-        <span className="text">You are removing Vault:</span>
+        <span className="text">{`${t(
+          messageKeys.REMOVING_VAULT_WARNING
+        )}:`}</span>
         <span className="name">{vault?.name}</span>
       </div>
       <div className="footer">

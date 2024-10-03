@@ -1,5 +1,10 @@
 import { Currency, Language } from "~utils/constants";
-import type { AccountsProps, ChainProps, VaultProps } from "~utils/interfaces";
+import type {
+  AccountsProps,
+  ChainProps,
+  TransactionProps,
+  VaultProps,
+} from "~utils/interfaces";
 import i18n from "~i18n/config";
 
 export interface LocalStorage {
@@ -109,6 +114,23 @@ export const setStoredVaults = (vaults: VaultProps[]): Promise<void> => {
   return new Promise((resolve) => {
     chrome.storage.local.set(vals, () => {
       resolve();
+    });
+  });
+};
+
+export const setStoredTransaction = (
+  transaction: TransactionProps
+): Promise<void> => {
+  return new Promise((resolve) => {
+    getStoredVaults().then((vaults) => {
+      setStoredVaults(
+        vaults.map((vault) => ({
+          ...vault,
+          transactions: vault.transactions.map((t) =>
+            t.id === transaction.id ? transaction : t
+          ),
+        }))
+      ).then(resolve);
     });
   });
 };

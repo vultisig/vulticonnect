@@ -1,5 +1,6 @@
 import type { PlasmoMessaging } from "@plasmohq/messaging";
 
+import { Contract, Interface, JsonRpcProvider } from "ethers";
 import { v4 as uuidv4 } from "uuid";
 
 import {
@@ -8,6 +9,8 @@ import {
   setStoredVaults,
 } from "~utils/storage";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
+import ERC20Abi from "~utils/erc20";
+import { rpcUrl } from "~utils/constants";
 
 const handler: PlasmoMessaging.MessageHandler<
   Messaging.SendTransaction.Request,
@@ -15,52 +18,96 @@ const handler: PlasmoMessaging.MessageHandler<
 > = async (req, res) => {
   getStoredChains().then((chains) => {
     getStoredVaults().then((vaults) => {
-      const activeChain = chains.find(({ active }) => active);
-      const activeVault = vaults.find(({ active }) => active);
-      const transaction: TransactionProps = {
-        ...req.body.transaction,
-        chain: activeChain.name,
-        id: uuidv4(),
-        status: "default",
-      };
+      const chain = chains.find(({ active }) => active);
+      const vault = vaults.find(({ active }) => active);
 
-      activeVault.transactions = [transaction, ...activeVault.transactions];
+      const prepareTransaction = (): Promise<TransactionProps> => {
+        return new Promise((resolve, reject) => {
+          if (
+            req.body.transaction.data &&
+            !parseInt(req.body.transaction.value)
+          ) {
+            const provider = new JsonRpcProvider(rpcUrl[chain.name]);
+            const coinContract = new Contract(
+              req.body.transaction.to,
+              ERC20Abi,
+              provider
+            );
+            const iface = new Interface(ERC20Abi);
+            const data = iface.parseTransaction({
+              data: req.body.transaction.data,
+            });
 
-      setStoredVaults(
-        vaults.map((vault) => (vault.active ? activeVault : vault))
-      ).then(() => {
-        let createdWindowId: number;
+            const [to, value] = data.args;
 
-        chrome.windows.create(
-          {
-            url: chrome.runtime.getURL("tabs/send-transaction.html"),
-            type: "popup",
-            height: 639,
-            left: req.body.screen.width - 376,
-            top: 0,
-            width: 376,
-          },
-          (window) => {
-            createdWindowId = window.id;
-          }
-        );
-
-        chrome.windows.onRemoved.addListener((closedWindowId) => {
-          if (closedWindowId === createdWindowId) {
-            getStoredVaults().then((vaults) => {
-              setStoredVaults(
-                vaults.map((vault) => ({
-                  ...vault,
-                  transactions: vault.transactions.filter(
-                    ({ id, status }) =>
-                      id !== transaction.id || status !== "default"
-                  ),
-                }))
-              ).then(() => {
-                res.send({ transactionHash: "0xMockTransactionHash" });
-              });
+            Promise.all([coinContract.symbol(), coinContract.decimals()])
+              .then(([ticker, decimals]) => {
+                resolve({
+                  data: "0x",
+                  chain: { ...chain, decimals: Number(decimals), ticker },
+                  contract: req.body.transaction.to,
+                  from: req.body.transaction.from,
+                  id: uuidv4(),
+                  status: "default",
+                  to,
+                  value: `0x${value.toString(16)}`,
+                });
+              })
+              .catch(reject);
+          } else {
+            resolve({
+              ...req.body.transaction,
+              chain,
+              id: uuidv4(),
+              status: "default",
             });
           }
+        });
+      };
+
+      prepareTransaction().then((transaction) => {
+        vault.transactions = [transaction, ...vault.transactions];
+
+        setStoredVaults(vaults.map((v) => (v.active ? vault : v))).then(() => {
+          let createdWindowId: number;
+
+          chrome.windows.create(
+            {
+              url: chrome.runtime.getURL("tabs/send-transaction.html"),
+              type: "popup",
+              height: 639,
+              left: req.body.screen.width - 376,
+              top: 0,
+              width: 376,
+            },
+            (window) => {
+              createdWindowId = window.id;
+            }
+          );
+
+          chrome.windows.onRemoved.addListener((closedWindowId) => {
+            if (closedWindowId === createdWindowId) {
+              getStoredVaults().then((vaults) => {
+                let transactionHash = "";
+
+                setStoredVaults(
+                  vaults.map((vault) => ({
+                    ...vault,
+                    transactions: vault.transactions.filter(
+                      ({ id, status, txHash }) => {
+                        if (id === transaction.id)
+                          transactionHash = txHash ?? "";
+
+                        return id !== transaction.id || status !== "default";
+                      }
+                    ),
+                  }))
+                ).then(() => {
+                  res.send({ transactionHash });
+                });
+              });
+            }
+          });
         });
       });
     });

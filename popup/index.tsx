@@ -1,10 +1,9 @@
 import { useEffect, type FC } from "react";
-import { ConfigProvider } from "antd";
 
-import { themeConfig } from "~utils/constants";
 import { getStoredLanguage } from "~utils/storage";
 import i18n from "~i18n/config";
 
+import ConfigProvider from "~components/config-provider";
 import Routing from "~popup/routes";
 
 import "~styles/index.scss";
@@ -20,7 +19,7 @@ const Component: FC = () => {
   useEffect(componentDidMount, []);
 
   return (
-    <ConfigProvider theme={themeConfig}>
+    <ConfigProvider>
       <Routing />
     </ConfigProvider>
   );
