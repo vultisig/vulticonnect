@@ -53,6 +53,7 @@ export default keyMirror({
   // S
   SAVE: true,
   SCAN_QR_WITH_DEVICE: true,
+  SELECT_A_VAULT:true,
   SETTINGS: true,
   SIGN: true,
   SIGNING: true,
