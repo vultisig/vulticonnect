@@ -52,6 +52,7 @@ export default {
   [messageKeys.START]: "Start",
   [messageKeys.SUCCESSFUL_COPY_LINK]: "Link copied to clipboard",
   [messageKeys.SUCCESSFUL_COPY_TEXT]: "Text copied to clipboard",
+  [messageKeys.SELECT_A_VAULT]: "Please select a Vault",
   // T
   [messageKeys.TO]: "To",
   [messageKeys.TRANSACTION]: "Transaction",

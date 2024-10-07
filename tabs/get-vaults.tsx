@@ -84,7 +84,12 @@ const Component: FC = () => {
           </div>
           <div className="content">
             <Form form={form} onFinish={handleSubmit}>
-              <Form.Item<FormProps> name="uids" rules={[{ required: true }]}>
+              <Form.Item<FormProps>
+                name="uids"
+                rules={[
+                  { required: true, message: t(messageKeys.SELECT_A_VAULT) },
+                ]}
+              >
                 <Checkbox.Group>
                   {vaults.map(({ name, uid }) => (
                     <Checkbox key={uid} value={uid}>
