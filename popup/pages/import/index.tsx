@@ -8,8 +8,9 @@ import { toCamelCase } from "~utils/functions";
 import { chains, errorKey } from "~utils/constants";
 import { getStoredVaults, setStoredVaults } from "~utils/storage";
 import type { VaultProps } from "~utils/interfaces";
-import useAddress from "~hooks/get-address";
 import useGoBack from "~hooks/go-back";
+import AddressProvider from "~utils/address-provider";
+import WalletCoreProvider from "~utils/wallet-core-provider";
 import messageKeys from "~utils/message-keys";
 import routeKeys from "~utils/route-keys";
 
@@ -29,8 +30,8 @@ const Component: FC = () => {
   const { file, loading, status, vault } = state;
   const location = useLocation();
   const navigate = useNavigate();
-  const getAddress = useAddress();
   const goBack = useGoBack();
+  const walletCore = new WalletCoreProvider();
 
   const handleStart = (): void => {
     if (!loading && vault && status === "success") {
@@ -51,30 +52,39 @@ const Component: FC = () => {
             navigate(routeKeys.main, { state: true });
           });
         } else {
-          const modifiedChains = chains.filter(({ id }) => !!id);
-          const promises = modifiedChains.map(({ name }) =>
-            getAddress(name, vault)
-          );
+          walletCore
+            .getCore()
+            .then(({ chainRef, walletCore }) => {
+              const addressProvider = new AddressProvider(chainRef, walletCore);
 
-          Promise.all(promises).then((props) => {
-            vault.chains = modifiedChains.map((chain, index) => ({
-              ...chain,
-              ...props[index],
-            }));
+              const modifiedChains = chains.filter(({ id }) => !!id);
+              const promises = modifiedChains.map(({ name }) =>
+                addressProvider.getAddress(name, vault)
+              );
 
-            const modifiedVaults = [
-              { ...vault, active: true },
-              ...vaults
-                .filter(({ uid }) => uid !== vault.uid)
-                .map((vault) => ({ ...vault, active: false })),
-            ];
+              Promise.all(promises).then((props) => {
+                vault.chains = modifiedChains.map((chain, index) => ({
+                  ...chain,
+                  ...props[index],
+                }));
 
-            setStoredVaults(modifiedVaults).then(() => {
-              setState((prevState) => ({ ...prevState, loading: false }));
+                const modifiedVaults = [
+                  { ...vault, active: true },
+                  ...vaults
+                    .filter(({ uid }) => uid !== vault.uid)
+                    .map((vault) => ({ ...vault, active: false })),
+                ];
 
-              navigate(routeKeys.main, { state: true });
+                setStoredVaults(modifiedVaults).then(() => {
+                  setState((prevState) => ({ ...prevState, loading: false }));
+
+                  navigate(routeKeys.main, { state: true });
+                });
+              });
+            })
+            .catch((error) => {
+              console.log(error);
             });
-          });
         }
       });
     }

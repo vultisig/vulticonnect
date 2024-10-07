@@ -13,20 +13,43 @@ const handler: PlasmoMessaging.MessageHandler<
   }).then(() => {
     let createdWindowId: number;
 
-    chrome.windows.create(
-      {
-        url: chrome.runtime.getURL("tabs/get-accounts.html"),
-        type: "popup",
-        height: 639,
-        left: req.body.screen.width - 376,
-        top: 0,
-        width: 376,
-      },
-      (window) => {
-        createdWindowId = window.id;
+    chrome.windows.getCurrent({ populate: true }, (currentWindow) => {
+      if (!currentWindow) {
+        console.error("Error: Unable to get the current window.");
+        return;
       }
-    );
-
+    
+      // Get the current window's dimensions and position
+      const { left: windowLeft, top: windowTop, width: windowWidth } = currentWindow;
+    
+      if (windowLeft === undefined || windowTop === undefined || windowWidth === undefined) {
+        console.error("Error: Current window properties are undefined.");
+        return;
+      }
+    
+      // Set the popup position to the left of the current browser window
+      const leftPosition = windowLeft + windowWidth - 376; // 376 is the popup width, adjust for the right side
+      const topPosition = windowTop; // Top of the browser window
+    
+      chrome.windows.create(
+        {
+          url: chrome.runtime.getURL("tabs/get-accounts.html"),
+          type: "popup",
+          height: 639,
+          width: 376,
+          left: leftPosition,
+          top: topPosition,
+        },
+        (window) => {
+          if (chrome.runtime.lastError) {
+            console.error("Error creating window: ", chrome.runtime.lastError);
+          } else {
+            createdWindowId = window.id;
+          }
+        }
+      );
+    });
+    
     chrome.windows.onRemoved.addListener((closedWindowId) => {
       if (closedWindowId === createdWindowId) {
         getStoredVaults()

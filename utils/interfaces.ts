@@ -11,6 +11,11 @@ export namespace Messaging {
     export type Response = { chains: ChainProps[] };
   }
 
+  export namespace GetVaults {
+    export type Request = { screen: ScreenProps };
+    export type Response = { vaults: VaultProps[] };
+  }
+
   export namespace SendTransaction {
     export type Request = {
       screen: ScreenProps;
@@ -132,13 +137,14 @@ export interface TransactionProps {
 }
 
 export interface VaultProps {
-  active: boolean;
+  active?: boolean;
   apps?: string[];
   chains: ChainProps[];
   hexChainCode: string;
   name: string;
   publicKeyEcdsa: string;
   publicKeyEddsa: string;
+  selected?: boolean;
   transactions: TransactionProps[];
   uid: string;
 }

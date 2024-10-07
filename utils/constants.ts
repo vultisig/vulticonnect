@@ -68,6 +68,7 @@ export const errorKey = keyMirror({
   FAIL_TO_GET_ACCOUNTS: true,
   FAIL_TO_GET_ADDRESS: true,
   FAIL_TO_GET_VAULT: true,
+  FAIL_TO_GET_VAULTS: true,
   FAIL_TO_GET_TRANSACTION: true,
   FAIL_TO_INIT_WASM: true,
   INVALID_CHAIN: true,

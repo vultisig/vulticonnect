@@ -51,7 +51,8 @@
     "permissions": [
       "activeTab",
       "storage",
-      "tabs"
+      "tabs",
+       "system.display"
     ],
     "web_accessible_resources": [
       {

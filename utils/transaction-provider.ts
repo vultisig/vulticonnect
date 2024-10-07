@@ -1,11 +1,12 @@
 import {
+  JsonRpcProvider,
+  Transaction,
   formatUnits,
   hexlify,
   keccak256,
   randomBytes,
   toUtf8Bytes,
   toUtf8String,
-  Transaction,
 } from "ethers";
 import { create, toBinary } from "@bufbuild/protobuf";
 import { TW, type WalletCore } from "@trustwallet/wallet-core";
@@ -22,40 +23,26 @@ import {
   type KeysignPayload,
 } from "~protos/keysign_message_pb";
 
-import { ChainKey, rpcUrl } from "~utils/constants";
+import { ChainKey, Currency, rpcUrl } from "~utils/constants";
 import type {
   SignatureProps,
   TransactionProps,
   VaultProps,
 } from "~utils/interfaces";
+import api from "./api";
 
 interface ChainRef {
-  [chain: string]: CoinType;
+  [chainKey: string]: CoinType;
 }
 
-interface RpcError {
-  code: number;
-  message: string;
-}
-
-interface RpcPayload {
-  method: string;
-  params: any[];
-  jsonrpc?: string;
-  id?: number;
-}
-
-interface RpcResponse {
-  id: number;
-  result: string | null;
-  error: RpcError | null;
-}
-
-export default class SignAPI {
-  private baseFee: bigint;
+export default class TransactionProvider {
   private gasPrice: bigint;
-  private maxPriority: bigint;
+  private keysignPayload: KeysignPayload;
+  private maxFeePerGas: bigint;
+  private maxPriorityFeePerGas: bigint;
   private nonce: bigint;
+
+  private provider: JsonRpcProvider;
 
   constructor(
     private chainKey: ChainKey,
@@ -67,144 +54,9 @@ export default class SignAPI {
     this.chainRef = chainRef;
     this.dataEncoder = dataEncoder;
     this.walletCore = walletCore;
+
+    this.provider = new JsonRpcProvider(rpcUrl[this.chainKey]);
   }
-
-  private fetchAPI = <T>(payload: RpcPayload): Promise<T> => {
-    return new Promise((resolve, reject) => {
-      const url = rpcUrl[this.chainKey];
-
-      fetch(url, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      })
-        .then((response) => response.json())
-        .then(resolve)
-        .catch(reject);
-    });
-  };
-
-  private getGasLimit = (): number => {
-    switch (this.chainKey) {
-      case ChainKey.ARBITRUM:
-        return 300000;
-      default:
-        return 40000;
-    }
-  };
-
-  private getNonce = (address: string): Promise<bigint> => {
-    return new Promise((resolve) => {
-      if (this.nonce) {
-        resolve(this.nonce);
-      } else {
-        const payload = {
-          jsonrpc: "2.0",
-          method: "eth_getTransactionCount",
-          params: [address, "latest"],
-          id: 1,
-        };
-
-        this.fetchAPI<RpcResponse>(payload)
-          .then((response) => {
-            this.nonce = BigInt(response?.result ?? 0);
-
-            resolve(this.nonce);
-          })
-          .catch(() => {
-            this.nonce = BigInt(0);
-
-            resolve(this.nonce);
-          });
-      }
-    });
-  };
-
-  private getGasPrice = (): Promise<bigint> => {
-    return new Promise((resolve) => {
-      if (this.gasPrice) {
-        resolve(this.gasPrice);
-      } else {
-        const payload = {
-          jsonrpc: "2.0",
-          method: "eth_gasPrice",
-          params: [],
-          id: 1,
-        };
-
-        this.fetchAPI<RpcResponse>(payload)
-          .then((response) => {
-            this.gasPrice = BigInt(response.result ?? 0);
-
-            resolve(this.gasPrice);
-          })
-          .catch(() => {
-            this.gasPrice = BigInt(0);
-
-            resolve(this.gasPrice);
-          });
-      }
-    });
-  };
-
-  private getMaxPriorityFeePerGas = (): Promise<bigint> => {
-    return new Promise((resolve) => {
-      if (this.maxPriority) {
-        resolve(this.maxPriority);
-      } else {
-        const payload = {
-          jsonrpc: "2.0",
-          method: "eth_maxPriorityFeePerGas",
-          params: [],
-          id: 1,
-        };
-
-        this.fetchAPI<RpcResponse>(payload)
-          .then((response) => {
-            this.maxPriority = BigInt(response?.result ?? 0);
-
-            resolve(this.maxPriority);
-          })
-          .catch(() => {
-            this.maxPriority = BigInt(0);
-
-            resolve(this.maxPriority);
-          });
-      }
-    });
-  };
-
-  private getBaseFeePerGas = (): Promise<bigint> => {
-    return new Promise((resolve) => {
-      if (this.baseFee) {
-        resolve(this.baseFee);
-      } else {
-        const payload = {
-          jsonrpc: "2.0",
-          method: "eth_feeHistory",
-          params: ["0x1", "latest", []],
-          id: 1,
-        };
-
-        this.fetchAPI<RpcResponse>(payload)
-          .then((response) => {
-            const [baseFeePerGasHex] =
-              (response.result as any).baseFeePerGas ?? [];
-
-            this.baseFee = BigInt(baseFeePerGasHex ?? 0);
-
-            resolve(this.baseFee);
-          })
-          .catch(() => {
-            this.baseFee = BigInt(0);
-
-            resolve(this.baseFee);
-          });
-      }
-    });
-  };
 
   private encryptionKeyHex = (): string => {
     const keyBytes = randomBytes(32);
@@ -218,24 +70,56 @@ export default class SignAPI {
     return hex.startsWith("0x") ? hex.slice(2) : hex;
   };
 
-  public getEstimateTransactionFee = (): Promise<string> => {
+  public getEstimateTransactionFee = (
+    cmcId: number,
+    currency: Currency
+  ): Promise<string> => {
     return new Promise((resolve) => {
-      Promise.all([
-        this.getBaseFeePerGas(),
-        this.getMaxPriorityFeePerGas(),
-        this.getGasLimit(),
-      ])
-        .then(([baseFeePerGas, maxPriorityFeePerGas, gasLimit]) => {
-          const totalFeePerGas = baseFeePerGas + maxPriorityFeePerGas;
-          const estimatedFeeInWei = totalFeePerGas * BigInt(gasLimit);
-          const estimatedFeeInGwei = formatUnits(estimatedFeeInWei, "gwei");
+      api
+        .cryptoCurrency(cmcId, currency)
+        .then((price) => {
+          const gwei = formatUnits(
+            (this.gasPrice + this.maxPriorityFeePerGas) *
+              BigInt(this.getGasLimit()),
+            "gwei"
+          );
 
-          resolve(estimatedFeeInGwei);
+          resolve((parseInt(gwei) * 1e-9 * price).toValueFormat(currency));
         })
         .catch(() => {
-          resolve("0");
+          resolve((0).toValueFormat(currency));
         });
     });
+  };
+
+  public getFeeData = (): Promise<void> => {
+    return new Promise((resolve) => {
+      this.provider
+        .getFeeData()
+        .then(({ gasPrice, maxFeePerGas, maxPriorityFeePerGas }) => {
+          this.gasPrice = gasPrice;
+          this.maxFeePerGas = maxFeePerGas;
+          this.maxPriorityFeePerGas = maxPriorityFeePerGas;
+
+          resolve();
+        })
+        .catch(() => {
+          this.gasPrice = BigInt(0);
+          this.maxFeePerGas = BigInt(0);
+          this.maxPriorityFeePerGas = BigInt(0);
+
+          resolve();
+        });
+    });
+  };
+
+  public getGasLimit = (): number => {
+    switch (this.chainKey) {
+      case ChainKey.ARBITRUM:
+        return 300000;
+      default:
+        return 40000;
+    }
   };
 
   public getKeysignPayload = (
@@ -253,27 +137,25 @@ export default class SignAPI {
         logo: transaction.chain.ticker.toLowerCase(),
       });
 
-      Promise.all([
-        this.getGasLimit(),
-        this.getGasPrice(),
-        this.getMaxPriorityFeePerGas(),
-        this.getNonce(transaction.from),
-      ])
-        .then(([gasLimit, gasPrice, feePerGas, nonce]) => {
+      this.provider
+        .getTransactionCount(transaction.from)
+        .then((nonce) => {
+          this.nonce = BigInt(nonce);
+
           const ethereumSpecific = create(EthereumSpecificSchema, {
-            gasLimit: gasLimit.toString(),
+            gasLimit: this.getGasLimit().toString(),
             maxFeePerGasWei: (
-              (BigInt(gasPrice) * BigInt(3)) /
+              (this.gasPrice * BigInt(3)) /
               BigInt(2)
             ).toString(),
-            priorityFee: feePerGas.toString(),
-            nonce,
+            priorityFee: this.maxPriorityFeePerGas.toString(),
+            nonce: this.nonce,
           });
 
           const keysignPayload = create(KeysignPayloadSchema, {
             toAddress: transaction.to,
             toAmount: BigInt(parseInt(transaction.value)).toString(),
-            memo: toUtf8String(transaction.data),
+            memo: transaction.data,
             vaultPublicKeyEcdsa: vault.publicKeyEcdsa,
             vaultLocalPartyId: "VultiConnect",
             coin,
@@ -282,6 +164,8 @@ export default class SignAPI {
               value: ethereumSpecific,
             },
           });
+
+          this.keysignPayload = keysignPayload;
 
           resolve(keysignPayload);
         })
@@ -314,11 +198,9 @@ export default class SignAPI {
     });
   };
 
-  public getPreSignedInputData = (
-    keysignPayload: KeysignPayload
-  ): Promise<Uint8Array> => {
+  public getPreSignedInputData = (): Promise<Uint8Array> => {
     return new Promise((resolve, reject) => {
-      const blockchainSpecific = keysignPayload.blockchainSpecific as
+      const blockchainSpecific = this.keysignPayload.blockchainSpecific as
         | { case: "ethereumSpecific"; value: EthereumSpecific }
         | undefined;
 
@@ -327,7 +209,7 @@ export default class SignAPI {
         blockchainSpecific.case !== "ethereumSpecific"
       ) {
         reject("Invalid blockchain specific");
-      } else if (!keysignPayload.coin) {
+      } else if (!this.keysignPayload.coin) {
         reject("Invalid coin");
       }
 
@@ -371,26 +253,26 @@ export default class SignAPI {
 
       // Amount: converted to hexadecimal, stripped of '0x'
       const amountHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(keysignPayload.toAmount))),
+        this.stripHexPrefix(hexlify(toUtf8Bytes(this.keysignPayload.toAmount))),
         "hex"
       );
 
       // Send native tokens
-      let toAddress = keysignPayload.toAddress;
+      let toAddress = this.keysignPayload.toAddress;
       let evmTransaction = TW.Ethereum.Proto.Transaction.create({
         transfer: TW.Ethereum.Proto.Transaction.Transfer.create({
           amount: amountHex,
-          data: Buffer.from(keysignPayload.memo ?? "", "utf8"),
+          data: Buffer.from(this.keysignPayload.memo ?? "", "utf8"),
         }),
       });
 
       // Send ERC20 tokens, it will replace the transaction object
-      if (!keysignPayload.coin.isNativeToken) {
-        toAddress = keysignPayload.coin.contractAddress;
+      if (!this.keysignPayload.coin.isNativeToken) {
+        toAddress = this.keysignPayload.coin.contractAddress;
         evmTransaction = TW.Ethereum.Proto.Transaction.create({
           erc20Transfer: TW.Ethereum.Proto.Transaction.ERC20Transfer.create({
             amount: amountHex,
-            to: keysignPayload.toAddress,
+            to: this.keysignPayload.toAddress,
           }),
         });
       }
@@ -411,30 +293,6 @@ export default class SignAPI {
     });
   };
 
-  public getSendKey = (
-    keysignPayload: KeysignPayload,
-    publicKeyEcdsa: string,
-    transactionId: string
-  ): Promise<string> => {
-    return new Promise((resolve) => {
-      const keysignMessage = create(KeysignMessageSchema, {
-        sessionId: transactionId,
-        serviceName: "VultiConnect",
-        encryptionKeyHex: this.encryptionKeyHex(),
-        useVultisigRelay: true,
-        keysignPayload,
-      });
-
-      const binary = toBinary(KeysignMessageSchema, keysignMessage);
-
-      this.dataEncoder(binary).then((base64EncodedData) => {
-        resolve(
-          `vultisig://vultisig.com?type=SignTransaction&vault=${publicKeyEcdsa}&jsonData=${base64EncodedData}`
-        );
-      });
-    });
-  };
-
   public getSignedTransaction = (
     transaction: TransactionProps,
     signature: SignatureProps
@@ -446,8 +304,8 @@ export default class SignAPI {
         chainId: parseInt(transaction.chain.id).toString(),
         nonce: Number(this.nonce),
         gasLimit: this.getGasLimit().toString(),
-        maxFeePerGas: (BigInt(this.gasPrice) * BigInt(3)) / BigInt(2),
-        maxPriorityFeePerGas: this.maxPriority,
+        maxFeePerGas: this.maxFeePerGas,
+        maxPriorityFeePerGas: this.maxPriorityFeePerGas,
         to: transaction.to,
         value: BigInt(transaction.value),
         signature: {
@@ -462,6 +320,29 @@ export default class SignAPI {
       const txHash = keccak256(Transaction.from(tx).serialized);
 
       resolve(txHash);
+    });
+  };
+
+  public getTransactionKey = (
+    publicKeyEcdsa: string,
+    transactionId: string
+  ): Promise<string> => {
+    return new Promise((resolve) => {
+      const keysignMessage = create(KeysignMessageSchema, {
+        sessionId: transactionId,
+        serviceName: "VultiConnect",
+        encryptionKeyHex: this.encryptionKeyHex(),
+        useVultisigRelay: true,
+        keysignPayload: this.keysignPayload,
+      });
+
+      const binary = toBinary(KeysignMessageSchema, keysignMessage);
+
+      this.dataEncoder(binary).then((base64EncodedData) => {
+        resolve(
+          `vultisig://vultisig.com?type=SignTransaction&vault=${publicKeyEcdsa}&jsonData=${base64EncodedData}`
+        );
+      });
     });
   };
 }
