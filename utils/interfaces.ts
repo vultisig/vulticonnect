@@ -2,7 +2,7 @@ import { ChainKey, Currency, Language } from "utils/constants";
 
 export namespace Messaging {
   export namespace GetAccounts {
-    export type Request = { chain: ChainKey; screen: ScreenProps };
+    export type Request = { chain: ChainKey };
     export type Response = { accounts: string[] };
   }
 
@@ -11,11 +11,13 @@ export namespace Messaging {
     export type Response = { chains: ChainProps[] };
   }
 
+  export namespace GetVaults {
+    export type Request = any;
+    export type Response = { vaults: VaultProps[] };
+  }
+
   export namespace SendTransaction {
-    export type Request = {
-      screen: ScreenProps;
-      transaction: TransactionProps;
-    };
+    export type Request = { transaction: TransactionProps };
     export type Response = { transactionHash: string };
   }
 
@@ -132,13 +134,14 @@ export interface TransactionProps {
 }
 
 export interface VaultProps {
-  active: boolean;
+  active?: boolean;
   apps?: string[];
   chains: ChainProps[];
   hexChainCode: string;
   name: string;
   publicKeyEcdsa: string;
   publicKeyEddsa: string;
+  selected?: boolean;
   transactions: TransactionProps[];
   uid: string;
 }

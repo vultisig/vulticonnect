@@ -31,6 +31,17 @@ relay(
 
 relay(
   {
+    name: "get-vaults" as const,
+  },
+  async (req) => {
+    const openResult = await sendToBackground(req);
+
+    return openResult;
+  }
+);
+
+relay(
+  {
     name: "send-transaction" as const,
   },
   async (req) => {

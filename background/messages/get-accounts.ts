@@ -13,19 +13,36 @@ const handler: PlasmoMessaging.MessageHandler<
   }).then(() => {
     let createdWindowId: number;
 
-    chrome.windows.create(
-      {
-        url: chrome.runtime.getURL("tabs/get-accounts.html"),
-        type: "popup",
-        height: 639,
-        left: req.body.screen.width - 376,
-        top: 0,
-        width: 376,
-      },
-      (window) => {
-        createdWindowId = window.id;
+    chrome.windows.getCurrent({ populate: true }, (currentWindow) => {
+      const height = 639;
+      const width = 376;
+      let left = 0;
+      let top = 0;
+
+      if (
+        currentWindow &&
+        currentWindow.left !== undefined &&
+        currentWindow.top !== undefined &&
+        currentWindow.width !== undefined
+      ) {
+        left = currentWindow.left + currentWindow.width - width;
+        top = currentWindow.top;
       }
-    );
+
+      chrome.windows.create(
+        {
+          url: chrome.runtime.getURL("tabs/get-accounts.html"),
+          type: "popup",
+          height,
+          left,
+          top,
+          width,
+        },
+        (window) => {
+          createdWindowId = window.id;
+        }
+      );
+    });
 
     chrome.windows.onRemoved.addListener((closedWindowId) => {
       if (closedWindowId === createdWindowId) {

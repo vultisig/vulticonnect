@@ -50,6 +50,7 @@
     ],
     "permissions": [
       "activeTab",
+      "system.display",
       "storage",
       "tabs"
     ],

@@ -3,8 +3,6 @@ import { useTranslation } from "react-i18next";
 import { Button, QRCode, message } from "antd";
 import { formatUnits, toUtf8String } from "ethers";
 
-import type { KeysignPayload } from "~protos/keysign_message_pb";
-
 import { errorKey, explorerUrl } from "~utils/constants";
 import {
   getStoredCurrency,
@@ -15,10 +13,10 @@ import {
 import type { TransactionProps, VaultProps } from "~utils/interfaces";
 import i18n from "~i18n/config";
 import api from "~utils/api";
-import SignAPI from "~utils/sign-api";
-import useEncoder from "~hooks/encode-data";
-import useWalletCore from "~hooks/get-wallet-core";
 import messageKeys from "~utils/message-keys";
+import DataConverterProvider from "~utils/data-converter-provider";
+import TransactionProvider from "~utils/transaction-provider";
+import WalletCoreProvider from "~utils/wallet-core-provider";
 
 import {
   ChevronLeft,
@@ -35,13 +33,13 @@ import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 
 interface InitialState {
-  signAPI?: SignAPI;
   fastSign?: boolean;
   loaded?: boolean;
   loading?: boolean;
   sendKey?: string;
   step: number;
   transaction?: TransactionProps;
+  txProvider?: TransactionProvider;
   vault?: VaultProps;
 }
 
@@ -54,14 +52,12 @@ const Component: FC = () => {
     loaded,
     loading,
     sendKey,
-    signAPI,
     step,
     transaction,
+    txProvider,
     vault,
   } = state;
   const [messageApi, contextHolder] = message.useMessage();
-  const dataEncoder = useEncoder();
-  const getWalletCore = useWalletCore();
 
   const handleApp = (): void => {
     window.open(sendKey, "_self");
@@ -92,7 +88,7 @@ const Component: FC = () => {
     api.transaction
       .getComplete(transaction.id, preSignedImageHash)
       .then(({ data }) => {
-        signAPI
+        txProvider
           .getSignedTransaction(transaction, data)
           .then((txHash) => {
             setStoredTransaction({
@@ -122,7 +118,7 @@ const Component: FC = () => {
       });
   };
 
-  const handleStart = (keysignPayload: KeysignPayload): void => {
+  const handleStart = (): void => {
     api.transaction
       .getDevices(transaction.id)
       .then(({ data }) => {
@@ -130,10 +126,10 @@ const Component: FC = () => {
           api.transaction.setStart(transaction.id, data).then(() => {
             setStoredTransaction({ ...transaction, status: "pending" }).then(
               () => {
-                signAPI
-                  .getPreSignedInputData(keysignPayload)
+                txProvider
+                  .getPreSignedInputData()
                   .then((preSignedInputData) => {
-                    signAPI
+                    txProvider
                       .getPreSignedImageHash(preSignedInputData)
                       .then((preSignedImageHash) => {
                         setState((prevState) => ({ ...prevState, step: 3 }));
@@ -146,7 +142,7 @@ const Component: FC = () => {
           });
         } else {
           setTimeout(() => {
-            handleStart(keysignPayload);
+            handleStart();
           }, 1000);
         }
       })
@@ -165,15 +161,11 @@ const Component: FC = () => {
         } else {
           setState((prevState) => ({ ...prevState, loading: true }));
 
-          signAPI
+          txProvider
             .getKeysignPayload(transaction, vault)
-            .then((keysignPayload) => {
-              signAPI
-                .getSendKey(
-                  keysignPayload,
-                  vault.publicKeyEcdsa,
-                  transaction.id
-                )
+            .then(() => {
+              txProvider
+                .getTransactionKey(vault.publicKeyEcdsa, transaction.id)
                 .then((sendKey) => {
                   api.checkVaultExist(vault.publicKeyEcdsa).then((fastSign) => {
                     setState((prevState) => ({
@@ -184,7 +176,7 @@ const Component: FC = () => {
                       step,
                     }));
 
-                    handleStart(keysignPayload);
+                    handleStart();
                   });
                 })
                 .catch(() => {
@@ -207,64 +199,64 @@ const Component: FC = () => {
   };
 
   const componentDidMount = (): void => {
-    getStoredLanguage().then((language) => {
-      getStoredCurrency().then((currency) => {
-        getStoredVaults().then((vautls) => {
-          const vault = vautls.find(({ active }) => active);
-          const [transaction] = vault?.transactions ?? [];
+    Promise.all([
+      getStoredCurrency(),
+      getStoredLanguage(),
+      getStoredVaults(),
+    ]).then(([currency, language, vautls]) => {
+      const vault = vautls.find(({ active }) => active);
+      const [transaction] = vault?.transactions ?? [];
 
-          i18n.changeLanguage(language);
+      i18n.changeLanguage(language);
 
-          if (transaction) {
-            if (transaction.status === "success") {
-              setState((prevState) => ({
-                ...prevState,
-                loaded: true,
-                step: 4,
-                transaction,
-              }));
-            } else {
-              getWalletCore()
-                .then(({ core, chainRef }) => {
-                  const signAPI = new SignAPI(
-                    transaction.chain.name,
-                    chainRef,
-                    dataEncoder,
-                    core
-                  );
+      if (transaction) {
+        if (transaction.status === "success") {
+          setState((prevState) => ({
+            ...prevState,
+            loaded: true,
+            step: 4,
+            transaction,
+          }));
+        } else {
+          const walletCore = new WalletCoreProvider();
 
-                  signAPI.getEstimateTransactionFee().then((gasPrice) => {
-                    api
-                      .cryptoCurrency(transaction.chain.cmcId, currency)
-                      .then((price) => {
-                        transaction.gasPrice = (
-                          parseInt(gasPrice) *
-                          1e-9 *
-                          price
-                        ).toValueFormat(currency);
+          walletCore
+            .getCore()
+            .then(({ chainRef, walletCore }) => {
+              const dataConverter = new DataConverterProvider();
+              const txProvider = new TransactionProvider(
+                transaction.chain.name,
+                chainRef,
+                dataConverter.compactEncoder,
+                walletCore
+              );
 
-                        setStoredTransaction(transaction).then(() => {
-                          setState((prevState) => ({
-                            ...prevState,
-                            currency,
-                            loaded: true,
-                            signAPI,
-                            transaction,
-                            vault,
-                          }));
-                        });
-                      });
+              txProvider.getFeeData().then(() => {
+                txProvider
+                  .getEstimateTransactionFee(transaction.chain.cmcId, currency)
+                  .then((gasPrice) => {
+                    transaction.gasPrice = gasPrice;
+
+                    setStoredTransaction(transaction).then(() => {
+                      setState((prevState) => ({
+                        ...prevState,
+                        currency,
+                        loaded: true,
+                        transaction,
+                        txProvider,
+                        vault,
+                      }));
+                    });
                   });
-                })
-                .catch((error) => {
-                  console.log(error);
-                });
-            }
-          } else {
-            console.error(errorKey.FAIL_TO_GET_TRANSACTION);
-          }
-        });
-      });
+              });
+            })
+            .catch((error) => {
+              console.log(error);
+            });
+        }
+      } else {
+        console.error(errorKey.FAIL_TO_GET_TRANSACTION);
+      }
     });
   };
 

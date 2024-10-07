@@ -147,13 +147,7 @@ const ethereumProvider: EthereumProvider = {
                   Messaging.GetAccounts.Response
                 >({
                   name: "get-accounts",
-                  body: {
-                    chain: chain.name,
-                    screen: {
-                      height: window.screen.height,
-                      width: window.screen.width,
-                    },
-                  },
+                  body: { chain: chain.name },
                 })
                   .then(({ accounts }) => {
                     ethereumProvider._state.accounts = accounts;
@@ -192,13 +186,7 @@ const ethereumProvider: EthereumProvider = {
               Messaging.SendTransaction.Response
             >({
               name: "send-transaction",
-              body: {
-                screen: {
-                  height: window.screen.height,
-                  width: window.screen.width,
-                },
-                transaction,
-              },
+              body: { transaction },
             })
               .then(({ transactionHash }) => {
                 resolve(transactionHash);
