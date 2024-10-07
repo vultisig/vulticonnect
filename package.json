@@ -50,9 +50,9 @@
     ],
     "permissions": [
       "activeTab",
+      "system.display",
       "storage",
-      "tabs",
-       "system.display"
+      "tabs"
     ],
     "web_accessible_resources": [
       {

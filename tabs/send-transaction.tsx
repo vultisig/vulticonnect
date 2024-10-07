@@ -132,25 +132,6 @@ const Component: FC = () => {
                     txProvider
                       .getPreSignedImageHash(preSignedInputData)
                       .then((preSignedImageHash) => {
-                        // https://api.vultisig.com/vault/sign
-
-                        //   data class JoinKeysignRequestJson(
-                        //     @SerialName("public_key")
-                        //     val publicKeyEcdsa: String,
-                        //     @SerialName("messages")
-                        //     val messages: List<String>,
-                        //     @SerialName("session")
-                        //     val sessionId: String,
-                        //     @SerialName("hex_encryption_key")
-                        //     val hexEncryptionKey: String,
-                        //     @SerialName("derive_path")
-                        //     val derivePath: String,
-                        //     @SerialName("is_ecdsa")
-                        //     val isEcdsa: Boolean,
-                        //     @SerialName("vault_password")
-                        //     val password: String,
-                        // )
-
                         setState((prevState) => ({ ...prevState, step: 3 }));
 
                         handlePending(preSignedImageHash);
@@ -332,7 +313,7 @@ const Component: FC = () => {
                     <div className="list-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
                       <span className="extra">
-                        {/* {toUtf8String(transaction.data)} */}
+                        {toUtf8String(transaction.data)}
                       </span>
                     </div>
                   )}
@@ -421,7 +402,7 @@ const Component: FC = () => {
                     <div className="list-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
                       <span className="extra">
-                        {/* {toUtf8String(transaction.data)} */}
+                        {toUtf8String(transaction.data)}
                       </span>
                     </div>
                   )}

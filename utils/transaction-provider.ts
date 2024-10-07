@@ -155,7 +155,7 @@ export default class TransactionProvider {
           const keysignPayload = create(KeysignPayloadSchema, {
             toAddress: transaction.to,
             toAmount: BigInt(parseInt(transaction.value)).toString(),
-            memo: transaction.data,
+            memo: toUtf8String(transaction.data),
             vaultPublicKeyEcdsa: vault.publicKeyEcdsa,
             vaultLocalPartyId: "VultiConnect",
             coin,

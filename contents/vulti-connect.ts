@@ -15,15 +15,7 @@ const vultiConnect = {
       sendToBackgroundViaRelay<
         Messaging.GetVaults.Request,
         Messaging.GetVaults.Response
-      >({
-        name: "get-vaults",
-        body: {
-          screen: {
-            height: window.screen.height,
-            width: window.screen.width,
-          },
-        },
-      }).then(({ vaults }) => {
+      >({ name: "get-vaults" }).then(({ vaults }) => {
         resolve(vaults);
       });
     });

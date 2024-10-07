@@ -2,7 +2,7 @@ import { ChainKey, Currency, Language } from "utils/constants";
 
 export namespace Messaging {
   export namespace GetAccounts {
-    export type Request = { chain: ChainKey; screen: ScreenProps };
+    export type Request = { chain: ChainKey };
     export type Response = { accounts: string[] };
   }
 
@@ -12,15 +12,12 @@ export namespace Messaging {
   }
 
   export namespace GetVaults {
-    export type Request = { screen: ScreenProps };
+    export type Request = any;
     export type Response = { vaults: VaultProps[] };
   }
 
   export namespace SendTransaction {
-    export type Request = {
-      screen: ScreenProps;
-      transaction: TransactionProps;
-    };
+    export type Request = { transaction: TransactionProps };
     export type Response = { transactionHash: string };
   }
 

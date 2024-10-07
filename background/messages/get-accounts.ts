@@ -14,42 +14,36 @@ const handler: PlasmoMessaging.MessageHandler<
     let createdWindowId: number;
 
     chrome.windows.getCurrent({ populate: true }, (currentWindow) => {
-      if (!currentWindow) {
-        console.error("Error: Unable to get the current window.");
-        return;
+      const height = 639;
+      const width = 376;
+      let left = 0;
+      let top = 0;
+
+      if (
+        currentWindow &&
+        currentWindow.left !== undefined &&
+        currentWindow.top !== undefined &&
+        currentWindow.width !== undefined
+      ) {
+        left = currentWindow.left + currentWindow.width - width;
+        top = currentWindow.top;
       }
-    
-      // Get the current window's dimensions and position
-      const { left: windowLeft, top: windowTop, width: windowWidth } = currentWindow;
-    
-      if (windowLeft === undefined || windowTop === undefined || windowWidth === undefined) {
-        console.error("Error: Current window properties are undefined.");
-        return;
-      }
-    
-      // Set the popup position to the left of the current browser window
-      const leftPosition = windowLeft + windowWidth - 376; // 376 is the popup width, adjust for the right side
-      const topPosition = windowTop; // Top of the browser window
-    
+
       chrome.windows.create(
         {
           url: chrome.runtime.getURL("tabs/get-accounts.html"),
           type: "popup",
-          height: 639,
-          width: 376,
-          left: leftPosition,
-          top: topPosition,
+          height,
+          left,
+          top,
+          width,
         },
         (window) => {
-          if (chrome.runtime.lastError) {
-            console.error("Error creating window: ", chrome.runtime.lastError);
-          } else {
-            createdWindowId = window.id;
-          }
+          createdWindowId = window.id;
         }
       );
     });
-    
+
     chrome.windows.onRemoved.addListener((closedWindowId) => {
       if (closedWindowId === createdWindowId) {
         getStoredVaults()
