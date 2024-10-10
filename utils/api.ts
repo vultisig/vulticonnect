@@ -107,4 +107,16 @@ export default {
       toSnakeCase(params)
     );
   },
+  getFunctionSelector: async (hexFunction: string) => {
+    return new Promise<boolean>((resolve) => {
+      api
+        .get(`https://api.etherface.io/v1/signatures/hash/all/${hexFunction}/1`)
+        .then(() => {
+          resolve(true);
+        })
+        .catch(() => {
+          resolve(false);
+        });
+    });
+  },
 };

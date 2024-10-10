@@ -1,3 +1,5 @@
+import api from "./api";
+
 const hexToAscii = (value: string): string => {
   const hex: string = value.toString().replace("0x", "");
 
@@ -64,4 +66,11 @@ const toSnakeCase = (obj: any): any => {
   return obj;
 };
 
-export { hexToAscii, toCamelCase, toSnakeCase };
+const checkERC20Function = async (inputHex: string): Promise<boolean> => {
+  const functionSelector = inputHex.slice(0, 10); // "0x" + 8 hex chars
+
+  const res = await api.getFunctionSelector(functionSelector);
+  return res;
+};
+
+export { hexToAscii, toCamelCase, toSnakeCase, checkERC20Function };

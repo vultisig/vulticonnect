@@ -1,6 +1,4 @@
 import type { PlasmoMessaging } from "@plasmohq/messaging";
-
-import { Contract, Interface, JsonRpcProvider } from "ethers";
 import { v4 as uuidv4 } from "uuid";
 
 import {
@@ -9,8 +7,6 @@ import {
   setStoredVaults,
 } from "~utils/storage";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
-import ERC20Abi from "~utils/erc20";
-import { rpcUrl } from "~utils/constants";
 
 const handler: PlasmoMessaging.MessageHandler<
   Messaging.SendTransaction.Request,
@@ -23,48 +19,14 @@ const handler: PlasmoMessaging.MessageHandler<
 
       const prepareTransaction = (): Promise<TransactionProps> => {
         return new Promise((resolve, reject) => {
-          if (
-            req.body.transaction.data &&
-            !parseInt(req.body.transaction.value)
-          ) {
-            const provider = new JsonRpcProvider(rpcUrl[chain.name]);
-            const coinContract = new Contract(
-              req.body.transaction.to,
-              ERC20Abi,
-              provider
-            );
-            const iface = new Interface(ERC20Abi);
-            const data = iface.parseTransaction({
-              data: req.body.transaction.data,
-            });
-
-            const [to, value] = data.args;
-
-            Promise.all([coinContract.symbol(), coinContract.decimals()])
-              .then(([ticker, decimals]) => {
-                resolve({
-                  data: "0x",
-                  chain: { ...chain, decimals: Number(decimals), ticker },
-                  contract: req.body.transaction.to,
-                  from: req.body.transaction.from,
-                  id: uuidv4(),
-                  status: "default",
-                  to,
-                  value: `0x${value.toString(16)}`,
-                });
-              })
-              .catch(reject);
-          } else {
-            resolve({
-              ...req.body.transaction,
-              chain,
-              id: uuidv4(),
-              status: "default",
-            });
-          }
+          resolve({
+            ...req.body.transaction,
+            chain,
+            id: uuidv4(),
+            status: "default",
+          });
         });
       };
-
       prepareTransaction().then((transaction) => {
         vault.transactions = [transaction, ...vault.transactions];
 

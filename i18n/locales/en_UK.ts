@@ -10,6 +10,7 @@ export default {
   [messageKeys.CANCEL]: "Cancel",
   [messageKeys.CHOOSE_VAULT]: "Choose Vault",
   [messageKeys.CONNECT]: "Connect",
+  [messageKeys.CLOSE]: "Close",
   [messageKeys.CONNECTED_DAPPS]: "Connected Apps",
   [messageKeys.COPY_TX]: "COPY TX",
   [messageKeys.CURRENCY]: "Currency",
@@ -18,12 +19,18 @@ export default {
   [messageKeys.DONE]: "Done",
   [messageKeys.DROP_FILE_HERE]: "Drop your file here",
   [messageKeys.DROP_FILE_HERE_OR]: "Drop your file here or",
+  // E
+  [messageKeys.ERROR]: "ERROR",
   // F
   [messageKeys.FAQ]: "FAQ",
   [messageKeys.FAST_SIGN]: "Fast Sign",
   [messageKeys.FIND_YOUR_QRCODE]:
     "If you didn't save the QR code yet, you can find it in the app in the top right on the main screen",
   [messageKeys.FROM]: "From",
+  // G
+  [messageKeys.GET_VAULT_FAILED]: "Failed to Get Vaults",
+  [messageKeys.GET_VAULT_FAILED_DESCRIPTION]:
+    "Make you sure you have already imported your vaults in VultiConnect",
   // I
   [messageKeys.IMPORT_FAILED]: "QR code invalid, please retry",
   [messageKeys.IMPORT_SUCCESSED]: "Imported successfully",

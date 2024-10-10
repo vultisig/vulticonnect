@@ -1,8 +1,11 @@
 import type { PlasmoCSConfig } from "plasmo";
 import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
 
-import { ChainKey, chains } from "~utils/constants";
+import { ChainKey, chains, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
+import { JsonRpcProvider, NonceManager } from "ethers";
+import api from "~utils/api";
+import axios from "axios";
 
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
@@ -82,6 +85,7 @@ type RequestArguments = {
 interface BaseProviderState {
   accounts: string[];
   chainId: string;
+  chainKey: ChainKey;
   isConnected: boolean;
 }
 
@@ -109,14 +113,12 @@ const ethereumProvider: EthereumProvider = {
     accounts: [],
     chainId: defaultChain.id,
     isConnected: false,
+    chainKey: defaultChain.name,
   },
 
   isConnected: () => ethereumProvider._state.isConnected,
 
   request: ({ method, params = [] }) => {
-    console.log(method);
-    console.log(params);
-
     return new Promise((resolve, reject) => {
       switch (method) {
         case RequestMethod.ETH_ACCOUNTS: {
@@ -179,7 +181,6 @@ const ethereumProvider: EthereumProvider = {
         }
         case RequestMethod.ETH_SEND_TRANSACTION: {
           const [transaction] = params as TransactionProps[];
-
           if (transaction) {
             sendToBackgroundViaRelay<
               Messaging.SendTransaction.Request,
@@ -193,9 +194,31 @@ const ethereumProvider: EthereumProvider = {
               })
               .catch(reject);
           } else {
-            reject(); // transaction params is required
+            reject();
           }
-
+          break;
+        }
+        case RequestMethod.ETH_GET_TRANSACTION_BY_HASH: {
+          const hash = params[0];
+          axios
+            .post(rpcUrl[ethereumProvider._state.chainKey], {
+              id: 1,
+              jsonrpc: "2.0",
+              method: "eth_getTransactionByHash",
+              params: [hash],
+            })
+            .then((res) => {
+              resolve(res.data.result);
+            });
+          break;
+        }
+        case RequestMethod.ETH_BLOCK_NUMBER: {
+          const provider = new JsonRpcProvider(
+            rpcUrl[ethereumProvider._state.chainKey]
+          );
+          provider.getBlock("latest").then((block) => {
+            resolve(String(block.number));
+          });
           break;
         }
         case RequestMethod.WALLET_ADD_ETHEREUM_CHAIN: {
@@ -292,7 +315,9 @@ const ethereumProvider: EthereumProvider = {
                   })
                     .then(() => {
                       ethereumProvider._state.chainId = param.chainId;
-
+                      ethereumProvider._state.chainKey = chains.find(
+                        (chain) => chain.id === param.chainId
+                      ).name;
                       resolve(null);
                     })
                     .catch(reject);
@@ -318,7 +343,6 @@ const ethereumProvider: EthereumProvider = {
             EventMethod.ERROR,
             new Error(`Unsupported method: ${method}`)
           );
-
           reject(`Unsupported method: ${method}`);
 
           break;
