@@ -93,6 +93,7 @@ export interface CurrencyRef {
   [Currency.USD]: string;
 }
 
+
 export interface SignatureProps {
   Msg: string;
   R: string;
@@ -124,8 +125,9 @@ export interface TransactionProps {
   from: string;
   id: string;
   status: "default" | "error" | "pending" | "success";
+  memo?: string;
   to: string;
-  value: string;
+  value?: string;
   gas?: string;
   gasPrice?: string;
   maxFeePerGas?: string;

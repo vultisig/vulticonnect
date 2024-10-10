@@ -15,6 +15,7 @@ import messageKeys from "~utils/message-keys";
 import { Vultisig } from "~icons";
 import ConfigProvider from "~components/config-provider";
 import VultiLoading from "~components/vulti-loading";
+import VultiError from "~components/vulti-error";
 
 import "~styles/index.scss";
 import "~tabs/get-vaults.scss";
@@ -25,11 +26,19 @@ interface FormProps {
 
 interface InitialState {
   vaults: VaultProps[];
+  hasError: boolean;
+  errorTitle: string;
+  errorDescription: string;
 }
 
 const Component: FC = () => {
   const { t } = useTranslation();
-  const initialState: InitialState = { vaults: [] };
+  const initialState: InitialState = {
+    vaults: [],
+    hasError: false,
+    errorTitle: "",
+    errorDescription: "",
+  };
   const [state, setState] = useState(initialState);
   const { vaults } = state;
   const [form] = Form.useForm();
@@ -62,8 +71,14 @@ const Component: FC = () => {
 
       getStoredVaults().then((vaults) => {
         if (vaults.length) {
-          setState((prevState) => ({ ...prevState, vaults }));
+          setState((prevState) => ({ ...prevState, vaults, hasError: false }));
         } else {
+          setState((prevState) => ({
+            ...prevState,
+            hasError: true,
+            errorTitle: messageKeys.GET_VAULT_FAILED,
+            errorDescription: messageKeys.GET_VAULT_FAILED_DESCRIPTION,
+          }));
           console.error(errorKey.FAIL_TO_GET_VAULTS);
         }
       });
@@ -110,8 +125,13 @@ const Component: FC = () => {
             </Button>
           </div>
         </div>
-      ) : (
+      ) : !state.hasError ? (
         <VultiLoading />
+      ) : (
+        <VultiError
+          title={t(state.errorTitle)}
+          description={t(state.errorDescription)}
+        />
       )}
     </ConfigProvider>
   );

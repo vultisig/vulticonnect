@@ -10,6 +10,7 @@ export default keyMirror({
   // C
   CANCEL: true,
   CHOOSE_VAULT: true,
+  CLOSE: true,
   CONNECT: true,
   CONNECT_WITH_VULTISIG: true,
   CONNECTED_DAPPS: true,
@@ -21,12 +22,15 @@ export default keyMirror({
   DROP_FILE_HERE: true,
   DROP_FILE_HERE_OR: true,
   // E
+  ERROR: true,
   // F
   FAQ: true,
   FAST_SIGN: true,
   FIND_YOUR_QRCODE: true,
   FROM: true,
   // G
+  GET_VAULT_FAILED: true,
+  GET_VAULT_FAILED_DESCRIPTION: true,
   // H
   // I
   IMPORT_FAILED: true,
@@ -53,7 +57,7 @@ export default keyMirror({
   // S
   SAVE: true,
   SCAN_QR_WITH_DEVICE: true,
-  SELECT_A_VAULT:true,
+  SELECT_A_VAULT: true,
   SETTINGS: true,
   SIGN: true,
   SIGNING: true,

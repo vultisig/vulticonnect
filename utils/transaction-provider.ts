@@ -1,8 +1,10 @@
 import {
   JsonRpcProvider,
   Transaction,
+  encodeBase64,
   formatUnits,
   hexlify,
+  isHexString,
   keccak256,
   randomBytes,
   toUtf8Bytes,
@@ -30,6 +32,7 @@ import type {
   VaultProps,
 } from "~utils/interfaces";
 import api from "./api";
+import { checkERC20Function } from "./functions";
 
 interface ChainRef {
   [chainKey: string]: CoinType;
@@ -38,7 +41,6 @@ interface ChainRef {
 export default class TransactionProvider {
   private gasPrice: bigint;
   private keysignPayload: KeysignPayload;
-  private maxFeePerGas: bigint;
   private maxPriorityFeePerGas: bigint;
   private nonce: bigint;
 
@@ -98,14 +100,14 @@ export default class TransactionProvider {
         .getFeeData()
         .then(({ gasPrice, maxFeePerGas, maxPriorityFeePerGas }) => {
           this.gasPrice = gasPrice;
-          this.maxFeePerGas = maxFeePerGas;
+          // this.maxFeePerGas = maxFeePerGas;
           this.maxPriorityFeePerGas = maxPriorityFeePerGas;
 
           resolve();
         })
         .catch(() => {
           this.gasPrice = BigInt(0);
-          this.maxFeePerGas = BigInt(0);
+          // this.maxFeePerGas = BigInt(0);
           this.maxPriorityFeePerGas = BigInt(0);
 
           resolve();
@@ -114,12 +116,8 @@ export default class TransactionProvider {
   };
 
   public getGasLimit = (): number => {
-    switch (this.chainKey) {
-      case ChainKey.ARBITRUM:
-        return 300000;
-      default:
-        return 40000;
-    }
+    //TODO: update gaslimit based on chain and transaction type
+    return 600000;
   };
 
   public getKeysignPayload = (
@@ -145,29 +143,32 @@ export default class TransactionProvider {
           const ethereumSpecific = create(EthereumSpecificSchema, {
             gasLimit: this.getGasLimit().toString(),
             maxFeePerGasWei: (
-              (this.gasPrice * BigInt(3)) /
+              (this.gasPrice * BigInt(5)) /
               BigInt(2)
             ).toString(),
             priorityFee: this.maxPriorityFeePerGas.toString(),
             nonce: this.nonce,
           });
-
-          const keysignPayload = create(KeysignPayloadSchema, {
-            toAddress: transaction.to,
-            toAmount: BigInt(parseInt(transaction.value)).toString(),
-            memo: toUtf8String(transaction.data),
-            vaultPublicKeyEcdsa: vault.publicKeyEcdsa,
-            vaultLocalPartyId: "VultiConnect",
-            coin,
-            blockchainSpecific: {
-              case: "ethereumSpecific",
-              value: ethereumSpecific,
-            },
+          checkERC20Function(transaction.data).then((isMemoFunction) => {
+            const keysignPayload = create(KeysignPayloadSchema, {
+              toAddress: transaction.to,
+              toAmount: transaction.value
+                ? BigInt(parseInt(transaction.value)).toString()
+                : "0",
+              memo: isMemoFunction
+                ? transaction.data
+                : toUtf8String(transaction.data),
+              vaultPublicKeyEcdsa: vault.publicKeyEcdsa,
+              vaultLocalPartyId: "VultiConnect",
+              coin,
+              blockchainSpecific: {
+                case: "ethereumSpecific",
+                value: ethereumSpecific,
+              },
+            });
+            this.keysignPayload = keysignPayload;
+            resolve(keysignPayload);
           });
-
-          this.keysignPayload = keysignPayload;
-
-          resolve(keysignPayload);
         })
         .catch(() => {
           reject();
@@ -186,14 +187,12 @@ export default class TransactionProvider {
 
       const preSigningOutput =
         TW.TxCompiler.Proto.PreSigningOutput.decode(preHashes);
-
       if (preSigningOutput.errorMessage !== "")
         reject(preSigningOutput.errorMessage);
 
       const imageHash = this.walletCore.HexCoding.encode(
         preSigningOutput.dataHash
       )?.replace(/^0x/, "");
-
       resolve(imageHash);
     });
   };
@@ -262,7 +261,10 @@ export default class TransactionProvider {
       let evmTransaction = TW.Ethereum.Proto.Transaction.create({
         transfer: TW.Ethereum.Proto.Transaction.Transfer.create({
           amount: amountHex,
-          data: Buffer.from(this.keysignPayload.memo ?? "", "utf8"),
+          data: Buffer.from(
+            this.stripHexPrefix(this.keysignPayload.memo) ?? "",
+            "utf8"
+          ),
         }),
       });
 
@@ -299,15 +301,14 @@ export default class TransactionProvider {
   ): Promise<string> => {
     return new Promise((resolve) => {
       let tx = {};
-
       const props = {
         chainId: parseInt(transaction.chain.id).toString(),
         nonce: Number(this.nonce),
         gasLimit: this.getGasLimit().toString(),
-        maxFeePerGas: this.maxFeePerGas,
+        maxFeePerGas: (this.gasPrice * BigInt(5)) / BigInt(2),
         maxPriorityFeePerGas: this.maxPriorityFeePerGas,
         to: transaction.to,
-        value: BigInt(transaction.value),
+        value: transaction.value ? BigInt(transaction.value) : BigInt(0),
         signature: {
           v: BigInt(signature.RecoveryID),
           r: `0x${signature.R}`,
@@ -316,9 +317,7 @@ export default class TransactionProvider {
       };
 
       tx = transaction.data ? { ...props, data: transaction.data } : props;
-
       const txHash = keccak256(Transaction.from(tx).serialized);
-
       resolve(txHash);
     });
   };

@@ -230,13 +230,14 @@ const Component: FC = () => {
                 dataConverter.compactEncoder,
                 walletCore
               );
-
               txProvider.getFeeData().then(() => {
                 txProvider
                   .getEstimateTransactionFee(transaction.chain.cmcId, currency)
                   .then((gasPrice) => {
                     transaction.gasPrice = gasPrice;
-
+                    try {
+                      transaction.memo = toUtf8String(transaction.data);
+                    } catch (err) {}
                     setStoredTransaction(transaction).then(() => {
                       setState((prevState) => ({
                         ...prevState,
@@ -302,19 +303,20 @@ const Component: FC = () => {
                     <span className="label">{t(messageKeys.TO)}</span>
                     <MiddleTruncate text={transaction.to} />
                   </div>
-                  <div className="list-item">
-                    <span className="label">{t(messageKeys.AMOUNT)}</span>
-                    <span className="extra">{`${formatUnits(
-                      transaction.value,
-                      transaction.chain.decimals
-                    )} ${transaction.chain.ticker}`}</span>
-                  </div>
-                  {transaction.data?.length > 2 && (
+                  {transaction.value && (
+                    <div className="list-item">
+                      <span className="label">{t(messageKeys.AMOUNT)}</span>
+                      <span className="extra">{`${formatUnits(
+                        transaction.value,
+                        transaction.chain.decimals
+                      )} ${transaction.chain.ticker}`}</span>
+                    </div>
+                  )}
+
+                  {transaction.memo && (
                     <div className="list-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
-                      <span className="extra">
-                        {toUtf8String(transaction.data)}
-                      </span>
+                      <span className="extra">{transaction.memo}</span>
                     </div>
                   )}
                   <div className="list-item">
@@ -391,19 +393,20 @@ const Component: FC = () => {
                     <span className="label">{t(messageKeys.TO)}</span>
                     <MiddleTruncate text={transaction.to} />
                   </div>
-                  <div className="list-item">
-                    <span className="label">{t(messageKeys.AMOUNT)}</span>
-                    <span className="extra">{`${formatUnits(
-                      transaction.value,
-                      transaction.chain.decimals
-                    )} ${transaction.chain.ticker}`}</span>
-                  </div>
-                  {transaction.data?.length > 2 && (
+                  {transaction.value && (
+                    <div className="list-item">
+                      <span className="label">{t(messageKeys.AMOUNT)}</span>
+                      <span className="extra">{`${formatUnits(
+                        transaction.value,
+                        transaction.chain.decimals
+                      )} ${transaction.chain.ticker}`}</span>
+                    </div>
+                  )}
+
+                  {transaction.memo && (
                     <div className="list-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
-                      <span className="extra">
-                        {toUtf8String(transaction.data)}
-                      </span>
+                      <span className="extra">{transaction.memo}</span>
                     </div>
                   )}
                   <div className="list-item">
