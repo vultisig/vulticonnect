@@ -5,11 +5,11 @@ interface Window {
   lodash: unknown;
   providers: EthereumProvider[];
   vultiConnectRouter: {
-    rainbowProvider: EthereumProvider;
+    vultisigProvider: EthereumProvider;
     lastInjectedProvider?: EthereumProvider;
     currentProvider: EthereumProvider;
     providers: EthereumProvider[];
-    setDefaultProvider: (rainbowAsDefault: boolean) => void;
+    setDefaultProvider: (vultiAsDefault: boolean) => void;
     addProvider: (provider: EthereumProvider) => void;
   };
 }
