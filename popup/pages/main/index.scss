@@ -16,8 +16,12 @@
       background-color: $blue-base;
       border-radius: rem(12);
       padding: 0 rem(20);
-
       .action {
+        .title {
+          display: flex;
+          gap: 5;
+          align-items: "center";
+        }
         border-bottom: solid rem(1) rgba($color: $gray-1, $alpha: 0.1);
         display: flex;
         font-weight: 600;

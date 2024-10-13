@@ -25,6 +25,11 @@ export namespace Messaging {
     export type Request = { chains: ChainProps[] };
     export type Response = any;
   }
+
+  export namespace SetPriority {
+    export type Request = { priority?: boolean };
+    export type Response = any;
+  }
 }
 
 export interface AccountsProps {
@@ -92,7 +97,6 @@ export interface CurrencyRef {
   [Currency.SGD]: string;
   [Currency.USD]: string;
 }
-
 
 export interface SignatureProps {
   Msg: string;

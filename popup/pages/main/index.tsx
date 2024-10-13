@@ -1,17 +1,22 @@
 import { useEffect, useState, type FC } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Empty, Modal, Switch } from "antd";
+import { Empty, message, Modal, Switch, Tooltip } from "antd";
 
 import { getStoredVaults, setStoredVaults } from "~utils/storage";
-import type { VaultProps } from "~utils/interfaces";
+import type { Messaging, VaultProps } from "~utils/interfaces";
 import messageKeys from "~utils/message-keys";
 
 import { BrokenLinkBold, ChevronRight, SettingsGear, Vultisig } from "~icons";
 import routeKeys from "~utils/route-keys";
+import {
+  sendToBackground,
+  sendToBackgroundViaRelay,
+} from "@plasmohq/messaging";
 
 interface InitialState {
   vault?: VaultProps;
+  isPriority: boolean;
 }
 
 const ConnectedApp: FC<{
@@ -36,12 +41,12 @@ const ConnectedApp: FC<{
 
 const Component: FC = () => {
   const { t } = useTranslation();
-  const initialState: InitialState = {};
+  const initialState: InitialState = { isPriority: false };
   const [state, setState] = useState(initialState);
   const { vault } = state;
   const [modal, contextHolder] = Modal.useModal();
   const navigate = useNavigate();
-
+  const [messageApi, messageContextHolder] = message.useMessage();
   const handleUnlink = (app: string): void => {
     modal.confirm({
       title: "Confirm",
@@ -62,14 +67,39 @@ const Component: FC = () => {
     });
   };
 
-  const componentDidMount = (): void => {
-    getStoredVaults().then((vaults) => {
-      const vault = vaults.find(({ active }) => active);
-
-      setState((prevState) => ({ ...prevState, vault }));
+  const handlePriority = async (checked) => {
+    sendToBackground<
+      Messaging.SetPriority.Request,
+      Messaging.SetPriority.Response
+    >({
+      name: "set-priority",
+      body: { priority: checked },
+    }).then((isPriority) => {
+      setState((prevState) => ({ ...prevState, isPriority: isPriority }));
+      showReloadMessage();
     });
   };
 
+  const showReloadMessage = () => {
+    messageApi.open({
+      type: "info",
+      content: t(t(messageKeys.REALOAD_MESSAGE)),
+    });
+  };
+  const componentDidMount = (): void => {
+    getStoredVaults().then((vaults) => {
+      const vault = vaults.find(({ active }) => active);
+      sendToBackground<
+        Messaging.SetPriority.Request,
+        Messaging.SetPriority.Response
+      >({
+        name: "set-priority",
+      }).then((isPriority) => {
+        setState((prevState) => ({ ...prevState, isPriority: isPriority }));
+      });
+      setState((prevState) => ({ ...prevState, vault }));
+    });
+  };
   useEffect(componentDidMount, []);
 
   return vault ? (
@@ -93,8 +123,16 @@ const Component: FC = () => {
           <span className="divider">{t(messageKeys.CONNECTED_DAPPS)}</span>
           <div className="apps">
             <div className="action">
-              {t(messageKeys.VULTISIG_WEB3)}
-              <Switch />
+              <div className="title">
+                {t(messageKeys.PRIORITIZE_VULTICONNECT)}
+                <Tooltip title={t(messageKeys.PRIORITIZE_VULTICONNECT_HINT)}>
+                  <img src="/static/icons/info.svg" className="icon" />
+                </Tooltip>
+              </div>
+              <Switch
+                checked={state.isPriority}
+                onChange={(checked) => handlePriority(checked)}
+              />
             </div>
             {vault.apps.length ? (
               vault.apps.map((app) => (
@@ -105,12 +143,12 @@ const Component: FC = () => {
                 />
               ))
             ) : (
-              <Empty />
+              <Empty description={t(messageKeys.NO_CONNECTED_APP)}  />
             )}
           </div>
         </div>
       </div>
-
+      {messageContextHolder}
       {contextHolder}
     </>
   ) : (

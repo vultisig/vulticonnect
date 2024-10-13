@@ -18,6 +18,7 @@
     "ethers": "^6.13.3",
     "i18next": "^23.15.1",
     "keymirror": "^0.1.1",
+    "mipd": "^0.0.7",
     "plasmo": "0.89.2",
     "react": "18.3.1",
     "react-dom": "18.3.1",
@@ -50,9 +51,7 @@
     ],
     "permissions": [
       "activeTab",
-      "system.display",
-      "storage",
-      "tabs"
+      "storage"
     ],
     "web_accessible_resources": [
       {

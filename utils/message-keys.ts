@@ -45,6 +45,7 @@ export default keyMirror({
   // N
   NAME: true,
   NETWORK_FEE: true,
+  NO_CONNECTED_APP: true,
   // O
   OPEN_DESKTOP_APP: true,
   OTHER: true,
@@ -52,6 +53,7 @@ export default keyMirror({
   // P
   // Q
   // R
+  REALOAD_MESSAGE: true,
   REMOVING_VAULT_WARNING: true,
   RENAME_VAULT: true,
   // S
@@ -83,7 +85,8 @@ export default keyMirror({
   VULTISIG: true,
   VULTISIG_CONNECT: true,
   VULTISIG_SLOGAN: true,
-  VULTISIG_WEB3: true,
+  PRIORITIZE_VULTICONNECT: true,
+  PRIORITIZE_VULTICONNECT_HINT: true,
   // W
   // Y
   // Z
