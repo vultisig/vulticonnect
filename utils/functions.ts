@@ -1,4 +1,3 @@
-import { resolve } from "path";
 import api from "./api";
 
 const hexToAscii = (value: string): string => {
