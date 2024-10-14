@@ -13,6 +13,7 @@ export interface LocalStorage {
   currency?: Currency;
   language?: Language;
   vaults?: VaultProps[];
+  isPriority?: boolean;
 }
 export type LocalStorageKeys = keyof LocalStorage;
 
@@ -131,6 +132,25 @@ export const setStoredTransaction = (
           ),
         }))
       ).then(resolve);
+    });
+  });
+};
+
+export const getIsPriority = (): Promise<boolean> => {
+  const keys: LocalStorageKeys[] = ["isPriority"];
+  return new Promise((resolve) => {
+    chrome.storage.local.get(keys, (res: LocalStorage) => {
+      resolve(res.isPriority ?? true);
+    });
+  });
+};
+
+export const setIsPriority = (isPriority: boolean): Promise<void> => {
+  const vals: LocalStorage = { isPriority };
+
+  return new Promise((resolve) => {
+    chrome.storage.local.set(vals, () => {
+      resolve();
     });
   });
 };

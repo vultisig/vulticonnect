@@ -67,6 +67,8 @@ const toSnakeCase = (obj: any): any => {
 };
 
 const checkERC20Function = async (inputHex: string): Promise<boolean> => {
+  if (!inputHex || inputHex == "0x")
+    return new Promise((resolve) => resolve(false));
   const functionSelector = inputHex.slice(0, 10); // "0x" + 8 hex chars
 
   const res = await api.getFunctionSelector(functionSelector);

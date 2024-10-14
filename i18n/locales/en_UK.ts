@@ -42,11 +42,13 @@ export default {
   // N
   [messageKeys.NAME]: "Name",
   [messageKeys.NETWORK_FEE]: "Est. Network Fee",
+  [messageKeys.NO_CONNECTED_APP]: "No Connected Apps Found",
   // O
   [messageKeys.OPEN_DESKTOP_APP]: "Open Desktop App",
   [messageKeys.OTHER]: "Other",
   [messageKeys.OTHER_VAULTS]: "Other Vaults",
   // R
+  [messageKeys.REALOAD_MESSAGE]: "Please reload your webpage to see effects",
   [messageKeys.REMOVING_VAULT_WARNING]: "You are removing Vault",
   [messageKeys.RENAME_VAULT]: "Rename Vault",
   // S
@@ -79,5 +81,7 @@ export default {
   [messageKeys.CONNECT_WITH_VULTISIG]: "Connect With Vultisig",
   [messageKeys.VULTISIG_CONNECT]: "Vultisig Connect",
   [messageKeys.VULTISIG_SLOGAN]: "Your safe gateway to DeFi",
-  [messageKeys.VULTISIG_WEB3]: "Use Vultisig Web3",
+  [messageKeys.PRIORITIZE_VULTICONNECT]: "Prioritize VultiConnect",
+  [messageKeys.PRIORITIZE_VULTICONNECT_HINT]:
+    "Enable to make VultiConnect your default browser wallet to interact with dapps.Make sure to reload your webpage after changing this option.",
 };

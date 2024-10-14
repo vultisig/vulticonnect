@@ -61,3 +61,14 @@ relay(
     return openResult;
   }
 );
+
+relay(
+  {
+    name: "set-priority" as const,
+  },
+  async (req) => {
+    const openResult = await sendToBackground(req);
+
+    return openResult;
+  }
+);

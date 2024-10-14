@@ -20,6 +20,7 @@ import VultiLoading from "~components/vulti-loading";
 
 import "~styles/index.scss";
 import "~tabs/get-accounts.scss";
+import VultiError from "~components/vulti-error";
 
 interface FormProps {
   uids: string[];
@@ -29,11 +30,19 @@ interface InitialState {
   chain?: ChainKey;
   sender?: string;
   vaults: VaultProps[];
+  hasError: boolean;
+  errorTitle: string;
+  errorDescription: string;
 }
 
 const Component: FC = () => {
   const { t } = useTranslation();
-  const initialState: InitialState = { vaults: [] };
+  const initialState: InitialState = {
+    vaults: [],
+    hasError: false,
+    errorTitle: "",
+    errorDescription: "",
+  };
   const [state, setState] = useState(initialState);
   const { chain, sender, vaults } = state;
   const [form] = Form.useForm();
@@ -76,6 +85,7 @@ const Component: FC = () => {
                 chain,
                 sender,
                 vaults,
+                hasError: false,
               }));
 
               form.setFieldsValue({
@@ -84,6 +94,12 @@ const Component: FC = () => {
                   .map(({ uid }) => uid),
               });
             } else {
+              setState((prevState) => ({
+                ...prevState,
+                hasError: true,
+                errorTitle: messageKeys.GET_VAULT_FAILED,
+                errorDescription: messageKeys.GET_VAULT_FAILED_DESCRIPTION,
+              }));
               console.error(errorKey.FAIL_TO_GET_ACCOUNTS);
             }
           });
@@ -134,8 +150,13 @@ const Component: FC = () => {
             </Button>
           </div>
         </div>
-      ) : (
+      ) : !state.hasError ? (
         <VultiLoading />
+      ) : (
+        <VultiError
+          title={t(state.errorTitle)}
+          description={t(state.errorDescription)}
+        />
       )}
     </ConfigProvider>
   );

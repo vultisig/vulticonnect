@@ -1,5 +1,6 @@
 import { Currency, Language } from "~utils/constants";
 import {
+  setIsPriority,
   setStoredChains,
   setStoredCurrency,
   setStoredLanguage,
@@ -11,4 +12,5 @@ chrome.runtime.onInstalled.addListener(() => {
   setStoredLanguage(Language.ENGLISH);
   setStoredVaults([]);
   setStoredChains([]);
+  setIsPriority(true);
 });

@@ -1,12 +1,14 @@
 import type { PlasmoCSConfig } from "plasmo";
-import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
-
+import {
+  sendToBackgroundViaRelay,
+} from "@plasmohq/messaging";
+import { type EIP1193Provider, announceProvider } from "mipd";
 import { ChainKey, chains, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
-import { JsonRpcProvider, NonceManager } from "ethers";
-import api from "~utils/api";
+import { JsonRpcProvider } from "ethers";
 import axios from "axios";
-
+import { v4 as uuidv4 } from "uuid";
+import { VULTI_ICON_RAW_SVG } from "~static/icons/vulti-raw";
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
   world: "MAIN",
@@ -91,6 +93,7 @@ interface BaseProviderState {
 
 interface EthereumProvider {
   isMetaMask: boolean;
+  isVultiConnect: boolean;
   _events: Record<string, Function[]>;
   _state: BaseProviderState;
   enable(): Promise<string[]>;
@@ -107,7 +110,7 @@ const defaultChain = chains.find(({ name }) => name === ChainKey.ETHEREUM);
 
 const ethereumProvider: EthereumProvider = {
   isMetaMask: true,
-
+  isVultiConnect: true,
   _events: {},
   _state: {
     accounts: [],
@@ -425,5 +428,92 @@ const ethereumProvider: EthereumProvider = {
 };
 
 ethereumProvider._connect();
+window.vultisig = ethereumProvider;
+if (!window.ethereum) window.ethereum = ethereumProvider;
 
-window.ethereum = ethereumProvider;
+let prioritize: boolean = true;
+
+const intervalRef = setInterval(() => {
+  if (
+    (window.ethereum && window.ethereum.isVultiConnect) ||
+    prioritize == false
+  )
+    clearInterval(intervalRef);
+
+  sendToBackgroundViaRelay<
+    Messaging.SetPriority.Request,
+    Messaging.SetPriority.Response
+  >({
+    name: "set-priority",
+  })
+    .then((res) => {
+      if (res) {
+        const providerCopy = Object.create(
+          Object.getPrototypeOf(ethereumProvider),
+          Object.getOwnPropertyDescriptors(ethereumProvider)
+        );
+        providerCopy.isMetaMask = false;
+        announceProvider({
+          info: {
+            icon: VULTI_ICON_RAW_SVG,
+            name: "Vultisig",
+            rdns: "me.vultisig",
+            uuid: uuidv4(),
+          },
+          provider: providerCopy as EthereumProvider as EIP1193Provider,
+        });
+
+        Object.defineProperties(window, {
+          vultisig: {
+            value: ethereumProvider,
+            configurable: false,
+            writable: false,
+          },
+          ethereum: {
+            get() {
+              return window.vultiConnectRouter.currentProvider;
+            },
+            set(newProvider) {
+              window.vultiConnectRouter?.addProvider(newProvider);
+            },
+            configurable: false,
+          },
+          vultiConnectRouter: {
+            value: {
+              ethereumProvider,
+              lastInjectedProvider: window.ethereum,
+              currentProvider: ethereumProvider,
+              providers: [
+                ethereumProvider,
+                ...(window.ethereum ? [window.ethereum] : []),
+              ],
+              setDefaultProvider(vultiAsDefault: boolean) {
+                if (vultiAsDefault) {
+                  window.vultiConnectRouter.currentProvider = window.vultisig;
+                } else {
+                  const nonDefaultProvider =
+                    window.vultiConnectRouter?.lastInjectedProvider ??
+                    window.ethereum;
+                  window.vultiConnectRouter.currentProvider =
+                    nonDefaultProvider;
+                }
+              },
+              addProvider(provider: EthereumProvider) {
+                if (!window.vultiConnectRouter?.providers?.includes(provider)) {
+                  window.vultiConnectRouter?.providers?.push(provider);
+                }
+                if (ethereumProvider !== provider) {
+                  window.vultiConnectRouter.lastInjectedProvider = provider;
+                }
+              },
+            },
+            configurable: false,
+            writable: false,
+          },
+        });
+      } else {
+        prioritize = false;
+      }
+    })
+    .catch((err) => {});
+}, 500);

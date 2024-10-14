@@ -33,5 +33,5 @@ export default {
   [messageKeys.VULTISIG]: "Vultisig",
   [messageKeys.VULTISIG_CONNECT]: "Vultisig Connect",
   [messageKeys.VULTISIG_SLOGAN]: "Your safe gateway to DeFi",
-  [messageKeys.VULTISIG_WEB3]: "Use Vultisig Web3",
+  [messageKeys.PRIORITIZE_VULTICONNECT]: "Prioritize VultiConnect",
 };
