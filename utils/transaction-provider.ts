@@ -157,7 +157,9 @@ export default class TransactionProvider {
                 : "0",
               memo: isMemoFunction
                 ? transaction.data
-                : toUtf8String(transaction.data),
+                : transaction.data && transaction.data != "0x"
+                ? toUtf8String(transaction.data)
+                : "",
               vaultPublicKeyEcdsa: vault.publicKeyEcdsa,
               vaultLocalPartyId: "VultiConnect",
               coin,
