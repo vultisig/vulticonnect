@@ -1,13 +1,11 @@
 import type { PlasmoCSConfig } from "plasmo";
 import {
   sendToBackgroundViaRelay,
-  sendToBackground,
 } from "@plasmohq/messaging";
-import { type EIP1193Provider, announceProvider, requestProviders } from "mipd";
+import { type EIP1193Provider, announceProvider } from "mipd";
 import { ChainKey, chains, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
-import { JsonRpcProvider, NonceManager } from "ethers";
-import api from "~utils/api";
+import { JsonRpcProvider } from "ethers";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { VULTI_ICON_RAW_SVG } from "~static/icons/vulti-raw";
@@ -406,7 +404,7 @@ const ethereumProvider: EthereumProvider = {
       });
     }
   },
-  
+
   _connect: () => {
     ethereumProvider._state.isConnected = true;
 
@@ -431,8 +429,17 @@ const ethereumProvider: EthereumProvider = {
 
 ethereumProvider._connect();
 window.vultisig = ethereumProvider;
+if (!window.ethereum) window.ethereum = ethereumProvider;
 
-setTimeout(() => {
+let prioritize: boolean = true;
+
+const intervalRef = setInterval(() => {
+  if (
+    (window.ethereum && window.ethereum.isVultiConnect) ||
+    prioritize == false
+  )
+    clearInterval(intervalRef);
+
   sendToBackgroundViaRelay<
     Messaging.SetPriority.Request,
     Messaging.SetPriority.Response
@@ -504,9 +511,9 @@ setTimeout(() => {
             writable: false,
           },
         });
+      } else {
+        prioritize = false;
       }
     })
-    .catch((err) => {
-      console.log(err);
-    });
-}, 1000);
+    .catch((err) => {});
+}, 500);
