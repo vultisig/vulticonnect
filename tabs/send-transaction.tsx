@@ -10,7 +10,11 @@ import {
   getStoredVaults,
   setStoredTransaction,
 } from "~utils/storage";
-import type { TransactionProps, VaultProps } from "~utils/interfaces";
+import type {
+  SignatureProps,
+  TransactionProps,
+  VaultProps,
+} from "~utils/interfaces";
 import i18n from "~i18n/config";
 import api from "~utils/api";
 import messageKeys from "~utils/message-keys";
@@ -87,9 +91,9 @@ const Component: FC = () => {
   const handlePending = (preSignedImageHash: string): void => {
     api.transaction
       .getComplete(transaction.id, preSignedImageHash)
-      .then(({ data }) => {
+      .then((data) => {
         txProvider
-          .getSignedTransaction(transaction, data)
+          .getSignedTransaction(transaction, data as SignatureProps)
           .then((txHash) => {
             setStoredTransaction({
               ...transaction,

@@ -50,12 +50,31 @@ namespace Derivation {
 export default {
   transaction: {
     getComplete: async (uuid: string, message: string) => {
-      return await api.get<SignatureProps>(
-        `https://api.vultisig.com/router/complete/${uuid}/keysign`,
-        {
-          headers: { message_id: message },
-        }
-      );
+      return new Promise((resolve, reject) => {
+        api
+          .get<SignatureProps>(
+            `https://api.vultisig.com/router/complete/${uuid}/keysign`,
+            {
+              headers: { message_id: message },
+            }
+          )
+          .then((res) => {
+            if (res.status === 200) {
+              const transformed = Object.entries(res.data).reduce(
+                (acc, [key, value]) => {
+                  const newKey = key.charAt(0).toUpperCase() + key.slice(1);
+                  acc[newKey] = value;
+                  return acc;
+                },
+                {} as { [key: string]: any }
+              );
+              resolve(transformed);
+            }
+          })
+          .catch((err) => {
+            reject(err);
+          });
+      });
     },
     getDevices: async (uuid: string) => {
       return await api.get<string[]>(`https://api.vultisig.com/router/${uuid}`);
