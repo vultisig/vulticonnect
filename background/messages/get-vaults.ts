@@ -1,6 +1,6 @@
 import type { PlasmoMessaging } from "@plasmohq/messaging";
 
-import { getStoredVaults } from "~utils/storage";
+import { getStoredVaults, setStoredVaults } from "~utils/storage";
 import type { Messaging } from "~utils/interfaces";
 
 const handler: PlasmoMessaging.MessageHandler<
@@ -24,20 +24,25 @@ const handler: PlasmoMessaging.MessageHandler<
       left = currentWindow.left + currentWindow.width - width;
       top = currentWindow.top;
     }
-
-    chrome.windows.create(
-      {
-        url: chrome.runtime.getURL("tabs/get-vaults.html"),
-        type: "popup",
-        height,
-        left,
-        top,
-        width,
-      },
-      (window) => {
-        createdWindowId = window.id;
-      }
-    );
+    getStoredVaults().then((vaults) => {
+      setStoredVaults(
+        vaults.map((vault) => ({ ...vault, selected: false }))
+      ).then(() => {
+        chrome.windows.create(
+          {
+            url: chrome.runtime.getURL("tabs/get-vaults.html"),
+            type: "popup",
+            height,
+            left,
+            top,
+            width,
+          },
+          (window) => {
+            createdWindowId = window.id;
+          }
+        );
+      });
+    });
   });
 
   chrome.windows.onRemoved.addListener((closedWindowId) => {
