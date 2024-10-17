@@ -147,6 +147,7 @@ export const rpcUrl: ChainRpcRef = {
   [ChainKey.BLAST]: "https://rpc.ankr.com/blast",
   [ChainKey.BSCCHAIN]: "https://bsc-rpc.publicnode.com",
   [ChainKey.CRONOSCHAIN]: "https://cronos-evm-rpc.publicnode.com",
+  [ChainKey.OPTIMISM]: "https://optimism-rpc.publicnode.com",
   [ChainKey.ETHEREUM]: "https://ethereum-rpc.publicnode.com",
   [ChainKey.POLYGON]: "https://polygon-bor-rpc.publicnode.com",
   [ChainKey.ZKSYNC]: "https://mainnet.era.zksync.io",

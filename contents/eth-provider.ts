@@ -1,7 +1,5 @@
 import type { PlasmoCSConfig } from "plasmo";
-import {
-  sendToBackgroundViaRelay,
-} from "@plasmohq/messaging";
+import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
 import { type EIP1193Provider, announceProvider } from "mipd";
 import { ChainKey, chains, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
@@ -190,7 +188,7 @@ const ethereumProvider: EthereumProvider = {
               Messaging.SendTransaction.Response
             >({
               name: "send-transaction",
-              body: { transaction },
+              body: { transaction,activeChain:ethereumProvider._state.chainId },
             })
               .then(({ transactionHash }) => {
                 resolve(transactionHash);
