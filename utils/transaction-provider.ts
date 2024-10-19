@@ -146,8 +146,11 @@ export default class TransactionProvider {
               (this.gasPrice * BigInt(5)) /
               BigInt(2)
             ).toString(),
-            priorityFee: this.maxPriorityFeePerGas.toString(),
             nonce: this.nonce,
+            priorityFee:
+              this.maxPriorityFeePerGas == null
+                ? this.gasPrice.toString()
+                : this.maxPriorityFeePerGas.toString(),
           });
           checkERC20Function(transaction.data).then((isMemoFunction) => {
             const keysignPayload = create(KeysignPayloadSchema, {

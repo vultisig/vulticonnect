@@ -14,7 +14,7 @@ const handler: PlasmoMessaging.MessageHandler<
 > = async (req, res) => {
   getStoredChains().then((chains) => {
     getStoredVaults().then((vaults) => {
-      const chain = chains.find(({ active }) => active);
+      const chain = chains.find((chain) => chain.id === req.body.activeChain);
       const vault = vaults.find(({ active }) => active);
 
       const prepareTransaction = (): Promise<TransactionProps> => {

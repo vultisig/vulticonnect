@@ -17,7 +17,10 @@ export namespace Messaging {
   }
 
   export namespace SendTransaction {
-    export type Request = { transaction: TransactionProps };
+    export type Request = {
+      transaction: TransactionProps;
+      activeChain: string;
+    };
     export type Response = { transactionHash: string };
   }
 
@@ -80,6 +83,7 @@ export interface ChainRpcRef {
   [ChainKey.BLAST]: string;
   [ChainKey.BSCCHAIN]: string;
   [ChainKey.CRONOSCHAIN]: string;
+  [ChainKey.OPTIMISM]: string;
   [ChainKey.ETHEREUM]: string;
   [ChainKey.POLYGON]: string;
   [ChainKey.ZKSYNC]: string;
