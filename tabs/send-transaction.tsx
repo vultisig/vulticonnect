@@ -35,6 +35,7 @@ import VultiLoading from "~components/vulti-loading";
 import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
+import VultiError from "~components/vulti-error";
 
 interface InitialState {
   fastSign?: boolean;
@@ -45,11 +46,15 @@ interface InitialState {
   transaction?: TransactionProps;
   txProvider?: TransactionProvider;
   vault?: VaultProps;
+  hasError?: boolean;
+  errorTitle?: string;
+  errorDescription?: string;
 }
 
 const Component: FC = () => {
   const { t } = useTranslation();
-  const initialState: InitialState = { step: 1 };
+  const RETRY_TIMEOUT = 120000; //2min
+  const initialState: InitialState = { step: 1, hasError: false };
   const [state, setState] = useState(initialState);
   const {
     fastSign,
@@ -60,6 +65,9 @@ const Component: FC = () => {
     transaction,
     txProvider,
     vault,
+    hasError,
+    errorTitle,
+    errorDescription,
   } = state;
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -89,37 +97,56 @@ const Component: FC = () => {
   };
 
   const handlePending = (preSignedImageHash: string): void => {
-    api.transaction
-      .getComplete(transaction.id, preSignedImageHash)
-      .then((data) => {
-        txProvider
-          .getSignedTransaction(transaction, data as SignatureProps)
-          .then((txHash) => {
-            setStoredTransaction({
-              ...transaction,
-              status: "success",
-              txHash,
-            }).then(() => {
-              setState((prevState) => ({
-                ...prevState,
-                step: 4,
-                transaction: { ...transaction, txHash },
-              }));
-            });
-          })
-          .catch(() => {});
-      })
-      .catch(({ status }) => {
-        if (status === 404) {
-          setTimeout(() => {
-            handlePending(preSignedImageHash);
-          }, 1000);
-        } else {
-          setStoredTransaction({ ...transaction, status: "error" }).then(() => {
-            handleClose();
-          });
-        }
+    const retryTimeout = setTimeout(() => {
+      setStoredTransaction({ ...transaction, status: "error" }).then(() => {
+        setState({
+          ...state,
+          hasError: true,
+          errorTitle: t(messageKeys.TIMEOUT_ERROR),
+          errorDescription: t(messageKeys.SIGNING_TIMEOUT_DESCRIPTION),
+        });
+        handleClose();
       });
+    }, RETRY_TIMEOUT);
+
+    const attemptTransaction = (): void => {
+      api.transaction
+        .getComplete(transaction.id, preSignedImageHash)
+        .then((data) => {
+          clearTimeout(retryTimeout);
+          txProvider
+            .getSignedTransaction(transaction, data as SignatureProps)
+            .then((txHash) => {
+              setStoredTransaction({
+                ...transaction,
+                status: "success",
+                txHash,
+              }).then(() => {
+                setState((prevState) => ({
+                  ...prevState,
+                  step: 4,
+                  transaction: { ...transaction, txHash },
+                }));
+              });
+            })
+            .catch(() => {});
+        })
+        .catch(({ status }) => {
+          if (status === 404) {
+            setTimeout(() => {
+              attemptTransaction();
+            }, 1000);
+          } else {
+            clearTimeout(retryTimeout);
+            setStoredTransaction({ ...transaction, status: "error" }).then(
+              () => {
+                handleClose();
+              }
+            );
+          }
+        });
+    };
+    attemptTransaction();
   };
 
   const handleStart = (): void => {
@@ -269,7 +296,7 @@ const Component: FC = () => {
 
   return (
     <ConfigProvider>
-      {loaded ? (
+      {loaded && !hasError ? (
         <div className={`layout step-${step}`}>
           <div className="header">
             <span className="heading">
@@ -435,8 +462,10 @@ const Component: FC = () => {
       ) : (
         <VultiLoading />
       )}
-
       {contextHolder}
+      {loaded && hasError && (
+        <VultiError title={t(errorTitle)} description={t(errorDescription)} />
+      )}
     </ConfigProvider>
   );
 };

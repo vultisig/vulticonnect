@@ -394,3 +394,13 @@ body {
     z-index: 1;
   }
 }
+@media (max-width: 300px) {
+  .footer {
+    flex-direction: column !important;
+    width: 100%;
+  }
+  body {
+    min-width: rem(360) !important;
+    width: 100% !important;
+  }
+}
