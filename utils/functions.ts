@@ -1,4 +1,5 @@
 import api from "./api";
+import type { ParsedMemo } from "./interfaces";
 
 const hexToAscii = (value: string): string => {
   const hex: string = value.toString().replace("0x", "");
@@ -71,8 +72,36 @@ const checkERC20Function = async (inputHex: string): Promise<boolean> => {
     return new Promise((resolve) => resolve(false));
   const functionSelector = inputHex.slice(0, 10); // "0x" + 8 hex chars
 
+  const res = await api.getIsFunctionSelector(functionSelector);
+  return res;
+};
+
+const getFunctionName = async (inputHex: string): Promise<string> => {
+  if (!inputHex || inputHex == "0x")
+    return new Promise((resolve, reject) => reject(""));
+  const functionSelector = inputHex.slice(0, 10); // "0x" + 8 hex chars
+
   const res = await api.getFunctionSelector(functionSelector);
   return res;
 };
 
-export { hexToAscii, toCamelCase, toSnakeCase, checkERC20Function };
+const parseMemo = async (memo: string) => {
+  return new Promise<ParsedMemo>((resolve, reject) => {
+    getFunctionName(memo)
+      .then((name) => {
+        const inputs = splitString(memo.slice(10), 64);
+        resolve({ name: name, inputs: inputs });
+      })
+      .catch(reject);
+  });
+};
+
+function splitString(str: string, size: number): string[] {
+  const result: string[] = [];
+  for (let i = 0; i < str.length; i += size) {
+    result.push(str.slice(i, i + size));
+  }
+  return result;
+}
+
+export { hexToAscii, toCamelCase, toSnakeCase, checkERC20Function, parseMemo };

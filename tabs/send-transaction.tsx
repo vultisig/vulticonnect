@@ -11,6 +11,7 @@ import {
   setStoredTransaction,
 } from "~utils/storage";
 import type {
+  ParsedMemo,
   SignatureProps,
   TransactionProps,
   VaultProps,
@@ -36,6 +37,7 @@ import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
+import { parseMemo } from "~utils/functions";
 
 interface InitialState {
   fastSign?: boolean;
@@ -45,6 +47,7 @@ interface InitialState {
   step: number;
   transaction?: TransactionProps;
   txProvider?: TransactionProvider;
+  parsedMemo?: ParsedMemo;
   vault?: VaultProps;
   hasError?: boolean;
   errorTitle?: string;
@@ -68,6 +71,7 @@ const Component: FC = () => {
     hasError,
     errorTitle,
     errorDescription,
+    parsedMemo,
   } = state;
   const [messageApi, contextHolder] = message.useMessage();
 
@@ -261,6 +265,11 @@ const Component: FC = () => {
                 dataConverter.compactEncoder,
                 walletCore
               );
+              parseMemo(transaction.data)
+                .then((memo) => {
+                  setState({ ...state, parsedMemo: memo });
+                })
+                .catch();
               txProvider.getFeeData().then(() => {
                 txProvider
                   .getEstimateTransactionFee(transaction.chain.cmcId, currency)
@@ -343,7 +352,6 @@ const Component: FC = () => {
                       )} ${transaction.chain.ticker}`}</span>
                     </div>
                   )}
-
                   {transaction.memo && (
                     <div className="list-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
@@ -354,6 +362,28 @@ const Component: FC = () => {
                     <span className="label">{t(messageKeys.NETWORK_FEE)}</span>
                     <span className="extra">{transaction.gasPrice}</span>
                   </div>
+                  {parsedMemo && (
+                    <>
+                      <div className="list-item">
+                        <span className="label">
+                          {t(messageKeys.FUNCTION_NAME)}
+                        </span>
+                        <div className="scrollable-x">{parsedMemo.name}</div>
+                      </div>
+                      <div className="list-item">
+                        <span className="label">
+                          {t(messageKeys.FUNCTION_INPUTS)}
+                        </span>
+                        <div className="scrollable-x monospace-text ">
+                          {parsedMemo.inputs.map((input, index) => (
+                            <div key={index}>
+                              [{index}]: {input} 
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
               <div className="footer">
