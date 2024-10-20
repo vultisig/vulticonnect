@@ -120,15 +120,25 @@ const ethereumProvider: EthereumProvider = {
   isConnected: () => ethereumProvider._state.isConnected,
 
   request: ({ method, params = [] }) => {
+    console.log(method);
+    console.log(params);
     return new Promise((resolve, reject) => {
       switch (method) {
         case RequestMethod.ETH_ACCOUNTS: {
           resolve(ethereumProvider._state.accounts);
-
           break;
         }
         case RequestMethod.ETH_CHAIN_ID: {
-          resolve(ethereumProvider._state.chainId);
+          sendToBackgroundViaRelay<
+            Messaging.GetChains.Request,
+            Messaging.GetChains.Response
+          >({
+            name: "get-chains",
+          }).then(({ chains }) => {
+            const chain = chains.find(({ active }) => active == true);
+            if (chain) resolve(chain.id);
+            else resolve(ethereumProvider._state.chainId);
+          });
 
           break;
         }
@@ -140,9 +150,7 @@ const ethereumProvider: EthereumProvider = {
             name: "get-chains",
           })
             .then(({ chains }) => {
-              const chain = chains.find(
-                ({ id }) => id === ethereumProvider._state.chainId
-              );
+              const chain = chains.find(({ active }) => active === true);
 
               if (chain) {
                 sendToBackgroundViaRelay<
@@ -295,9 +303,12 @@ const ethereumProvider: EthereumProvider = {
             rpcUrl[ethereumProvider._state.chainKey]
           );
           const tx = { ...params[0] } as TransactionRequest;
-          provider.estimateGas(tx).then((res) => {
-            resolve(res.toString());
-          }).catch(reject);
+          provider
+            .estimateGas(tx)
+            .then((res) => {
+              resolve(res.toString());
+            })
+            .catch(reject);
           break;
         }
         case RequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {

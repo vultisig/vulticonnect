@@ -302,3 +302,48 @@ export const chains: ChainProps[] = [
     ticker: "RUNE",
   },
 ];
+
+export const supportedChains: ChainProps[] = [
+  {
+    cmcId: 1027,
+    decimals: 18,
+    id: "0xa4b1",
+    name: ChainKey.ARBITRUM,
+    ticker: "ETH",
+  },
+  {
+    cmcId: 5805,
+    decimals: 18,
+    id: "0xa86a",
+    name: ChainKey.AVALANCHE,
+    ticker: "AVAX",
+  },
+  {
+    cmcId: 1027,
+    decimals: 18,
+    id: "0x2105",
+    name: ChainKey.BASE,
+    ticker: "ETH",
+  },
+  {
+    cmcId: 1839,
+    decimals: 18,
+    id: "0x38",
+    name: ChainKey.BSCCHAIN,
+    ticker: "BNB",
+  },
+  {
+    cmcId: 1027,
+    decimals: 18,
+    id: "0x1",
+    name: ChainKey.ETHEREUM,
+    ticker: "ETH",
+  },
+  {
+    cmcId: 1027,
+    decimals: 18,
+    id: "",
+    name: ChainKey.OPTIMISM,
+    ticker: "ETH",
+  },
+];

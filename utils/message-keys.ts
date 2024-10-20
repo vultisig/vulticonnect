@@ -16,6 +16,7 @@ export default keyMirror({
   CONNECTED_DAPPS: true,
   COPY_TX: true,
   CURRENCY: true,
+  CURRENT_NETWORK: true,
   // D
   DELETE_VAULT: true,
   DONE: true,

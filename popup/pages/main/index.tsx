@@ -1,7 +1,7 @@
 import { useEffect, useState, type FC } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Empty, message, Modal, Switch, Tooltip } from "antd";
+import { Empty, message, Modal, Select, Switch, Tooltip } from "antd";
 
 import { getStoredVaults, setStoredVaults } from "~utils/storage";
 import type { Messaging, VaultProps } from "~utils/interfaces";
@@ -120,6 +120,50 @@ const Component: FC = () => {
               <ChevronRight className="action" />
             </Link>
           </div>
+          <span className="divider">{t(messageKeys.CURRENT_NETWORK)}</span>
+          <div>
+            <Select
+              // showSearch
+              style={{ width: 200 }}
+              // placeholder="Search to Select"
+              optionFilterProp="label"
+              options={[
+                {
+                  value: "1",
+                  label: (
+                    <div>
+                      <img
+                        src="/static/icons/error.svg"
+                        alt="Not Identified"
+                        style={{ width: 20, marginRight: 8 }}
+                      />
+                      Not Identified
+                    </div>
+                  ),
+                },
+                {
+                  value: "2",
+                  label: "Closed",
+                },
+                {
+                  value: "3",
+                  label: "Communicated",
+                },
+                {
+                  value: "4",
+                  label: "Identified",
+                },
+                {
+                  value: "5",
+                  label: "Resolved",
+                },
+                {
+                  value: "6",
+                  label: "Cancelled",
+                },
+              ]}
+            />
+          </div>
           <span className="divider">{t(messageKeys.CONNECTED_DAPPS)}</span>
           <div className="apps">
             <div className="action">
@@ -143,7 +187,7 @@ const Component: FC = () => {
                 />
               ))
             ) : (
-              <Empty description={t(messageKeys.NO_CONNECTED_APP)}  />
+              <Empty description={t(messageKeys.NO_CONNECTED_APP)} />
             )}
           </div>
         </div>

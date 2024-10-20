@@ -14,6 +14,7 @@ export default {
   [messageKeys.CONNECTED_DAPPS]: "Connected Apps",
   [messageKeys.COPY_TX]: "COPY TX",
   [messageKeys.CURRENCY]: "Currency",
+  [messageKeys.CURRENT_NETWORK]: "Current Network",
   // D
   [messageKeys.DELETE_VAULT]: "Delete Vault",
   [messageKeys.DONE]: "Done",
