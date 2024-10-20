@@ -104,4 +104,8 @@ function splitString(str: string, size: number): string[] {
   return result;
 }
 
-export { hexToAscii, toCamelCase, toSnakeCase, checkERC20Function, parseMemo };
+function removeLeadingZeros(hexString: string): string {
+  return hexString.replace(/^0+/, '') || "0";
+}
+
+export { hexToAscii, toCamelCase, toSnakeCase, checkERC20Function, parseMemo, removeLeadingZeros };

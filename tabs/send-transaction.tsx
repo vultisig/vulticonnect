@@ -37,7 +37,7 @@ import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
-import { parseMemo } from "~utils/functions";
+import { parseMemo, removeLeadingZeros } from "~utils/functions";
 
 interface InitialState {
   fastSign?: boolean;
@@ -267,7 +267,7 @@ const Component: FC = () => {
               );
               parseMemo(transaction.data)
                 .then((memo) => {
-                  setState({ ...state, parsedMemo: memo });
+                  setState({ ...state, parsedMemo: memo });   
                 })
                 .catch();
               txProvider.getFeeData().then(() => {
@@ -376,8 +376,8 @@ const Component: FC = () => {
                         </span>
                         <div className="scrollable-x monospace-text ">
                           {parsedMemo.inputs.map((input, index) => (
-                            <div key={index}>
-                              [{index}]: {input} 
+                            <div key={index} style={{ width: "max-content" }}>
+                              {`[${index}]: ${removeLeadingZeros(input)} `}
                             </div>
                           ))}
                         </div>
