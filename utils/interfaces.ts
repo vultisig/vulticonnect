@@ -157,6 +157,6 @@ export interface VaultProps {
 }
 
 export interface ParsedMemo {
-  name: string;
-  inputs: string[];
+  signature: string;
+  inputs: string;
 }

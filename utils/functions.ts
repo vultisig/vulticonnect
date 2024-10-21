@@ -1,3 +1,4 @@
+import { Interface } from "ethers";
 import api from "./api";
 import type { ParsedMemo } from "./interfaces";
 
@@ -76,7 +77,7 @@ const checkERC20Function = async (inputHex: string): Promise<boolean> => {
   return res;
 };
 
-const getFunctionName = async (inputHex: string): Promise<string> => {
+const getFunctionSignature = async (inputHex: string): Promise<string> => {
   if (!inputHex || inputHex == "0x")
     return new Promise((resolve, reject) => reject(""));
   const functionSelector = inputHex.slice(0, 10); // "0x" + 8 hex chars
@@ -87,25 +88,55 @@ const getFunctionName = async (inputHex: string): Promise<string> => {
 
 const parseMemo = async (memo: string) => {
   return new Promise<ParsedMemo>((resolve, reject) => {
-    getFunctionName(memo)
-      .then((name) => {
-        const inputs = splitString(memo.slice(10), 64);
-        resolve({ name: name, inputs: inputs });
+    getFunctionSignature(memo)
+      .then((signature) => {
+        const abi = new Interface([`function ${signature}`]);
+        try {
+          const decodedData = abi.decodeFunctionData(
+            signature.split("(")[0],
+            memo
+          );
+          const processedData = processDecodedData(decodedData);
+          console.log(processedData);
+          resolve({
+            signature: signature,
+            inputs: JSON.stringify(processedData, null, 2),
+          });
+        } catch (error) {
+          console.error("Error decoding input data:", error);
+        }
       })
       .catch(reject);
   });
 };
 
-function splitString(str: string, size: number): string[] {
-  const result: string[] = [];
-  for (let i = 0; i < str.length; i += size) {
-    result.push(str.slice(i, i + size));
+const processDecodedData = (data: any): any => {
+  if (Array.isArray(data)) {
+    return data.map((item) => processDecodedData(item));
+  } else if (typeof data === "bigint") {
+    return data.toString();
+  } else if (typeof data === "object" && data !== null) {
+    if (data.toString && (data._isBigNumber || typeof data === "bigint")) {
+      return data.toString();
+    }
+    return Object.keys(data).reduce((acc, key) => {
+      acc[key] = processDecodedData(data[key]);
+      return acc;
+    }, {} as any);
   }
-  return result;
-}
+  return data;
+};
+
 
 function removeLeadingZeros(hexString: string): string {
-  return hexString.replace(/^0+/, '') || "0";
+  return hexString.replace(/^0+/, "") || "0";
 }
 
-export { hexToAscii, toCamelCase, toSnakeCase, checkERC20Function, parseMemo, removeLeadingZeros };
+export {
+  hexToAscii,
+  toCamelCase,
+  toSnakeCase,
+  checkERC20Function,
+  parseMemo,
+  removeLeadingZeros,
+};
