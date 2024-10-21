@@ -82,7 +82,6 @@
         }
       }
     }
-
     .ant-empty {
       padding: rem(20) 0;
 
@@ -93,4 +92,12 @@
       }
     }
   }
+}
+.address {
+  color: $cyan-base !important;
+  font-size: rem(10) !important;
+}
+.chain-item {
+  display: flex;
+  align-items: center;
 }

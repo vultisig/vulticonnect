@@ -1,6 +1,11 @@
 import type { PlasmoCSConfig } from "plasmo";
 import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
-import { type EIP1193Provider, announceProvider } from "mipd";
+import {
+  type EIP1193Provider,
+  announceProvider,
+  createStore,
+  requestProviders,
+} from "mipd";
 import { ChainKey, chains, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { JsonRpcProvider, type TransactionRequest } from "ethers";
@@ -118,10 +123,7 @@ const ethereumProvider: EthereumProvider = {
   },
 
   isConnected: () => ethereumProvider._state.isConnected,
-
   request: ({ method, params = [] }) => {
-    console.log(method);
-    console.log(params);
     return new Promise((resolve, reject) => {
       switch (method) {
         case RequestMethod.ETH_ACCOUNTS: {

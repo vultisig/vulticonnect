@@ -1,4 +1,4 @@
-import { Currency, Language } from "~utils/constants";
+import { chains, Currency, Language } from "~utils/constants";
 import {
   setIsPriority,
   setStoredChains,

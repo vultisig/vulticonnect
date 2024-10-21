@@ -1,10 +1,14 @@
 import { useEffect, useState, type FC } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Empty, message, Modal, Select, Switch, Tooltip } from "antd";
+import { Empty, Flex, message, Modal, Select, Switch, Tooltip } from "antd";
 
-import { getStoredVaults, setStoredVaults } from "~utils/storage";
-import type { Messaging, VaultProps } from "~utils/interfaces";
+import {
+  getStoredChains,
+  getStoredVaults,
+  setStoredVaults,
+} from "~utils/storage";
+import type { ChainProps, Messaging, VaultProps } from "~utils/interfaces";
 import messageKeys from "~utils/message-keys";
 
 import { BrokenLinkBold, ChevronRight, SettingsGear, Vultisig } from "~icons";
@@ -13,10 +17,15 @@ import {
   sendToBackground,
   sendToBackgroundViaRelay,
 } from "@plasmohq/messaging";
-
+import { ChainKey, chains, supportedChains } from "~utils/constants";
+interface SelectOption {
+  value: string;
+  label: JSX.Element;
+}
 interface InitialState {
   vault?: VaultProps;
   isPriority: boolean;
+  networkOptions?: SelectOption[];
 }
 
 const ConnectedApp: FC<{
@@ -43,6 +52,11 @@ const Component: FC = () => {
   const { t } = useTranslation();
   const initialState: InitialState = { isPriority: false };
   const [state, setState] = useState(initialState);
+  const [selectedNetwork, setSelectedNetwork] = useState<{
+    value: string;
+    label: JSX.Element;
+  }>();
+
   const { vault } = state;
   const [modal, contextHolder] = Modal.useModal();
   const navigate = useNavigate();
@@ -64,6 +78,54 @@ const Component: FC = () => {
           });
         });
       },
+    });
+  };
+
+  const getCurrentNetwork = (options: SelectOption[]) => {
+    sendToBackground<Messaging.GetChains.Request, Messaging.GetChains.Response>(
+      {
+        name: "get-chains",
+      }
+    ).then((res) => {
+      let currentChain = null;
+      if (!res.chains.length) {
+        // set default chain
+        currentChain = chains.find(({ name }) => name === ChainKey.ETHEREUM);
+        sendToBackgroundViaRelay<
+          Messaging.SetChains.Request,
+          Messaging.SetChains.Response
+        >({
+          name: "set-chains",
+          body: {
+            chains: [{ ...currentChain, active: true }],
+          },
+        });
+      } else {
+        currentChain = res.chains.find((chain) => chain.active === true);
+      }
+      const current = options.find(
+        (option) => option.value === currentChain.id
+      );
+      setSelectedNetwork(current);
+    });
+  };
+
+  const handleChangeNetwork = (value) => {
+    const currentNetwork = state.networkOptions.find(
+      (option) => option.value === value
+    );
+    sendToBackground<Messaging.SetChains.Request, Messaging.SetChains.Response>(
+      {
+        name: "set-chains",
+        body: {
+          chains: chains.map((chain) => ({
+            ...chain,
+            active: chain.id === value,
+          })),
+        },
+      }
+    ).then(() => {
+      setSelectedNetwork(currentNetwork);
     });
   };
 
@@ -89,6 +151,26 @@ const Component: FC = () => {
   const componentDidMount = (): void => {
     getStoredVaults().then((vaults) => {
       const vault = vaults.find(({ active }) => active);
+      const supportedChains = vault.chains.map((chain) => {
+        return {
+          value: chain.id,
+          label: (
+            <>
+              <div className="chain-item">
+                <img
+                  src={`/static/icons/chains/${chain.name.toLowerCase()}.svg`}
+                  alt={chain.name}
+                  style={{ width: 20, marginRight: 8 }}
+                />
+                {chain.name}
+              </div>
+              <span className="address">{chain.address}</span>
+            </>
+          ),
+        };
+      });
+      setState({ ...state, networkOptions: supportedChains });
+      getCurrentNetwork(supportedChains);
       sendToBackground<
         Messaging.SetPriority.Request,
         Messaging.SetPriority.Response
@@ -123,45 +205,10 @@ const Component: FC = () => {
           <span className="divider">{t(messageKeys.CURRENT_NETWORK)}</span>
           <div>
             <Select
-              // showSearch
-              style={{ width: 200 }}
-              // placeholder="Search to Select"
-              optionFilterProp="label"
-              options={[
-                {
-                  value: "1",
-                  label: (
-                    <div>
-                      <img
-                        src="/static/icons/error.svg"
-                        alt="Not Identified"
-                        style={{ width: 20, marginRight: 8 }}
-                      />
-                      Not Identified
-                    </div>
-                  ),
-                },
-                {
-                  value: "2",
-                  label: "Closed",
-                },
-                {
-                  value: "3",
-                  label: "Communicated",
-                },
-                {
-                  value: "4",
-                  label: "Identified",
-                },
-                {
-                  value: "5",
-                  label: "Resolved",
-                },
-                {
-                  value: "6",
-                  label: "Cancelled",
-                },
-              ]}
+              className="select"
+              options={state.networkOptions}
+              value={selectedNetwork}
+              onChange={(value) => handleChangeNetwork(value)}
             />
           </div>
           <span className="divider">{t(messageKeys.CONNECTED_DAPPS)}</span>

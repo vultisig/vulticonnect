@@ -68,6 +68,25 @@ body {
     display: none;
   }
 }
+.ant-select {
+  width: 100%;
+  height: rem(55);
+  .ant-select-selector {
+    background-color: $blue-base !important;
+    border-color: transparent;
+  }
+}
+.ant-select-dropdown {
+  background-color: $blue-base !important;
+}
+
+.ant-select-selection-item {
+  line-height: rem(20) !important;
+}
+
+.ant-select-item-option-selected {
+  background-color: $blue-light !important;
+}
 
 .ant-checkbox-group {
   border-radius: rem(12);
