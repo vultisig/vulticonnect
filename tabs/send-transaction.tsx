@@ -366,20 +366,22 @@ const Component: FC = () => {
                     <>
                       <div className="list-item">
                         <span className="label">
-                          {t(messageKeys.FUNCTION_NAME)}
+                          {t(messageKeys.FUNCTION_SIGNATURE)}
                         </span>
-                        <div className="scrollable-x">{parsedMemo.name}</div>
+                        <div className="scrollable-x">
+                          {parsedMemo.signature}
+                        </div>
                       </div>
                       <div className="list-item">
                         <span className="label">
                           {t(messageKeys.FUNCTION_INPUTS)}
                         </span>
                         <div className="scrollable-x monospace-text ">
-                          {parsedMemo.inputs.map((input, index) => (
-                            <div key={index}>
-                              [{index}]: {input} 
+                          <div style={{ width: "max-content" }}>
+                            <div className="function-inputs">
+                              {parsedMemo.inputs}
                             </div>
-                          ))}
+                          </div>
                         </div>
                       </div>
                     </>

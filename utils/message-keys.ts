@@ -27,7 +27,7 @@ export default keyMirror({
   // F
   FAQ: true,
   FAST_SIGN: true,
-  FUNCTION_NAME: true,
+  FUNCTION_SIGNATURE: true,
   FUNCTION_INPUTS: true,
   FIND_YOUR_QRCODE: true,
   FROM: true,
