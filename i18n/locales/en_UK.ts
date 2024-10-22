@@ -57,6 +57,8 @@ export default {
   [messageKeys.SETTINGS]: "Settings",
   [messageKeys.SIGN]: "Sign",
   [messageKeys.SIGNING]: "Signing",
+  [messageKeys.SIGNING_TIMEOUT_DESCRIPTION]:
+    "Signing process has exceeded time limit. Please retry!",
   [messageKeys.SIGN_TRANSACTION]: "Sign Transaction",
   [messageKeys.START]: "Start",
   [messageKeys.SUCCESSFUL_COPY_LINK]: "Link copied to clipboard",
@@ -64,6 +66,7 @@ export default {
   [messageKeys.SELECT_A_VAULT]: "Please select a Vault",
   // T
   [messageKeys.TO]: "To",
+  [messageKeys.TIMEOUT_ERROR]: "Timeout Error",
   [messageKeys.TRANSACTION]: "Transaction",
   [messageKeys.TRANSACTION_DETAILS]: "Transaction Details",
   [messageKeys.TRANSACTION_SUCCESSFUL]: "Transaction Successful",

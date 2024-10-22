@@ -1,11 +1,9 @@
 import type { PlasmoCSConfig } from "plasmo";
-import {
-  sendToBackgroundViaRelay,
-} from "@plasmohq/messaging";
+import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
 import { type EIP1193Provider, announceProvider } from "mipd";
 import { ChainKey, chains, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
-import { JsonRpcProvider } from "ethers";
+import { JsonRpcProvider, type TransactionRequest } from "ethers";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { VULTI_ICON_RAW_SVG } from "~static/icons/vulti-raw";
@@ -190,7 +188,10 @@ const ethereumProvider: EthereumProvider = {
               Messaging.SendTransaction.Response
             >({
               name: "send-transaction",
-              body: { transaction },
+              body: {
+                transaction,
+                activeChain: ethereumProvider._state.chainId,
+              },
             })
               .then(({ transactionHash }) => {
                 resolve(transactionHash);
@@ -287,6 +288,16 @@ const ethereumProvider: EthereumProvider = {
         case RequestMethod.WALLET_REVOKE_PERMISSIONS: {
           resolve(null);
 
+          break;
+        }
+        case RequestMethod.ETH_ESTIMATE_GAS: {
+          const provider = new JsonRpcProvider(
+            rpcUrl[ethereumProvider._state.chainKey]
+          );
+          const tx = { ...params[0] } as TransactionRequest;
+          provider.estimateGas(tx).then((res) => {
+            resolve(res.toString());
+          }).catch(reject);
           break;
         }
         case RequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
