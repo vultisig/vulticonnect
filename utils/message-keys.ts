@@ -86,6 +86,7 @@ export default keyMirror({
   VAULT_SETTINGS: true,
   VERIFY_SEND: true,
   VIEW_TX: true,
+  VIEW_IN_WEB: true,
   VULT_TOKEN: true,
   VULTISIG: true,
   VULTISIG_CONNECT: true,

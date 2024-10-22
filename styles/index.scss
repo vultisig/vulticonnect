@@ -88,6 +88,93 @@ body {
   background-color: $blue-light !important;
 }
 
+.ant-btn {
+  border: none;
+  border-radius: rem(20);
+  box-shadow: none;
+  height: rem(44);
+  position: relative;
+
+  span {
+    font-weight: 700;
+    position: relative;
+    z-index: 1;
+  }
+
+  &.ant-btn-default {
+    background-image: $linear-gradient !important;
+    border-color: $cyan-base;
+    color: $cyan-base;
+
+    span {
+      background-image: $linear-gradient;
+      background-clip: text;
+      color: transparent;
+    }
+
+    &::before {
+      background-color: $blue-base;
+      border-radius: rem(24);
+      bottom: rem(1);
+      content: "";
+      left: rem(1);
+      position: absolute;
+      right: rem(1);
+      top: rem(1);
+    }
+
+    &:hover {
+      box-shadow: 0 0 rem(8) rgba($color: $cyan-base, $alpha: 0.2);
+    }
+  }
+
+  &.ant-btn-primary {
+    background-color: $cyan-base;
+    color: $blue-dark !important;
+
+    &::before {
+      background-image: $linear-gradient;
+      border-radius: rem(24);
+      bottom: 0;
+      content: "";
+      left: 0;
+      opacity: 1;
+      position: absolute;
+      right: 0;
+      top: 0;
+      transition: opacity 0.3s;
+    }
+
+    &:hover {
+      &::before {
+        opacity: 0;
+      }
+    }
+  }
+
+  &.ant-btn-link {
+    height: auto !important;
+    padding: 0;
+  }
+
+  &:disabled {
+    background-color: $blue-dark !important;
+    background-image: none !important;
+    border: none;
+    box-shadow: none !important;
+    color: $gray-8 !important;
+    cursor: default;
+
+    span {
+      background-image: none;
+      color: $gray-8;
+    }
+
+    &::before {
+      content: none;
+    }
+  }
+}
 .ant-checkbox-group {
   border-radius: rem(12);
   display: flex;

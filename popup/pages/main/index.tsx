@@ -1,7 +1,16 @@
 import { useEffect, useState, type FC } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { Empty, Flex, message, Modal, Select, Switch, Tooltip } from "antd";
+import {
+  Button,
+  Empty,
+  Flex,
+  message,
+  Modal,
+  Select,
+  Switch,
+  Tooltip,
+} from "antd";
 
 import {
   getStoredChains,
@@ -79,6 +88,12 @@ const Component: FC = () => {
         });
       },
     });
+  };
+
+  const handleViewinWeb = () => {
+    const VULTISIG_WEB_URL = "https://airdrop.vultisig.com";
+    const url = `${VULTISIG_WEB_URL}/redirect/${vault.publicKeyEcdsa}/${vault.publicKeyEddsa}`;
+    chrome.tabs.create({ url });
   };
 
   const getCurrentNetwork = (options: SelectOption[]) => {
@@ -239,6 +254,15 @@ const Component: FC = () => {
             ) : (
               <Empty description={t(messageKeys.NO_CONNECTED_APP)} />
             )}
+          </div>
+          <div className="view">
+            <Button
+              onClick={handleViewinWeb}
+              shape="round"
+              block
+            >
+              {t(messageKeys.VIEW_IN_WEB)}
+            </Button>
           </div>
         </div>
       </div>

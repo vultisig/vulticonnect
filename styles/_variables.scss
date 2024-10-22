@@ -27,6 +27,7 @@ $gray-13: #000000;
 
 $font-primary: "Montserrat", Tahoma, Geneva, Verdana, sans-serif;
 $font-secondary: "Menlo", Tahoma, Geneva, Verdana, sans-serif;
+$linear-gradient: linear-gradient(102deg, $cyan-base 14%, $blue-sharp 140%);
 
 @function rem($px, $base: 16) {
   @return #{math.div($px, $base)}rem;
