@@ -155,3 +155,8 @@ export interface VaultProps {
   transactions: TransactionProps[];
   uid: string;
 }
+
+export interface ParsedMemo {
+  signature: string;
+  inputs: string;
+}

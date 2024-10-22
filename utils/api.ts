@@ -126,7 +126,7 @@ export default {
       toSnakeCase(params)
     );
   },
-  getFunctionSelector: async (hexFunction: string) => {
+  getIsFunctionSelector: async (hexFunction: string) => {
     return new Promise<boolean>((resolve) => {
       api
         .get(`https://api.etherface.io/v1/signatures/hash/all/${hexFunction}/1`)
@@ -138,5 +138,16 @@ export default {
         });
     });
   },
-
+  getFunctionSelector: async (hexFunction: string) => {
+    return new Promise<string>((resolve, reject) => {
+      api
+        .get(`https://api.etherface.io/v1/signatures/hash/all/${hexFunction}/1`)
+        .then((res) => {
+          resolve(res.data.items[0].text);
+        })
+        .catch(() => {
+          reject("Error getting FunctionSelector Text");
+        });
+    });
+  },
 };

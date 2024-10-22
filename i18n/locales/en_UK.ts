@@ -24,6 +24,8 @@ export default {
   // F
   [messageKeys.FAQ]: "FAQ",
   [messageKeys.FAST_SIGN]: "Fast Sign",
+  [messageKeys.FUNCTION_SIGNATURE]: "Function Signature",
+  [messageKeys.FUNCTION_INPUTS]: "Function Inputs",
   [messageKeys.FIND_YOUR_QRCODE]:
     "If you didn't save the QR code yet, you can find it in the app in the top right on the main screen",
   [messageKeys.FROM]: "From",

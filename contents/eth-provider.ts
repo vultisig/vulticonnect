@@ -295,9 +295,12 @@ const ethereumProvider: EthereumProvider = {
             rpcUrl[ethereumProvider._state.chainKey]
           );
           const tx = { ...params[0] } as TransactionRequest;
-          provider.estimateGas(tx).then((res) => {
-            resolve(res.toString());
-          }).catch(reject);
+          provider
+            .estimateGas(tx)
+            .then((res) => {
+              resolve(res.toString());
+            })
+            .catch(reject);
           break;
         }
         case RequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {

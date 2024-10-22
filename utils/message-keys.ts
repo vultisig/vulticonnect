@@ -26,6 +26,8 @@ export default keyMirror({
   // F
   FAQ: true,
   FAST_SIGN: true,
+  FUNCTION_SIGNATURE: true,
+  FUNCTION_INPUTS: true,
   FIND_YOUR_QRCODE: true,
   FROM: true,
   // G
@@ -63,7 +65,7 @@ export default keyMirror({
   SETTINGS: true,
   SIGN: true,
   SIGNING: true,
-  SIGNING_TIMEOUT_DESCRIPTION:true,
+  SIGNING_TIMEOUT_DESCRIPTION: true,
   SIGN_TRANSACTION: true,
   START: true,
   SUCCESSFUL_COPY_LINK: true,

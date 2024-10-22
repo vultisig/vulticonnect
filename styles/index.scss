@@ -10,7 +10,7 @@
 body {
   background-color: $blue-dark;
   color: $gray-1;
-  height: rem(600) !important;
+  min-height: rem(600) !important;
   font-family: $font-primary;
   margin: 0 auto;
   overflow: hidden;
@@ -19,7 +19,7 @@ body {
   #__plasmo {
     height: 100%;
     position: relative;
-
+    min-height: rem(600) !important;
     > .vulti-loading {
       left: 50%;
       position: absolute;
@@ -402,5 +402,26 @@ body {
   body {
     min-width: rem(360) !important;
     width: 100% !important;
+  }
+}
+
+.monospace-text {
+  font-family: monospace;
+  font-size: rem(14);
+}
+
+.scrollable-x {
+  overflow-x: auto;
+  &::-webkit-scrollbar {
+    background-color: $blue-base;
+    height: rem(8);
+  }
+
+  &::-webkit-scrollbar-corner {
+    background-color: $blue-base;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: $blue-light;
   }
 }
