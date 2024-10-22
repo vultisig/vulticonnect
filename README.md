@@ -28,3 +28,7 @@ To build the VultiConnect extension, follow these steps:
 2. Enable `Developer mode` by toggling the switch in the top right corner.
 3. Click on `Load unpacked` and select the *dist* folder from the VultiConnect project directory.
 4. Your extension should now be installed and ready to use.
+
+## Integration Guide
+
+For details on integrating VultiConnect with your project, see the [Integration Guide](docs/integration-guide.md).
