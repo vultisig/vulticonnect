@@ -1,4 +1,5 @@
 import api from "./api";
+import { evmSupportedChains } from "./constants";
 import type { ParsedMemo } from "./interfaces";
 
 const hexToAscii = (value: string): string => {
@@ -104,4 +105,15 @@ function splitString(str: string, size: number): string[] {
   return result;
 }
 
-export { hexToAscii, toCamelCase, toSnakeCase, checkERC20Function, parseMemo };
+const isSupportedChain = (chainId: string): boolean => {
+  return evmSupportedChains.some((chain) => chain.id === chainId);
+};
+
+export {
+  hexToAscii,
+  toCamelCase,
+  toSnakeCase,
+  checkERC20Function,
+  parseMemo,
+  isSupportedChain,
+};

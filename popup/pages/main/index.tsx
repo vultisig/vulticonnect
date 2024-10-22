@@ -17,7 +17,7 @@ import {
   sendToBackground,
   sendToBackgroundViaRelay,
 } from "@plasmohq/messaging";
-import { ChainKey, chains, supportedChains } from "~utils/constants";
+import { ChainKey, chains, evmSupportedChains } from "~utils/constants";
 interface SelectOption {
   value: string;
   label: JSX.Element;
@@ -151,7 +151,10 @@ const Component: FC = () => {
   const componentDidMount = (): void => {
     getStoredVaults().then((vaults) => {
       const vault = vaults.find(({ active }) => active);
-      const supportedChains = vault.chains.map((chain) => {
+      const vaultSupportedChains = vault.chains.filter((vaultChain) =>
+        evmSupportedChains.some((chain) => chain.id === vaultChain.id)
+      );
+      const supportedChains = vaultSupportedChains.map((chain) => {
         return {
           value: chain.id,
           label: (

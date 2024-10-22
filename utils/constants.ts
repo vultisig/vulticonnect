@@ -303,7 +303,14 @@ export const chains: ChainProps[] = [
   },
 ];
 
-export const supportedChains: ChainProps[] = [
+export const evmSupportedChains: ChainProps[] = [
+  {
+    cmcId: 1027,
+    decimals: 18,
+    id: "0x1",
+    name: ChainKey.ETHEREUM,
+    ticker: "ETH",
+  },
   {
     cmcId: 1027,
     decimals: 18,
@@ -333,10 +340,18 @@ export const supportedChains: ChainProps[] = [
     ticker: "BNB",
   },
   {
+    cmcId: 3635,
+    decimals: 18,
+    id: "0x19",
+    name: ChainKey.CRONOSCHAIN,
+    ticker: "CRO",
+  },
+
+  {
     cmcId: 1027,
     decimals: 18,
-    id: "0x1",
-    name: ChainKey.ETHEREUM,
+    id: "0x13e31",
+    name: ChainKey.BLAST,
     ticker: "ETH",
   },
   {
@@ -345,5 +360,12 @@ export const supportedChains: ChainProps[] = [
     id: "",
     name: ChainKey.OPTIMISM,
     ticker: "ETH",
+  },
+  {
+    cmcId: 3890,
+    decimals: 18,
+    id: "0x89",
+    name: ChainKey.POLYGON,
+    ticker: "MATIC",
   },
 ];
