@@ -37,7 +37,7 @@ import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
-import { parseMemo, removeLeadingZeros } from "~utils/functions";
+import { parseMemo } from "~utils/functions";
 
 interface InitialState {
   fastSign?: boolean;

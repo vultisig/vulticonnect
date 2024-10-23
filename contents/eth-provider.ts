@@ -1,12 +1,18 @@
 import type { PlasmoCSConfig } from "plasmo";
 import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
-import { type EIP1193Provider, announceProvider } from "mipd";
-import { ChainKey, chains, rpcUrl } from "~utils/constants";
+import {
+  type EIP1193Provider,
+  announceProvider,
+  createStore,
+  requestProviders,
+} from "mipd";
+import { ChainKey, chains, evmSupportedChains, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { JsonRpcProvider, type TransactionRequest } from "ethers";
 import axios from "axios";
 import { v4 as uuidv4 } from "uuid";
 import { VULTI_ICON_RAW_SVG } from "~static/icons/vulti-raw";
+import { isSupportedChain } from "~utils/functions";
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
   world: "MAIN",
@@ -118,17 +124,24 @@ const ethereumProvider: EthereumProvider = {
   },
 
   isConnected: () => ethereumProvider._state.isConnected,
-
   request: ({ method, params = [] }) => {
     return new Promise((resolve, reject) => {
       switch (method) {
         case RequestMethod.ETH_ACCOUNTS: {
           resolve(ethereumProvider._state.accounts);
-
           break;
         }
         case RequestMethod.ETH_CHAIN_ID: {
-          resolve(ethereumProvider._state.chainId);
+          sendToBackgroundViaRelay<
+            Messaging.GetChains.Request,
+            Messaging.GetChains.Response
+          >({
+            name: "get-chains",
+          }).then(({ chains }) => {
+            const chain = chains.find(({ active }) => active == true);
+            if (chain) resolve(chain.id);
+            else resolve(ethereumProvider._state.chainId);
+          });
 
           break;
         }
@@ -140,9 +153,7 @@ const ethereumProvider: EthereumProvider = {
             name: "get-chains",
           })
             .then(({ chains }) => {
-              const chain = chains.find(
-                ({ id }) => id === ethereumProvider._state.chainId
-              );
+              const chain = chains.find(({ active }) => active === true);
 
               if (chain) {
                 sendToBackgroundViaRelay<
@@ -305,54 +316,59 @@ const ethereumProvider: EthereumProvider = {
         }
         case RequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
           const [param] = params;
-
           if (param?.chainId) {
-            sendToBackgroundViaRelay<
-              Messaging.GetChains.Request,
-              Messaging.GetChains.Response
-            >({
-              name: "get-chains",
-            })
-              .then(({ chains }) => {
-                const existed =
-                  chains.findIndex(({ id }) => id === param.chainId) >= 0;
-
-                if (existed) {
-                  sendToBackgroundViaRelay<
-                    Messaging.SetChains.Request,
-                    Messaging.SetChains.Response
-                  >({
-                    name: "set-chains",
-                    body: {
-                      chains: chains.map((chain) => ({
-                        ...chain,
-                        active: chain.id === param.chainId,
-                      })),
-                    },
-                  })
-                    .then(() => {
-                      ethereumProvider._state.chainId = param.chainId;
-                      ethereumProvider._state.chainKey = chains.find(
-                        (chain) => chain.id === param.chainId
-                      ).name;
-                      resolve(null);
-                    })
-                    .catch(reject);
-                } else {
-                  ethereumProvider
-                    .request({
-                      method: RequestMethod.WALLET_ADD_ETHEREUM_CHAIN,
-                      params,
-                    })
-                    .then(resolve)
-                    .catch(reject);
-                }
+            if (!isSupportedChain(param?.chainId)) {
+              reject("Chain not Supported");
+              ethereumProvider._emit(
+                EventMethod.ERROR,
+                new Error(`Unsupported chain: ${param?.chainId}`)
+              );
+            } else {
+              sendToBackgroundViaRelay<
+                Messaging.GetChains.Request,
+                Messaging.GetChains.Response
+              >({
+                name: "get-chains",
               })
-              .catch(reject);
+                .then(({ chains }) => {
+                  const existed =
+                    chains.findIndex(({ id }) => id === param.chainId) >= 0;
+                  if (existed) {
+                    sendToBackgroundViaRelay<
+                      Messaging.SetChains.Request,
+                      Messaging.SetChains.Response
+                    >({
+                      name: "set-chains",
+                      body: {
+                        chains: chains.map((chain) => ({
+                          ...chain,
+                          active: chain.id === param.chainId,
+                        })),
+                      },
+                    })
+                      .then(() => {
+                        ethereumProvider._state.chainId = param.chainId;
+                        ethereumProvider._state.chainKey = chains.find(
+                          (chain) => chain.id === param.chainId
+                        ).name;
+                        resolve(null);
+                      })
+                      .catch(reject);
+                  } else {
+                    ethereumProvider
+                      .request({
+                        method: RequestMethod.WALLET_ADD_ETHEREUM_CHAIN,
+                        params,
+                      })
+                      .then(resolve)
+                      .catch(reject);
+                  }
+                })
+                .catch(reject);
+            }
           } else {
             reject(); // chainId is required
           }
-
           break;
         }
         default: {

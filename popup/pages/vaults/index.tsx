@@ -83,7 +83,6 @@ const Component: FC = () => {
       <div className="footer">
         <Button
           onClick={() => navigate(routeKeys.import, { state: true })}
-          type="primary"
           shape="round"
           block
         >

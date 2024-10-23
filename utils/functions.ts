@@ -1,5 +1,6 @@
 import { Interface } from "ethers";
 import api from "./api";
+import { evmSupportedChains } from "./constants";
 import type { ParsedMemo } from "./interfaces";
 
 const hexToAscii = (value: string): string => {
@@ -127,10 +128,9 @@ const processDecodedData = (data: any): any => {
   return data;
 };
 
-
-function removeLeadingZeros(hexString: string): string {
-  return hexString.replace(/^0+/, "") || "0";
-}
+const isSupportedChain = (chainId: string): boolean => {
+  return evmSupportedChains.some((chain) => chain.id === chainId);
+};
 
 export {
   hexToAscii,
@@ -138,5 +138,5 @@ export {
   toSnakeCase,
   checkERC20Function,
   parseMemo,
-  removeLeadingZeros,
+  isSupportedChain,
 };

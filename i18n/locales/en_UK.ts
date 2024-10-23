@@ -14,6 +14,7 @@ export default {
   [messageKeys.CONNECTED_DAPPS]: "Connected Apps",
   [messageKeys.COPY_TX]: "COPY TX",
   [messageKeys.CURRENCY]: "Currency",
+  [messageKeys.CURRENT_NETWORK]: "Current Network",
   // D
   [messageKeys.DELETE_VAULT]: "Delete Vault",
   [messageKeys.DONE]: "Done",
@@ -81,6 +82,7 @@ export default {
   [messageKeys.VAULT_SETTINGS]: "Vault Settings",
   [messageKeys.VERIFY_SEND]: "Verify Send",
   [messageKeys.VIEW_TX]: "VIEW TX",
+  [messageKeys.VIEW_IN_WEB]: "View in web",
   [messageKeys.VULT_TOKEN]: "The $VULT Token",
   [messageKeys.VULTISIG]: "Vultisig",
   [messageKeys.CONNECT_WITH_VULTISIG]: "Connect With Vultisig",
