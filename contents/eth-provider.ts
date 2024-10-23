@@ -428,7 +428,16 @@ const ethereumProvider: EthereumProvider = {
 
           resolve(rpcProvider.call(tx));
         }
-
+        case RequestMethod.ETH_GET_TRANSACTION_RECEIPT: {
+          const [param] = params;
+          rpcProvider
+            .getTransactionReceipt(String(param))
+            .then((receipt) => {
+              resolve(receipt.toJSON());
+            })
+            .catch(reject);
+          break;
+        }
         default: {
           ethereumProvider._emit(
             EventMethod.ERROR,
