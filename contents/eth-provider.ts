@@ -110,8 +110,22 @@ interface EthereumProvider {
   _disconnect(error?: { code: number; message: string }): void;
 }
 
-const defaultChain = chains.find(({ name }) => name === ChainKey.ETHEREUM);
+let rpcProvider: JsonRpcProvider;
 
+const initializeProvider = (chainKey: string) => {
+  const rpc = rpcUrl[chainKey];
+  rpcProvider = new JsonRpcProvider(rpc);
+};
+
+const updateProvider = (chainKey: string) => {
+  if (rpcProvider) {
+    const rpc = rpcUrl[chainKey];
+    rpcProvider = new JsonRpcProvider(rpc);
+  }
+};
+
+const defaultChain = chains.find(({ name }) => name === ChainKey.ETHEREUM);
+initializeProvider(defaultChain.name);
 const ethereumProvider: EthereumProvider = {
   isMetaMask: true,
   isVultiConnect: true,
@@ -139,8 +153,12 @@ const ethereumProvider: EthereumProvider = {
             name: "get-chains",
           }).then(({ chains }) => {
             const chain = chains.find(({ active }) => active == true);
-            if (chain) resolve(chain.id);
-            else resolve(ethereumProvider._state.chainId);
+            if (chain) {
+              resolve(chain.id);
+              ethereumProvider._state.chainId = chain.id;
+              ethereumProvider._state.chainKey = chain.name;
+              updateProvider(chain.name);
+            } else resolve(ethereumProvider._state.chainId);
           });
 
           break;
@@ -228,10 +246,7 @@ const ethereumProvider: EthereumProvider = {
           break;
         }
         case RequestMethod.ETH_BLOCK_NUMBER: {
-          const provider = new JsonRpcProvider(
-            rpcUrl[ethereumProvider._state.chainKey]
-          );
-          provider.getBlock("latest").then((block) => {
+          rpcProvider.getBlock("latest").then((block) => {
             resolve(String(block.number));
           });
           break;
@@ -302,11 +317,8 @@ const ethereumProvider: EthereumProvider = {
           break;
         }
         case RequestMethod.ETH_ESTIMATE_GAS: {
-          const provider = new JsonRpcProvider(
-            rpcUrl[ethereumProvider._state.chainKey]
-          );
           const tx = { ...params[0] } as TransactionRequest;
-          provider
+          rpcProvider
             .estimateGas(tx)
             .then((res) => {
               resolve(res.toString());
@@ -351,6 +363,7 @@ const ethereumProvider: EthereumProvider = {
                         ethereumProvider._state.chainKey = chains.find(
                           (chain) => chain.id === param.chainId
                         ).name;
+                        updateProvider(ethereumProvider._state.chainKey);
                         resolve(null);
                       })
                       .catch(reject);
@@ -371,6 +384,51 @@ const ethereumProvider: EthereumProvider = {
           }
           break;
         }
+        case RequestMethod.ETH_GET_BALANCE: {
+          const [address, tag] = params;
+          rpcProvider
+            .getBalance(String(address), String(tag))
+            .then((value) => {
+              resolve(value.toString());
+            })
+            .catch(reject);
+          break;
+        }
+        case RequestMethod.ETH_GET_BLOCK_BY_NUMBER: {
+          const [tag, refresh] = params;
+          rpcProvider
+            .getBlock(String(tag), Boolean(refresh))
+            .then((res) => {
+              resolve(res.toJSON());
+            })
+            .catch(reject);
+          break;
+        }
+        case RequestMethod.ETH_GAS_PRICE: {
+          rpcProvider
+            .getFeeData()
+            .then((res) => {
+              resolve(res.gasPrice.toString());
+            })
+            .catch(reject);
+          break;
+        }
+
+        case RequestMethod.ETH_MAX_PRIORITY_FEE_PER_GAS: {
+          rpcProvider
+            .getFeeData()
+            .then((res) => {
+              resolve(res.maxPriorityFeePerGas.toString());
+            })
+            .catch(reject);
+          break;
+        }
+        case RequestMethod.ETH_CALL: {
+          const [tx, tag] = params;
+
+          resolve(rpcProvider.call(tx));
+        }
+
         default: {
           ethereumProvider._emit(
             EventMethod.ERROR,
@@ -460,6 +518,15 @@ const ethereumProvider: EthereumProvider = {
 ethereumProvider._connect();
 window.vultisig = ethereumProvider;
 if (!window.ethereum) window.ethereum = ethereumProvider;
+announceProvider({
+  info: {
+    icon: VULTI_ICON_RAW_SVG,
+    name: "Vultisig",
+    rdns: "me.vultisig",
+    uuid: uuidv4(),
+  },
+  provider: ethereumProvider as EthereumProvider as EIP1193Provider,
+});
 
 let prioritize: boolean = true;
 
