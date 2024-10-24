@@ -248,7 +248,10 @@ const Component: FC = () => {
       if (transaction) {
         const vault = vaults.find(
           ({ chains }) =>
-            chains.findIndex(({ address }) => address.toLowerCase() === transaction.from.toLowerCase()) >= 0
+            chains.findIndex(
+              ({ address }) =>
+                address.toLowerCase() === transaction.from.toLowerCase()
+            ) >= 0
         );
         const walletCore = new WalletCoreProvider();
 
