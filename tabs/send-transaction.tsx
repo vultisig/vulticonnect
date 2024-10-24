@@ -246,8 +246,9 @@ const Component: FC = () => {
       i18n.changeLanguage(language);
 
       if (transaction) {
-        const vault = vaults.find(({ chains }) =>
-          chains.findIndex(({ address }) => address === transaction.from)
+        const vault = vaults.find(
+          ({ chains }) =>
+            chains.findIndex(({ address }) => address.toLowerCase() === transaction.from.toLowerCase()) >= 0
         );
         const walletCore = new WalletCoreProvider();
 
