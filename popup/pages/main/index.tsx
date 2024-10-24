@@ -98,7 +98,6 @@ const Component: FC = () => {
 
   const getCurrentNetwork = (options: SelectOption[]) => {
     getStoredChains().then((chains) => {
-      console.log(chains);
       const currentChain = chains.find(({active}) => active);
 
       const current = options.find(
