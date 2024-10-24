@@ -62,7 +62,7 @@ const Component: FC = () => {
               apps:
                 uids.indexOf(vault.uid) >= 0
                   ? [sender, ...vault.apps.filter((app) => app !== sender)]
-                  : vault.apps,
+                  : vault.apps.filter((app) => app !== sender),
             }))
           ).then(() => {
             handleClose();

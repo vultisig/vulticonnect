@@ -1,24 +1,11 @@
 import type { PlasmoCSConfig } from "plasmo";
 import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
-import {
-  type EIP1193Provider,
-  announceProvider,
-  createStore,
-  requestProviders,
-} from "mipd";
-import {
-  ChainKey,
-  chains,
-  evmSupportedChains,
-  RequestMethod,
-  rpcUrl,
-} from "~utils/constants";
-import type { Messaging, TransactionProps } from "~utils/interfaces";
-import { JsonRpcProvider, type TransactionRequest } from "ethers";
-import axios from "axios";
+import { type EIP1193Provider, announceProvider } from "mipd";
+import { RequestMethod } from "~utils/constants";
+import type { Messaging } from "~utils/interfaces";
+
 import { v4 as uuidv4 } from "uuid";
 import { VULTI_ICON_RAW_SVG } from "~static/icons/vulti-raw";
-import { isSupportedChain } from "~utils/functions";
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
   world: "MAIN",
@@ -37,13 +24,6 @@ type RequestArguments = {
   method: string;
   params?: Record<string, any>[];
 };
-
-interface BaseProviderState {
-  accounts: string[];
-  chainId: string;
-  chainKey: ChainKey;
-  isConnected: boolean;
-}
 
 interface EthereumProvider {
   isMetaMask: boolean;

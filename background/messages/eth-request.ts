@@ -195,76 +195,46 @@ const handleRequest = (
 ): Promise<Messaging.EthRequest.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = req.body;
-    getStoredEthProviderState().then((_state) => {
-      initializeProvider(_state.chainKey);
+    getStoredChains().then((chains) => {
+      const activeChain = chains.find(({ active }) => active);
+      initializeProvider(activeChain.name);
       switch (method) {
         case RequestMethod.ETH_ACCOUNTS: {
-          resolve(_state.accounts);
-          break;
-        }
-        case RequestMethod.ETH_CHAIN_ID: {
-          getStoredChains().then((chains) => {
-            const chain = chains.find(({ active }) => active == true);
-            if (chain) {
-              setStoredEthProviderState({
-                ..._state,
-                chainId: chain.id,
-                chainKey: chain.name,
-              }).then(() => {
-                resolve(chain.id);
-                updateProvider(chain.name);
-              });
-            } else {
-              resolve(_state.chainId);
-            }
+          getStoredVaults().then((vaults) => {
+            resolve(
+              vaults.flatMap(({ apps, chains }) =>
+                chains
+                  .filter(
+                    ({ name }) =>
+                      name === activeChain.name &&
+                      apps.indexOf(req.sender.origin) >= 0
+                  )
+                  .map(({ address }) => address)
+              )
+            );
           });
 
           break;
         }
+        case RequestMethod.ETH_CHAIN_ID: {
+          resolve(activeChain.id);
+          updateProvider(activeChain.name);
+
+          break;
+        }
         case RequestMethod.ETH_REQUEST_ACCOUNTS: {
-          getStoredChains()
-            .then((chains) => {
-              const chain = chains.find(({ active }) => active === true);
-
-              if (chain) {
-                getAccounts(chain.name, req.sender.origin).then(
-                  ({ accounts }) => {
-                    setStoredEthProviderState({ ..._state, accounts }).then(
-                      () => resolve(accounts)
-                    );
-                  }
-                );
-              } else {
-                handleRequest({
-                  ...req,
-                  body: {
-                    method: RequestMethod.WALLET_ADD_ETHEREUM_CHAIN,
-                    params: [{ chainId: _state.chainId }],
-                  },
-                })
-                  .then(() => {
-                    handleRequest({
-                      ...req,
-                      body: {
-                        method: RequestMethod.ETH_REQUEST_ACCOUNTS,
-                        params,
-                      },
-                    })
-                      .then(resolve)
-                      .catch(reject);
-                  })
-                  .catch(reject);
-              }
-            })
-            .catch(reject);
-
+          getAccounts(activeChain.name, req.sender.origin).then(
+            ({ accounts }) => {
+              resolve(accounts);
+            }
+          );
           break;
         }
         case RequestMethod.ETH_SEND_TRANSACTION: {
           const [transaction] = params as TransactionProps[];
 
           if (transaction) {
-            sendTransaction(transaction, _state.chainId)
+            sendTransaction(transaction, activeChain.id)
               .then(({ transactionHash }) => {
                 resolve(transactionHash);
               })
@@ -278,7 +248,7 @@ const handleRequest = (
         case RequestMethod.ETH_GET_TRANSACTION_BY_HASH: {
           const [hash] = params;
           axios
-            .post(rpcUrl[_state.chainKey], {
+            .post(rpcUrl[activeChain.name], {
               id: 1,
               jsonrpc: "2.0",
               method: "eth_getTransactionByHash",
@@ -304,25 +274,16 @@ const handleRequest = (
             );
 
             if (supportedChain) {
-              getStoredChains()
-                .then((chains) => {
-                  setStoredChains([
-                    { ...supportedChain, active: true },
-                    ...chains
-                      .filter(({ name }) => name !== supportedChain.name)
-                      .map((chain) => ({
-                        ...chain,
-                        active: false,
-                      })),
-                  ])
-                    .then(() => {
-                      setStoredEthProviderState({
-                        ..._state,
-                        chainId: param.chainId,
-                      }).then(() => resolve(null));
-                    })
-                    .catch(reject);
-                })
+              setStoredChains([
+                { ...supportedChain, active: true },
+                ...chains
+                  .filter(({ name }) => name !== supportedChain.name)
+                  .map((chain) => ({
+                    ...chain,
+                    active: false,
+                  })),
+              ])
+                .then(() => resolve(null))
                 .catch(reject);
             } else {
               reject(); // unsuported chain
@@ -344,8 +305,14 @@ const handleRequest = (
           break;
         }
         case RequestMethod.WALLET_REVOKE_PERMISSIONS: {
-          resolve(null);
-
+          getStoredVaults().then((vaults) => {
+            setStoredVaults(
+              vaults.map((vault) => ({
+                ...vault,
+                apps: vault.apps.filter((app) => app !== req.sender.origin),
+              }))
+            ).then(() => resolve(null));
+          });
           break;
         }
         case RequestMethod.ETH_ESTIMATE_GAS: {
@@ -368,40 +335,28 @@ const handleRequest = (
               //   new Error(`Unsupported chain: ${param?.chainId}`)
               // );
             } else {
-              getStoredChains()
-                .then((chains) => {
-                  const existed =
-                    chains.findIndex(({ id }) => id === param.chainId) >= 0;
-                  if (existed) {
-                    setStoredChains(
-                      chains.map((chain) => ({
-                        ...chain,
-                        active: chain.id === param.chainId,
-                      }))
-                    )
-                      .then(() => {
-                        setStoredEthProviderState({
-                          ..._state,
-                          chainId: param.chainId,
-                          chainKey: chains.find(
-                            (chain) => chain.id === param.chainId
-                          ).name,
-                        }).then(() => resolve(null));
-                      })
-                      .catch(reject);
-                  } else {
-                    handleRequest({
-                      ...req,
-                      body: {
-                        method: RequestMethod.WALLET_ADD_ETHEREUM_CHAIN,
-                        params,
-                      },
-                    })
-                      .then(resolve)
-                      .catch(reject);
-                  }
+              const existed =
+                chains.findIndex(({ id }) => id === param.chainId) >= 0;
+              if (existed) {
+                setStoredChains(
+                  chains.map((chain) => ({
+                    ...chain,
+                    active: chain.id === param.chainId,
+                  }))
+                )
+                  .then(() => resolve(null))
+                  .catch(reject);
+              } else {
+                handleRequest({
+                  ...req,
+                  body: {
+                    method: RequestMethod.WALLET_ADD_ETHEREUM_CHAIN,
+                    params,
+                  },
                 })
-                .catch(reject);
+                  .then(resolve)
+                  .catch(reject);
+              }
             }
           } else {
             reject(); // chainId is required
