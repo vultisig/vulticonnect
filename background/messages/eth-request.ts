@@ -195,8 +195,8 @@ const handleRequest = (
 ): Promise<Messaging.EthRequest.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = req.body;
-    getStoredChains().then((chains) => {
-      const activeChain = chains.find(({ active }) => active);
+    getStoredChains().then((storedChains) => {
+      const activeChain = storedChains.find(({ active }) => active);
       initializeProvider(activeChain.name);
       switch (method) {
         case RequestMethod.ETH_ACCOUNTS: {
@@ -276,7 +276,7 @@ const handleRequest = (
             if (supportedChain) {
               setStoredChains([
                 { ...supportedChain, active: true },
-                ...chains
+                ...storedChains
                   .filter(({ name }) => name !== supportedChain.name)
                   .map((chain) => ({
                     ...chain,
@@ -336,10 +336,10 @@ const handleRequest = (
               // );
             } else {
               const existed =
-                chains.findIndex(({ id }) => id === param.chainId) >= 0;
+                storedChains.findIndex(({ id }) => id === param.chainId) >= 0;
               if (existed) {
                 setStoredChains(
-                  chains.map((chain) => ({
+                  storedChains.map((chain) => ({
                     ...chain,
                     active: chain.id === param.chainId,
                   }))
