@@ -206,10 +206,14 @@ const handleRequest = (
           getStoredChains().then((chains) => {
             const chain = chains.find(({ active }) => active == true);
             if (chain) {
-              resolve(chain.id);
-              _state.chainId = chain.id;
-              _state.chainKey = chain.name;
-              updateProvider(chain.name);
+              setStoredEthProviderState({
+                ..._state,
+                chainId: chain.id,
+                chainKey: chain.name,
+              }).then(() => {
+                resolve(chain.id);
+                updateProvider(chain.name);
+              });
             } else {
               resolve(_state.chainId);
             }
@@ -225,9 +229,9 @@ const handleRequest = (
               if (chain) {
                 getAccounts(chain.name, req.sender.origin).then(
                   ({ accounts }) => {
-                    _state.accounts = accounts;
-
-                    resolve(_state.accounts);
+                    setStoredEthProviderState({ ..._state, accounts }).then(
+                      () => resolve(accounts)
+                    );
                   }
                 );
               } else {
@@ -376,12 +380,13 @@ const handleRequest = (
                       }))
                     )
                       .then(() => {
-                        _state.chainId = param.chainId;
-                        _state.chainKey = chains.find(
-                          (chain) => chain.id === param.chainId
-                        ).name;
-                        updateProvider(_state.chainKey);
-                        resolve(null);
+                        setStoredEthProviderState({
+                          ..._state,
+                          chainId: param.chainId,
+                          chainKey: chains.find(
+                            (chain) => chain.id === param.chainId
+                          ).name,
+                        }).then(() => resolve(null));
                       })
                       .catch(reject);
                   } else {

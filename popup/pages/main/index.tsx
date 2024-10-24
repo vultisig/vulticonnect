@@ -98,7 +98,7 @@ const Component: FC = () => {
 
   const getCurrentNetwork = (options: SelectOption[]) => {
     getStoredChains().then((chains) => {
-      const currentChain = chains.find(({active}) => active);
+      const currentChain = chains.find(({ active }) => active);
 
       const current = options.find(
         (option) => option.value === currentChain.id
@@ -186,6 +186,11 @@ const Component: FC = () => {
               <ChevronRight className="action" />
             </Link>
           </div>
+          <div className="view">
+            <Button onClick={handleViewinWeb} shape="round" block>
+              {t(messageKeys.VIEW_IN_WEB)}
+            </Button>
+          </div>
           <span className="divider">{t(messageKeys.CURRENT_NETWORK)}</span>
           <div>
             <Select
@@ -220,11 +225,6 @@ const Component: FC = () => {
             ) : (
               <Empty description={t(messageKeys.NO_CONNECTED_APP)} />
             )}
-          </div>
-          <div className="view">
-            <Button onClick={handleViewinWeb} shape="round" block>
-              {t(messageKeys.VIEW_IN_WEB)}
-            </Button>
           </div>
         </div>
       </div>
