@@ -57,7 +57,7 @@ const Component: FC = () => {
             className="list-item warning"
           >
             <TrashShape className="icon" />
-            <span className="label">{t(messageKeys.DELETE_VAULT)}</span>
+            <span className="label">{t(messageKeys.REMOVE_VAULT)}</span>
             <ChevronRight className="action" />
           </Link>
         </div>

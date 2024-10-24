@@ -153,16 +153,21 @@ export default class TransactionProvider {
                 : this.maxPriorityFeePerGas.toString(),
           });
           checkERC20Function(transaction.data).then((isMemoFunction) => {
+            let modifiedMemo: string;
+            try {
+              modifiedMemo =
+                isMemoFunction || transaction.data === "0x"
+                  ? transaction.data ?? ""
+                  : toUtf8String(transaction.data);
+            } catch {
+              modifiedMemo = transaction.data;
+            }
             const keysignPayload = create(KeysignPayloadSchema, {
               toAddress: transaction.to,
               toAmount: transaction.value
                 ? BigInt(parseInt(transaction.value)).toString()
                 : "0",
-              memo: isMemoFunction
-                ? transaction.data
-                : transaction.data && transaction.data != "0x"
-                ? toUtf8String(transaction.data)
-                : "",
+              memo: modifiedMemo,
               vaultPublicKeyEcdsa: vault.publicKeyEcdsa,
               vaultLocalPartyId: "VultiConnect",
               coin,

@@ -18,7 +18,7 @@ export default keyMirror({
   CURRENCY: true,
   CURRENT_NETWORK: true,
   // D
-  DELETE_VAULT: true,
+  REMOVE_VAULT: true,
   DONE: true,
   DROP_FILE_HERE: true,
   DROP_FILE_HERE_OR: true,

@@ -1,4 +1,4 @@
-import { Currency, Language } from "~utils/constants";
+import { ChainKey, chains, Currency, Language } from "~utils/constants";
 import type {
   AccountsProps,
   ChainProps,
@@ -7,6 +7,13 @@ import type {
 } from "~utils/interfaces";
 import i18n from "~i18n/config";
 
+interface EthProviderState {
+  accounts: string[];
+  chainId: string;
+  chainKey: ChainKey;
+  isConnected: boolean;
+}
+
 export interface LocalStorage {
   accounts?: AccountsProps;
   chains?: ChainProps[];
@@ -14,6 +21,8 @@ export interface LocalStorage {
   language?: Language;
   vaults?: VaultProps[];
   isPriority?: boolean;
+  ethProviderState?: EthProviderState;
+  transactions?: TransactionProps[];
 }
 export type LocalStorageKeys = keyof LocalStorage;
 
@@ -42,7 +51,14 @@ export const getStoredChains = (): Promise<ChainProps[]> => {
 
   return new Promise((resolve) => {
     chrome.storage.local.get(keys, (res: LocalStorage) => {
-      resolve(res.chains ?? []);
+      if (res.chains?.length) {
+        resolve(res.chains);
+      } else {
+        const defaultChain = chains.find(
+          ({ name }) => name === ChainKey.ETHEREUM
+        );
+        resolve([{ ...defaultChain, active: true }]);
+      }
     });
   });
 };
@@ -147,6 +163,57 @@ export const getIsPriority = (): Promise<boolean> => {
 
 export const setIsPriority = (isPriority: boolean): Promise<void> => {
   const vals: LocalStorage = { isPriority };
+
+  return new Promise((resolve) => {
+    chrome.storage.local.set(vals, () => {
+      resolve();
+    });
+  });
+};
+
+export const getStoredEthProviderState = (): Promise<EthProviderState> => {
+  const keys: LocalStorageKeys[] = ["ethProviderState"];
+
+  return new Promise((resolve) => {
+    chrome.storage.local.get(keys, (res: LocalStorage) => {
+      resolve(
+        res.ethProviderState ?? {
+          accounts: [],
+          chainId: "0x1",
+          chainKey: ChainKey.ETHEREUM,
+          isConnected: false,
+        }
+      );
+    });
+  });
+};
+
+export const setStoredEthProviderState = (
+  ethProviderState: EthProviderState
+): Promise<void> => {
+  const vals: LocalStorage = { ethProviderState };
+
+  return new Promise((resolve) => {
+    chrome.storage.local.set(vals, () => {
+      resolve();
+    });
+  });
+};
+
+export const getStoredTransactions = (): Promise<TransactionProps[]> => {
+  const keys: LocalStorageKeys[] = ["transactions"];
+
+  return new Promise((resolve) => {
+    chrome.storage.local.get(keys, (res: LocalStorage) => {
+      resolve(res.transactions ?? []);
+    });
+  });
+};
+
+export const setStoredTransactions = (
+  transactions: TransactionProps[]
+): Promise<void> => {
+  const vals: LocalStorage = { transactions };
 
   return new Promise((resolve) => {
     chrome.storage.local.set(vals, () => {

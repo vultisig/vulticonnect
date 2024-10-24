@@ -13,8 +13,11 @@ import {
 } from "antd";
 
 import {
+  getIsPriority,
   getStoredChains,
   getStoredVaults,
+  setIsPriority,
+  setStoredChains,
   setStoredVaults,
 } from "~utils/storage";
 import type { ChainProps, Messaging, VaultProps } from "~utils/interfaces";
@@ -22,10 +25,7 @@ import messageKeys from "~utils/message-keys";
 
 import { BrokenLinkBold, ChevronRight, SettingsGear, Vultisig } from "~icons";
 import routeKeys from "~utils/route-keys";
-import {
-  sendToBackground,
-  sendToBackgroundViaRelay,
-} from "@plasmohq/messaging";
+import { sendToBackground } from "@plasmohq/messaging";
 import { ChainKey, chains, evmSupportedChains } from "~utils/constants";
 interface SelectOption {
   value: string;
@@ -97,27 +97,9 @@ const Component: FC = () => {
   };
 
   const getCurrentNetwork = (options: SelectOption[]) => {
-    sendToBackground<Messaging.GetChains.Request, Messaging.GetChains.Response>(
-      {
-        name: "get-chains",
-      }
-    ).then((res) => {
-      let currentChain = null;
-      if (!res.chains.length) {
-        // set default chain
-        currentChain = chains.find(({ name }) => name === ChainKey.ETHEREUM);
-        sendToBackgroundViaRelay<
-          Messaging.SetChains.Request,
-          Messaging.SetChains.Response
-        >({
-          name: "set-chains",
-          body: {
-            chains: [{ ...currentChain, active: true }],
-          },
-        });
-      } else {
-        currentChain = res.chains.find((chain) => chain.active === true);
-      }
+    getStoredChains().then((chains) => {
+      const currentChain = chains.find(({ active }) => active);
+
       const current = options.find(
         (option) => option.value === currentChain.id
       );
@@ -129,30 +111,19 @@ const Component: FC = () => {
     const currentNetwork = state.networkOptions.find(
       (option) => option.value === value
     );
-    sendToBackground<Messaging.SetChains.Request, Messaging.SetChains.Response>(
-      {
-        name: "set-chains",
-        body: {
-          chains: chains.map((chain) => ({
-            ...chain,
-            active: chain.id === value,
-          })),
-        },
-      }
+    setStoredChains(
+      chains.map((chain) => ({
+        ...chain,
+        active: chain.id === value,
+      }))
     ).then(() => {
       setSelectedNetwork(currentNetwork);
     });
   };
 
   const handlePriority = async (checked) => {
-    sendToBackground<
-      Messaging.SetPriority.Request,
-      Messaging.SetPriority.Response
-    >({
-      name: "set-priority",
-      body: { priority: checked },
-    }).then((isPriority) => {
-      setState((prevState) => ({ ...prevState, isPriority: isPriority }));
+    setIsPriority(checked).then(() => {
+      setState((prevState) => ({ ...prevState, isPriority: checked }));
       showReloadMessage();
     });
   };
@@ -189,13 +160,8 @@ const Component: FC = () => {
       });
       setState({ ...state, networkOptions: supportedChains });
       getCurrentNetwork(supportedChains);
-      sendToBackground<
-        Messaging.SetPriority.Request,
-        Messaging.SetPriority.Response
-      >({
-        name: "set-priority",
-      }).then((isPriority) => {
-        setState((prevState) => ({ ...prevState, isPriority: isPriority }));
+      getIsPriority().then((isPriority) => {
+        setState((prevState) => ({ ...prevState, isPriority }));
       });
       setState((prevState) => ({ ...prevState, vault }));
     });
@@ -219,6 +185,11 @@ const Component: FC = () => {
               <span className="label">{vault.name}</span>
               <ChevronRight className="action" />
             </Link>
+          </div>
+          <div className="view">
+            <Button onClick={handleViewinWeb} shape="round" block>
+              {t(messageKeys.VIEW_IN_WEB)}
+            </Button>
           </div>
           <span className="divider">{t(messageKeys.CURRENT_NETWORK)}</span>
           <div>
@@ -254,15 +225,6 @@ const Component: FC = () => {
             ) : (
               <Empty description={t(messageKeys.NO_CONNECTED_APP)} />
             )}
-          </div>
-          <div className="view">
-            <Button
-              onClick={handleViewinWeb}
-              shape="round"
-              block
-            >
-              {t(messageKeys.VIEW_IN_WEB)}
-            </Button>
           </div>
         </div>
       </div>

@@ -62,7 +62,7 @@ const Component: FC = () => {
               apps:
                 uids.indexOf(vault.uid) >= 0
                   ? [sender, ...vault.apps.filter((app) => app !== sender)]
-                  : vault.apps,
+                  : vault.apps.filter((app) => app !== sender),
             }))
           ).then(() => {
             handleClose();
@@ -123,7 +123,12 @@ const Component: FC = () => {
           </div>
           <div className="content">
             <Form form={form} onFinish={handleSubmit}>
-              <Form.Item<FormProps> name="uids" rules={[{ required: true }]}>
+              <Form.Item<FormProps>
+                name="uids"
+                rules={[
+                  { required: true, message: t(messageKeys.SELECT_A_VAULT) },
+                ]}
+              >
                 <Checkbox.Group>
                   {vaults.map(({ chains, name, uid }) => (
                     <Checkbox key={uid} value={uid}>

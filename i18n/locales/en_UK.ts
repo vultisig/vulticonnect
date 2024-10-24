@@ -16,7 +16,7 @@ export default {
   [messageKeys.CURRENCY]: "Currency",
   [messageKeys.CURRENT_NETWORK]: "Current Network",
   // D
-  [messageKeys.DELETE_VAULT]: "Delete Vault",
+  [messageKeys.REMOVE_VAULT]: "Remove Vault",
   [messageKeys.DONE]: "Done",
   [messageKeys.DROP_FILE_HERE]: "Drop your file here",
   [messageKeys.DROP_FILE_HERE_OR]: "Drop your file here or",

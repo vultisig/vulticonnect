@@ -72,3 +72,14 @@ relay(
     return openResult;
   }
 );
+
+relay(
+  {
+    name: "eth-request" as const,
+  },
+  async (req) => {
+    const openResult = await sendToBackground(req);
+
+    return openResult;
+  }
+);

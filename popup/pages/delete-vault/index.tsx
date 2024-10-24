@@ -56,7 +56,7 @@ const Component: FC = () => {
   return (
     <div className="layout delete-vault-page">
       <div className="header">
-        <span className="heading">{t(messageKeys.DELETE_VAULT)}</span>
+        <span className="heading">{t(messageKeys.REMOVE_VAULT)}</span>
         <ChevronLeft
           className="icon icon-left"
           onClick={() => goBack(routeKeys.settings.root)}
@@ -78,7 +78,7 @@ const Component: FC = () => {
           }}
         >
           <Button onClick={handleSubmit} type="primary" shape="round" block>
-            {t(messageKeys.DELETE_VAULT)}
+            {t(messageKeys.REMOVE_VAULT)}
           </Button>
         </ConfigProvider>
       </div>
