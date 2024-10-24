@@ -33,6 +33,11 @@ export namespace Messaging {
     export type Request = { priority?: boolean };
     export type Response = any;
   }
+
+  export namespace EthRequest {
+    export type Request = { method: string; params?: Record<string, any>[] };
+    export type Response = string | string[];
+  }
 }
 
 export interface AccountsProps {
@@ -141,6 +146,7 @@ export interface TransactionProps {
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
   txHash?: string;
+  windowId?: number;
 }
 
 export interface VaultProps {

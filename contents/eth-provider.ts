@@ -6,7 +6,13 @@ import {
   createStore,
   requestProviders,
 } from "mipd";
-import { ChainKey, chains, evmSupportedChains, rpcUrl } from "~utils/constants";
+import {
+  ChainKey,
+  chains,
+  evmSupportedChains,
+  RequestMethod,
+  rpcUrl,
+} from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { JsonRpcProvider, type TransactionRequest } from "ethers";
 import axios from "axios";
@@ -18,62 +24,6 @@ export const config: PlasmoCSConfig = {
   world: "MAIN",
   run_at: "document_start",
 };
-
-enum RequestMethod {
-  ETH_ACCOUNTS = "eth_accounts",
-  ETH_BLOB_BASE_FEE = "eth_blobBaseFee",
-  ETH_BLOCK_NUMBER = "eth_blockNumber",
-  ETH_CALL = "eth_call",
-  ETH_CHAIN_ID = "eth_chainId",
-  ETH_COINBASE = "eth_coinbase",
-  ETH_DECRYPT = "eth_decrypt",
-  ETH_ESTIMATE_GAS = "eth_estimateGas",
-  ETH_FEE_HISTORY = "eth_feeHistory",
-  ETH_GAS_PRICE = "eth_gasPrice",
-  ETH_GET_BALANCE = "eth_getBalance",
-  ETH_GET_BLOCK_BY_HASH = "eth_getBlockByHash",
-  ETH_GET_BLOCK_BY_NUMBER = "eth_getBlockByNumber",
-  ETH_GET_BLOCK_RECEIPTS = "eth_getBlockReceipts",
-  ETH_GET_BLOCK_TRANSACTION_COUNT_BY_HASH = "eth_getBlockTransactionCountByHash",
-  ETH_GET_BLOCK_TRANSACTION_COUNT_BY_NUMBER = "eth_getBlockTransactionCountByNumber",
-  ETH_GET_CODE = "eth_getCode",
-  ETH_GET_ENCRYPTION_PUBLIC_KEY = "eth_getEncryptionPublicKey",
-  ETH_GET_FILTER_CHANGES = "eth_getFilterChanges",
-  ETH_GET_FILTER_LOGS = "eth_getFilterLogs",
-  ETH_GET_LOGS = "eth_getLogs",
-  ETH_GET_PROOF = "eth_getProof",
-  ETH_GET_STORAGEAT = "eth_getStorageAt",
-  ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX = "eth_getTransactionByBlockHashAndIndex",
-  ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX = "eth_getTransactionByBlockNumberAndIndex",
-  ETH_GET_TRANSACTION_BY_HASH = "eth_getTransactionByHash",
-  ETH_GET_TRANSACTION_COUNT = "eth_getTransactionCount",
-  ETH_GET_TRANSACTION_RECEIPT = "eth_getTransactionReceipt",
-  ETH_GET_UNCLE_COUNT_BY_BLOCK_HASH = "eth_getUncleCountByBlockHash",
-  ETH_GET_UNCLE_COUNT_BY_BLOCK_NUMBER = "eth_getUncleCountByBlockNumber",
-  ETH_MAX_PRIORITY_FEE_PER_GAS = "eth_maxPriorityFeePerGas",
-  ETH_NEW_BLOCK_FILTER = "eth_newBlockFilter",
-  ETH_NEW_FILTER = "eth_newFilter",
-  ETH_NEW_PENDING_TRANSACTION_FILTER = "eth_newPendingTransactionFilter",
-  ETH_REQUEST_ACCOUNTS = "eth_requestAccounts",
-  ETH_SEND_RAW_TRANSACTION = "eth_sendRawTransaction",
-  ETH_SEND_TRANSACTION = "eth_sendTransaction",
-  ETH_SIGN = "eth_sign",
-  ETH_SIGN_TYPED_DATA_V4 = "eth_signTypedData_v4",
-  ETH_SUBSCRIBE = "eth_subscribe",
-  ETH_SYNCING = "eth_syncing",
-  ETH_UNINSTALL_FILTER = "eth_uninstallFilter",
-  ETH_UNSUBSCRIBE = "eth_unsubscribe",
-  PERSONAL_SIGN = "personal_sign",
-  WALLET_ADD_ETHEREUM_CHAIN = "wallet_addEthereumChain",
-  WALLET_GET_PERMISSIONS = "wallet_getPermissions",
-  WALLET_REGISTER_ONBOARDING = "wallet_registerOnboarding",
-  WALLET_REQUEST_PERMISSIONS = "wallet_requestPermissions",
-  WALLET_REVOKE_PERMISSIONS = "wallet_revokePermissions",
-  WALLET_SWITCH_ETHEREUM_CHAIN = "wallet_switchEthereumChain",
-  WALLET_SCAN_QR_CODE = "wallet_scanQRCode",
-  WALLET_WATCH_ASSET = "wallet_watchAsset",
-  WEB3_CLIENT_VERSION = "web3_clientVersion",
-}
 
 enum EventMethod {
   ACCOUNTS_CHANGED = "ACCOUNTS_CHANGED",
@@ -99,7 +49,6 @@ interface EthereumProvider {
   isMetaMask: boolean;
   isVultiConnect: boolean;
   _events: Record<string, Function[]>;
-  _state: BaseProviderState;
   enable(): Promise<string[]>;
   isConnected(): boolean;
   on(event: string, callback: (data: any) => void): void;
@@ -110,344 +59,23 @@ interface EthereumProvider {
   _disconnect(error?: { code: number; message: string }): void;
 }
 
-let rpcProvider: JsonRpcProvider;
-
-const initializeProvider = (chainKey: string) => {
-  const rpc = rpcUrl[chainKey];
-  rpcProvider = new JsonRpcProvider(rpc);
-};
-
-const updateProvider = (chainKey: string) => {
-  if (rpcProvider) {
-    const rpc = rpcUrl[chainKey];
-    rpcProvider = new JsonRpcProvider(rpc);
-  }
-};
-
-const defaultChain = chains.find(({ name }) => name === ChainKey.ETHEREUM);
-initializeProvider(defaultChain.name);
 const ethereumProvider: EthereumProvider = {
   isMetaMask: true,
   isVultiConnect: true,
   _events: {},
-  _state: {
-    accounts: [],
-    chainId: defaultChain.id,
-    isConnected: false,
-    chainKey: defaultChain.name,
-  },
 
-  isConnected: () => ethereumProvider._state.isConnected,
-  request: ({ method, params = [] }) => {
+  isConnected: () => true,
+  request: (body) => {
     return new Promise((resolve, reject) => {
-      switch (method) {
-        case RequestMethod.ETH_ACCOUNTS: {
-          resolve(ethereumProvider._state.accounts);
-          break;
-        }
-        case RequestMethod.ETH_CHAIN_ID: {
-          sendToBackgroundViaRelay<
-            Messaging.GetChains.Request,
-            Messaging.GetChains.Response
-          >({
-            name: "get-chains",
-          }).then(({ chains }) => {
-            const chain = chains.find(({ active }) => active == true);
-            if (chain) {
-              resolve(chain.id);
-              ethereumProvider._state.chainId = chain.id;
-              ethereumProvider._state.chainKey = chain.name;
-              updateProvider(chain.name);
-            } else resolve(ethereumProvider._state.chainId);
-          });
-
-          break;
-        }
-        case RequestMethod.ETH_REQUEST_ACCOUNTS: {
-          sendToBackgroundViaRelay<
-            Messaging.GetChains.Request,
-            Messaging.GetChains.Response
-          >({
-            name: "get-chains",
-          })
-            .then(({ chains }) => {
-              const chain = chains.find(({ active }) => active === true);
-
-              if (chain) {
-                sendToBackgroundViaRelay<
-                  Messaging.GetAccounts.Request,
-                  Messaging.GetAccounts.Response
-                >({
-                  name: "get-accounts",
-                  body: { chain: chain.name },
-                })
-                  .then(({ accounts }) => {
-                    ethereumProvider._state.accounts = accounts;
-
-                    resolve(ethereumProvider._state.accounts);
-                  })
-                  .catch(reject);
-              } else {
-                ethereumProvider
-                  .request({
-                    method: RequestMethod.WALLET_ADD_ETHEREUM_CHAIN,
-                    params: [{ chainId: ethereumProvider._state.chainId }],
-                  })
-                  .then(() => {
-                    ethereumProvider
-                      .request({
-                        method: RequestMethod.ETH_REQUEST_ACCOUNTS,
-                        params,
-                      })
-                      .then(resolve)
-                      .catch(reject);
-                  })
-                  .catch(reject);
-              }
-            })
-            .catch(reject);
-
-          break;
-        }
-        case RequestMethod.ETH_SEND_TRANSACTION: {
-          const [transaction] = params as TransactionProps[];
-          if (transaction) {
-            sendToBackgroundViaRelay<
-              Messaging.SendTransaction.Request,
-              Messaging.SendTransaction.Response
-            >({
-              name: "send-transaction",
-              body: {
-                transaction,
-                activeChain: ethereumProvider._state.chainId,
-              },
-            })
-              .then(({ transactionHash }) => {
-                resolve(transactionHash);
-              })
-              .catch(reject);
-          } else {
-            reject();
-          }
-          break;
-        }
-        case RequestMethod.ETH_GET_TRANSACTION_BY_HASH: {
-          const hash = params[0];
-          axios
-            .post(rpcUrl[ethereumProvider._state.chainKey], {
-              id: 1,
-              jsonrpc: "2.0",
-              method: "eth_getTransactionByHash",
-              params: [hash],
-            })
-            .then((res) => {
-              resolve(res.data.result);
-            });
-          break;
-        }
-        case RequestMethod.ETH_BLOCK_NUMBER: {
-          rpcProvider.getBlock("latest").then((block) => {
-            resolve(String(block.number));
-          });
-          break;
-        }
-        case RequestMethod.WALLET_ADD_ETHEREUM_CHAIN: {
-          const [param] = params;
-
-          if (param?.chainId) {
-            const supportedChain = chains.find(
-              ({ id }) => id === param.chainId
-            );
-
-            if (supportedChain) {
-              sendToBackgroundViaRelay<
-                Messaging.GetChains.Request,
-                Messaging.GetChains.Response
-              >({
-                name: "get-chains",
-              })
-                .then(({ chains }) => {
-                  sendToBackgroundViaRelay<
-                    Messaging.SetChains.Request,
-                    Messaging.SetChains.Response
-                  >({
-                    name: "set-chains",
-                    body: {
-                      chains: [
-                        { ...supportedChain, active: true },
-                        ...chains
-                          .filter(({ name }) => name !== supportedChain.name)
-                          .map((chain) => ({
-                            ...chain,
-                            active: false,
-                          })),
-                      ],
-                    },
-                  })
-                    .then(() => {
-                      ethereumProvider._state.chainId = param.chainId;
-
-                      resolve(null);
-                    })
-                    .catch(reject);
-                })
-                .catch(reject);
-            } else {
-              reject(); // unsuported chain
-            }
-          } else {
-            reject(); // chainId is required
-          }
-
-          break;
-        }
-        case RequestMethod.WALLET_GET_PERMISSIONS: {
-          resolve([]);
-
-          break;
-        }
-        case RequestMethod.WALLET_REQUEST_PERMISSIONS: {
-          resolve([]);
-
-          break;
-        }
-        case RequestMethod.WALLET_REVOKE_PERMISSIONS: {
-          resolve(null);
-
-          break;
-        }
-        case RequestMethod.ETH_ESTIMATE_GAS: {
-          const tx = { ...params[0] } as TransactionRequest;
-          rpcProvider
-            .estimateGas(tx)
-            .then((res) => {
-              resolve(res.toString());
-            })
-            .catch(reject);
-          break;
-        }
-        case RequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
-          const [param] = params;
-          if (param?.chainId) {
-            if (!isSupportedChain(param?.chainId)) {
-              reject("Chain not Supported");
-              ethereumProvider._emit(
-                EventMethod.ERROR,
-                new Error(`Unsupported chain: ${param?.chainId}`)
-              );
-            } else {
-              sendToBackgroundViaRelay<
-                Messaging.GetChains.Request,
-                Messaging.GetChains.Response
-              >({
-                name: "get-chains",
-              })
-                .then(({ chains }) => {
-                  const existed =
-                    chains.findIndex(({ id }) => id === param.chainId) >= 0;
-                  if (existed) {
-                    sendToBackgroundViaRelay<
-                      Messaging.SetChains.Request,
-                      Messaging.SetChains.Response
-                    >({
-                      name: "set-chains",
-                      body: {
-                        chains: chains.map((chain) => ({
-                          ...chain,
-                          active: chain.id === param.chainId,
-                        })),
-                      },
-                    })
-                      .then(() => {
-                        ethereumProvider._state.chainId = param.chainId;
-                        ethereumProvider._state.chainKey = chains.find(
-                          (chain) => chain.id === param.chainId
-                        ).name;
-                        updateProvider(ethereumProvider._state.chainKey);
-                        resolve(null);
-                      })
-                      .catch(reject);
-                  } else {
-                    ethereumProvider
-                      .request({
-                        method: RequestMethod.WALLET_ADD_ETHEREUM_CHAIN,
-                        params,
-                      })
-                      .then(resolve)
-                      .catch(reject);
-                  }
-                })
-                .catch(reject);
-            }
-          } else {
-            reject(); // chainId is required
-          }
-          break;
-        }
-        case RequestMethod.ETH_GET_BALANCE: {
-          const [address, tag] = params;
-          rpcProvider
-            .getBalance(String(address), String(tag))
-            .then((value) => {
-              resolve(value.toString());
-            })
-            .catch(reject);
-          break;
-        }
-        case RequestMethod.ETH_GET_BLOCK_BY_NUMBER: {
-          const [tag, refresh] = params;
-          rpcProvider
-            .getBlock(String(tag), Boolean(refresh))
-            .then((res) => {
-              resolve(res.toJSON());
-            })
-            .catch(reject);
-          break;
-        }
-        case RequestMethod.ETH_GAS_PRICE: {
-          rpcProvider
-            .getFeeData()
-            .then((res) => {
-              resolve(res.gasPrice.toString());
-            })
-            .catch(reject);
-          break;
-        }
-
-        case RequestMethod.ETH_MAX_PRIORITY_FEE_PER_GAS: {
-          rpcProvider
-            .getFeeData()
-            .then((res) => {
-              resolve(res.maxPriorityFeePerGas.toString());
-            })
-            .catch(reject);
-          break;
-        }
-        case RequestMethod.ETH_CALL: {
-          const [tx, tag] = params;
-
-          resolve(rpcProvider.call(tx));
-        }
-        case RequestMethod.ETH_GET_TRANSACTION_RECEIPT: {
-          const [param] = params;
-          rpcProvider
-            .getTransactionReceipt(String(param))
-            .then((receipt) => {
-              resolve(receipt.toJSON());
-            })
-            .catch(reject);
-          break;
-        }
-        default: {
-          ethereumProvider._emit(
-            EventMethod.ERROR,
-            new Error(`Unsupported method: ${method}`)
-          );
-          reject(`Unsupported method: ${method}`);
-
-          break;
-        }
-      }
+      sendToBackgroundViaRelay<
+        Messaging.EthRequest.Request,
+        Messaging.EthRequest.Response
+      >({
+        name: "eth-request",
+        body,
+      })
+        .then(resolve)
+        .catch(reject);
     });
   },
 
@@ -467,7 +95,14 @@ const ethereumProvider: EthereumProvider = {
 
   on: (event, callback) => {
     if (event === EventMethod.CONNECT && ethereumProvider.isConnected()) {
-      callback({ chainId: ethereumProvider._state.chainId });
+      ethereumProvider
+        .request({
+          method: RequestMethod.ETH_CHAIN_ID,
+          params: [],
+        })
+        .then((chainId) => {
+          callback({ chainId });
+        });
     } else {
       if (!ethereumProvider._events[event])
         ethereumProvider._events[event] = [];
@@ -503,20 +138,19 @@ const ethereumProvider: EthereumProvider = {
   },
 
   _connect: () => {
-    ethereumProvider._state.isConnected = true;
-
-    console.log("_connect");
-
-    ethereumProvider._emit(EventMethod.CONNECT, {
-      chainId: ethereumProvider._state.chainId,
-    });
+    ethereumProvider
+      .request({
+        method: RequestMethod.ETH_CHAIN_ID,
+        params: [],
+      })
+      .then((chainId) => {
+        ethereumProvider._emit(EventMethod.CONNECT, {
+          chainId,
+        });
+      });
   },
 
   _disconnect: (error) => {
-    ethereumProvider._state.isConnected = false;
-
-    console.log("_disconnect");
-
     ethereumProvider._emit(
       EventMethod.DISCONNECT,
       error || { code: 4900, message: "Provider disconnected" }
