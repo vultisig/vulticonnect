@@ -98,7 +98,6 @@ const parseMemo = async (memo: string) => {
             memo
           );
           const processedData = processDecodedData(decodedData);
-          console.log(processedData);
           resolve({
             signature: signature,
             inputs: JSON.stringify(processedData, null, 2),

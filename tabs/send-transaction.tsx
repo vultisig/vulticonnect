@@ -7,6 +7,7 @@ import { errorKey, explorerUrl } from "~utils/constants";
 import {
   getStoredCurrency,
   getStoredLanguage,
+  getStoredTransactions,
   getStoredVaults,
   setStoredTransaction,
 } from "~utils/storage";
@@ -237,64 +238,62 @@ const Component: FC = () => {
     Promise.all([
       getStoredCurrency(),
       getStoredLanguage(),
+      getStoredTransactions(),
       getStoredVaults(),
-    ]).then(([currency, language, vautls]) => {
-      const vault = vautls.find(({ active }) => active);
-      const [transaction] = vault?.transactions ?? [];
+    ]).then(([currency, language, transactions, vaults]) => {
+      const [transaction] = transactions;
 
       i18n.changeLanguage(language);
 
       if (transaction) {
-        if (transaction.status === "success") {
-          setState((prevState) => ({
-            ...prevState,
-            loaded: true,
-            step: 4,
-            transaction,
-          }));
-        } else {
-          const walletCore = new WalletCoreProvider();
+        const vault = vaults.find(
+          ({ chains }) =>
+            chains.findIndex(
+              ({ address }) =>
+                address.toLowerCase() === transaction.from.toLowerCase()
+            ) >= 0
+        );
+        const walletCore = new WalletCoreProvider();
 
-          walletCore
-            .getCore()
-            .then(({ chainRef, walletCore }) => {
-              const dataConverter = new DataConverterProvider();
-              const txProvider = new TransactionProvider(
-                transaction.chain.name,
-                chainRef,
-                dataConverter.compactEncoder,
-                walletCore
-              );
-              parseMemo(transaction.data)
-                .then((memo) => {
-                  setState({ ...state, parsedMemo: memo });
-                })
-                .catch();
-              txProvider.getFeeData().then(() => {
-                txProvider
-                  .getEstimateTransactionFee(transaction.chain.cmcId, currency)
-                  .then((gasPrice) => {
-                    transaction.gasPrice = gasPrice;
-                    try {
-                      transaction.memo = toUtf8String(transaction.data);
-                    } catch (err) {}
-                    setStoredTransaction(transaction).then(() => {
-                      setState((prevState) => ({
-                        ...prevState,
-                        currency,
-                        loaded: true,
-                        transaction,
-                        txProvider,
-                        vault,
-                      }));
-                    });
+        walletCore
+          .getCore()
+          .then(({ chainRef, walletCore }) => {
+            const dataConverter = new DataConverterProvider();
+            const txProvider = new TransactionProvider(
+              transaction.chain.name,
+              chainRef,
+              dataConverter.compactEncoder,
+              walletCore
+            );
+            parseMemo(transaction.data)
+              .then((memo) => {
+                setState({ ...state, parsedMemo: memo });
+              })
+              .catch();
+            txProvider.getFeeData().then(() => {
+              txProvider
+                .getEstimateTransactionFee(transaction.chain.cmcId, currency)
+                .then((gasPrice) => {
+                  transaction.gasPrice = gasPrice;
+                  try {
+                    transaction.memo = toUtf8String(transaction.data);
+                  } catch (err) {}
+                  setStoredTransaction(transaction).then(() => {
+                    setState((prevState) => ({
+                      ...prevState,
+                      currency,
+                      loaded: true,
+                      transaction,
+                      txProvider,
+                      vault,
+                    }));
                   });
-              });
-            })
-            .catch((error) => {
-              console.log(error);
+                });
             });
-        }
+          })
+          .catch((error) => {
+            console.log(error);
+          });
       } else {
         console.error(errorKey.FAIL_TO_GET_TRANSACTION);
       }
