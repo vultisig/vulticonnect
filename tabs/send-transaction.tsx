@@ -58,6 +58,7 @@ interface InitialState {
 const Component: FC = () => {
   const { t } = useTranslation();
   const RETRY_TIMEOUT = 120000; //2min
+  const CLOSE_TIMEOUT = 60000; //1min
   const initialState: InitialState = { step: 1, hasError: false };
   const [state, setState] = useState(initialState);
   const {
@@ -101,6 +102,12 @@ const Component: FC = () => {
       });
   };
 
+  const initCloseTimer = (timeout: number) => {
+    setTimeout(() => {
+      handleClose();
+    }, timeout);
+  };
+
   const handlePending = (preSignedImageHash: string): void => {
     const retryTimeout = setTimeout(() => {
       setStoredTransaction({ ...transaction, status: "error" }).then(() => {
@@ -132,6 +139,7 @@ const Component: FC = () => {
                   step: 4,
                   transaction: { ...transaction, txHash },
                 }));
+                initCloseTimer(CLOSE_TIMEOUT);
               });
             })
             .catch(() => {});
