@@ -254,7 +254,6 @@ const Component: FC = () => {
             ) >= 0
         );
         const walletCore = new WalletCoreProvider();
-
         walletCore
           .getCore()
           .then(({ chainRef, walletCore }) => {

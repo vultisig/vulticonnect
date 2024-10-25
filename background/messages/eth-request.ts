@@ -235,7 +235,9 @@ const handleRequest = (
 
           if (transaction) {
             sendTransaction(transaction, activeChain.id)
-              .then(({ transactionHash }) => {
+              .then(({transactionHash}) => {
+                console.log("txhash output:", transactionHash);
+
                 resolve(transactionHash);
               })
               .catch(reject);
