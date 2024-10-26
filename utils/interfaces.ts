@@ -1,32 +1,10 @@
 import { ChainKey, Currency, Language } from "utils/constants";
 
 export namespace Messaging {
-  export namespace GetAccounts {
-    export type Request = { chain: ChainKey };
-    export type Response = { accounts: string[] };
-  }
-
-  export namespace GetChains {
-    export type Request = any;
-    export type Response = { chains: ChainProps[] };
-  }
 
   export namespace GetVaults {
     export type Request = any;
     export type Response = { vaults: VaultProps[] };
-  }
-
-  export namespace SendTransaction {
-    export type Request = {
-      transaction: TransactionProps;
-      activeChain: string;
-    };
-    export type Response = { transactionHash: string };
-  }
-
-  export namespace SetChains {
-    export type Request = { chains: ChainProps[] };
-    export type Response = any;
   }
 
   export namespace SetPriority {

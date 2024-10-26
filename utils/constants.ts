@@ -57,7 +57,14 @@ export enum Language {
   PORTUGUESE = "pt",
   SPANISH = "es",
 }
-
+export enum EventMethod {
+  ACCOUNTS_CHANGED = "accountsChanged",
+  CHAIN_CHANGED = "chainChanged",
+  CONNECT = "connect",
+  DISCONNECT = "diconnect",
+  ERROR = "ERROR",
+  MESSAGE = "MESSAGE",
+}
 export enum RequestMethod {
   ETH_ACCOUNTS = "eth_accounts",
   ETH_BLOB_BASE_FEE = "eth_blobBaseFee",

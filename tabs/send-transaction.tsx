@@ -418,7 +418,7 @@ const Component: FC = () => {
                 </div>
               </div>
               <div className="footer">
-                <Button type="primary" shape="round" disabled={!fastSign} block>
+                <Button type="primary" shape="round" disabled block>
                   {t(messageKeys.FAST_SIGN)}
                 </Button>
                 <Button onClick={handleApp} type="default" shape="round" block>
