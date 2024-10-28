@@ -43,7 +43,6 @@
       display: flex;
       flex-direction: column;
       justify-content: center;
-
       .hint {
         font-size: rem(16);
         font-weight: 700;
@@ -129,7 +128,7 @@
   }
 }
 .function-inputs {
-  height: max-content !important; 
+  height: max-content !important;
   padding: rem(10) !important;
   border-radius: rem(5) !important;
   white-space: pre-wrap !important;

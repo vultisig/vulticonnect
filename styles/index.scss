@@ -332,7 +332,18 @@ body {
     .list {
       border-radius: rem(12);
       overflow: hidden;
-
+      .memo-item {
+        background-color: $blue-base;
+        color: $gray-1;
+        display: block;
+        line-height: rem(24);
+        padding: rem(16) rem(20);
+        position: relative;
+        transition: background-color 0.3s;
+        .extra {
+          font-family: monospace;
+        }
+      }
       .list-item {
         background-color: $blue-base;
         color: $gray-1;

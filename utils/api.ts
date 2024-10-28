@@ -6,6 +6,7 @@ import type { SignatureProps } from "~utils/interfaces";
 
 const api = axios.create({
   headers: { accept: "application/json" },
+  timeout: 10000,
 });
 
 api.interceptors.request.use(

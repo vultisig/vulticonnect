@@ -38,7 +38,7 @@ import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
-import { parseMemo } from "~utils/functions";
+import { parseMemo, splitString } from "~utils/functions";
 
 interface InitialState {
   fastSign?: boolean;
@@ -284,7 +284,11 @@ const Component: FC = () => {
                   transaction.gasPrice = gasPrice;
                   try {
                     transaction.memo = toUtf8String(transaction.data);
-                  } catch (err) {}
+                  } catch (err) {
+                    if (!parsedMemo) {
+                      transaction.memo = transaction.data;
+                    }
+                  }
                   setStoredTransaction(transaction).then(() => {
                     setState((prevState) => ({
                       ...prevState,
@@ -359,9 +363,15 @@ const Component: FC = () => {
                     </div>
                   )}
                   {transaction.memo && (
-                    <div className="list-item">
+                    <div className="memo-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
-                      <span className="extra">{transaction.memo}</span>
+                      <span className="extra">
+                        <div>
+                          {splitString(transaction.memo, 32).map((str) => (
+                            <div>{str}</div>
+                          ))}
+                        </div>
+                      </span>
                     </div>
                   )}
                   <div className="list-item">
