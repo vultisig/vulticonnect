@@ -19,7 +19,7 @@ import {
   chains,
   EventMethod,
   evmSupportedChains,
-  RequestMethod,
+  EVMRequestMethod,
 } from "~utils/constants";
 import { sendToBackground } from "@plasmohq/messaging";
 interface SelectOption {

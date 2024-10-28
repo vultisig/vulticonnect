@@ -1,10 +1,12 @@
 import type { PlasmoCSConfig } from "plasmo";
 import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
 import { type EIP1193Provider, announceProvider } from "mipd";
-import { EventMethod, RequestMethod } from "~utils/constants";
+import { EventMethod, EVMRequestMethod } from "~utils/constants";
 import type { Messaging, VaultProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import { VULTI_ICON_RAW_SVG } from "~static/icons/vulti-raw";
+import { THORCHAIN_MANIFESTS, ThorProvider } from "@xdefi/chains-thor";
+import { ChainController } from "@xdefi/chains-controller";
 export const config: PlasmoCSConfig = {
   matches: ["<all_urls>"],
   world: "MAIN",
@@ -15,6 +17,15 @@ type RequestArguments = {
   method: string;
   params?: Record<string, any>[];
 };
+interface ThorchainProvider {
+  request(args: RequestArguments): Promise<string | string[]>;
+  on(event: string, callback: (data: any) => void): void;
+  removeListener(event: string, callback: Function): void;
+  _emit(event: string, data: any): void;
+  connect(): void;
+  disconnect(error?: { code: number; message: string }): void;
+  addListener(event: string, callback: (data: any) => void): void;
+}
 
 interface EthereumProvider {
   isMetaMask: boolean;
@@ -48,11 +59,11 @@ const ethereumProvider: EthereumProvider = {
         .then((result) => {
           const { method, params } = body;
           switch (method) {
-            case RequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
+            case EVMRequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
               ethereumProvider._emit(EventMethod.CHAIN_CHANGED, result);
               break;
             }
-            case RequestMethod.WALLET_REVOKE_PERMISSIONS: {
+            case EVMRequestMethod.WALLET_REVOKE_PERMISSIONS: {
               ethereumProvider._emit(EventMethod.DISCONNECT, result);
               break;
             }
@@ -67,7 +78,7 @@ const ethereumProvider: EthereumProvider = {
     return new Promise((resolve, reject) => {
       ethereumProvider
         .request({
-          method: RequestMethod.ETH_REQUEST_ACCOUNTS,
+          method: EVMRequestMethod.ETH_REQUEST_ACCOUNTS,
           params: [],
         })
         .then((accounts) => {
@@ -81,7 +92,7 @@ const ethereumProvider: EthereumProvider = {
     if (event === EventMethod.CONNECT && ethereumProvider.isConnected()) {
       ethereumProvider
         .request({
-          method: RequestMethod.ETH_CHAIN_ID,
+          method: EVMRequestMethod.ETH_CHAIN_ID,
           params: [],
         })
         .then((chainId) => {
@@ -143,9 +154,134 @@ const ethereumProvider: EthereumProvider = {
     });
   },
 };
+const thorchainProvider: ThorchainProvider = {
+
+  request: (body) => {
+    return new Promise((resolve, reject) => {
+      sendToBackgroundViaRelay<
+        Messaging.ThorRequest.Request,
+        Messaging.ThorRequest.Response
+      >({
+        name: "thor-request",
+        body,
+      })
+        .then((result) => {
+          console.log("contentBody:", body);
+          console.log(result);
+          resolve(result);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+  },
+  on: (event, callback) => {
+    console.log("on");
+    console.log(event);
+
+    // if (event === EventMethod.CONNECT && ethereumProvider.isConnected()) {
+    //   ethereumProvider
+    //     .request({
+    //       method: EVMRequestMethod.ETH_CHAIN_ID,
+    //       params: [],
+    //     })
+    //     .then((chainId) => {
+    //       callback({ chainId });
+    //     });
+    // } else {
+    //   if (!ethereumProvider._events[event])
+    //     ethereumProvider._events[event] = [];
+
+    //   ethereumProvider._events[event].push(callback);
+    // }
+
+    return;
+  },
+  addListener: (event: string, callback: (data: any) => void) => {
+    console.log("addListener");
+  },
+  removeListener: (event, callback) => {
+    console.log("removeListener");
+  },
+
+  _emit: (event, data) => {
+    console.log("_emit");
+  },
+
+  connect: () => {
+    console.log("connect");
+  },
+
+  disconnect: (error) => {
+    console.log("disconnet");
+  },
+};
 
 window.vultisig = ethereumProvider;
 window.vultisig._connect();
+
+const ChainsContextDefaultValue = new ChainController();
+ChainsContextDefaultValue.addProvider(
+  new ThorProvider(
+    new ThorProvider.dataSourceList.ChainDataSource(
+      THORCHAIN_MANIFESTS.thorchain
+    ),
+    {
+      providerId: "thor",
+    }
+  )
+);
+
+console.log(ChainsContextDefaultValue);
+
+// export const XDEFI = {
+//   id: 1,
+//   name: "XDEFI",
+//   logo: VULTI_ICON_RAW_SVG,
+//   type: "injected",
+//   check: "__XDEFI",
+//   installationLink: "https://xdefi.io",
+//   getEthereumProvider: () => {
+//     return window.vultisig;
+//   },
+
+//   chains: {
+//     thorchain: {
+//       methods: {
+//         getProvider: () => window.thorchain,
+//         getAccounts: () => {
+//           return new Promise((resolve, reject) => {
+//             window.thorchain.request(
+//               { method: "request_accounts", params: [] },
+//               (error: any, accounts: any) => {
+//                 if (error) {
+//                   reject(error);
+//                 }
+
+//                 resolve(accounts);
+//               }
+//             );
+//           });
+//         },
+//         request: (method: string, data: any) => {
+//           return new Promise((resolve, reject) => {
+//             window.vultisig.thorchain.request(
+//               { method: method, params: data },
+//               (error: any, result: any) => {
+//                 if (error) {
+//                   reject(error);
+//                 }
+
+//                 resolve(result);
+//               }
+//             );
+//           });
+//         },
+//       },
+//     },
+//   },
+// };
+
 if (!window.ethereum) window.ethereum = ethereumProvider;
 announceProvider({
   info: {
@@ -231,6 +367,15 @@ const intervalRef = setInterval(() => {
                 if (ethereumProvider !== provider) {
                   window.vultiConnectRouter.lastInjectedProvider = provider;
                 }
+              },
+            },
+            configurable: false,
+            writable: false,
+          },
+          xfi: {
+            value: {
+              thorchain: {
+                ...thorchainProvider,
               },
             },
             configurable: false,

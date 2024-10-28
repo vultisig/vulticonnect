@@ -1,7 +1,6 @@
 import { ChainKey, Currency, Language } from "utils/constants";
 
 export namespace Messaging {
-
   export namespace GetVaults {
     export type Request = any;
     export type Response = { vaults: VaultProps[] };
@@ -14,6 +13,11 @@ export namespace Messaging {
 
   export namespace EthRequest {
     export type Request = { method: string; params?: Record<string, any>[] };
+    export type Response = string | string[];
+  }
+
+  export namespace ThorRequest {
+    export type Request = any;
     export type Response = string | string[];
   }
 }
