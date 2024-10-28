@@ -367,9 +367,11 @@ const Component: FC = () => {
                       <span className="label">{t(messageKeys.MEMO)}</span>
                       <span className="extra">
                         <div>
-                          {splitString(transaction.memo, 32).map((str) => (
-                            <div>{str}</div>
-                          ))}
+                          {splitString(transaction.memo, 32).map(
+                            (str, index) => (
+                              <div key={index}>{str}</div>
+                            )
+                          )}
                         </div>
                       </span>
                     </div>
@@ -483,9 +485,17 @@ const Component: FC = () => {
                   )}
 
                   {transaction.memo && (
-                    <div className="list-item">
+                    <div className="memo-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
-                      <span className="extra">{transaction.memo}</span>
+                      <span className="extra">
+                        <div>
+                          {splitString(transaction.memo, 32).map(
+                            (str, index) => (
+                              <div key={index}>{str}</div>
+                            )
+                          )}
+                        </div>
+                      </span>
                     </div>
                   )}
                   <div className="list-item">
