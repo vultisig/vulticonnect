@@ -130,9 +130,15 @@ export default {
   getIsFunctionSelector: async (hexFunction: string) => {
     return new Promise<boolean>((resolve) => {
       api
-        .get(`https://api.etherface.io/v1/signatures/hash/all/${hexFunction}/1`)
-        .then(() => {
-          resolve(true);
+        .get(
+          `https://www.4byte.directory/api/v1/signatures/?format=json&hex_signature=${hexFunction}&ordering=created_at`
+        )
+        .then((res) => {
+          if (res.data.count > 0) {
+            resolve(true);
+          } else {
+            resolve(false);
+          }
         })
         .catch(() => {
           resolve(false);
@@ -142,9 +148,11 @@ export default {
   getFunctionSelector: async (hexFunction: string) => {
     return new Promise<string>((resolve, reject) => {
       api
-        .get(`https://api.etherface.io/v1/signatures/hash/all/${hexFunction}/1`)
+        .get(
+          `https://www.4byte.directory/api/v1/signatures/?format=json&hex_signature=${hexFunction}&ordering=created_at`
+        )
         .then((res) => {
-          resolve(res.data.items[0].text);
+          resolve(res.data.results[0].textSignature);
         })
         .catch(() => {
           reject("Error getting FunctionSelector Text");

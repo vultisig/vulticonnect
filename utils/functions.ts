@@ -146,5 +146,5 @@ export {
   checkERC20Function,
   parseMemo,
   isSupportedChain,
-  splitString
+  splitString,
 };

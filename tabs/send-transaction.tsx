@@ -362,7 +362,7 @@ const Component: FC = () => {
                       )} ${transaction.chain.ticker}`}</span>
                     </div>
                   )}
-                  {transaction.memo && (
+                  {transaction.memo && !parsedMemo && (
                     <div className="memo-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
                       <span className="extra">
@@ -484,7 +484,7 @@ const Component: FC = () => {
                     </div>
                   )}
 
-                  {transaction.memo && (
+                  {transaction.memo && !parsedMemo && (
                     <div className="memo-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
                       <span className="extra">
