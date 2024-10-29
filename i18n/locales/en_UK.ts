@@ -82,7 +82,7 @@ export default {
   [messageKeys.VAULT_SETTINGS]: "Vault Settings",
   [messageKeys.VERIFY_SEND]: "Verify Send",
   [messageKeys.VIEW_TX]: "VIEW TX",
-  [messageKeys.VIEW_IN_WEB]: "View in web",
+  [messageKeys.VIEW_IN_AIRDROP]: "View in Airdrop",
   [messageKeys.VULT_TOKEN]: "The $VULT Token",
   [messageKeys.VULTISIG]: "Vultisig",
   [messageKeys.CONNECT_WITH_VULTISIG]: "Connect With Vultisig",
