@@ -426,7 +426,9 @@ const Component: FC = () => {
                 </span>
                 <div className="qrcode">
                   <QRCodeBorder className="border" />
-                  <QRCode size={312} value={sendKey} />
+                  <div className="qr-container" >
+                    <QRCode bordered size={275} value={sendKey} color="white" />
+                  </div>
                 </div>
               </div>
               <div className="footer">

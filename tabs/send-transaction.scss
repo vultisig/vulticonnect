@@ -58,13 +58,24 @@
         right: 0;
         top: 0;
       }
-
+      .qr-container {
+        border: rem(2) solid white;
+        margin: rem(5);
+      }
       .ant-qrcode {
-        border: none;
-        padding: rem(24);
+        padding: 0 !important;
+        border-radius: 0 !important;
+        border: rem(2) solid black !important;
+        // margin: rem(24);
+        // border: 5px white;
+        // border: none;
+        // padding: rem(24);
       }
 
       .qrcode {
+        display: flex;
+        align-items: center;
+        justify-content: center;
         height: rem(312);
         overflow: hidden;
         position: relative;
