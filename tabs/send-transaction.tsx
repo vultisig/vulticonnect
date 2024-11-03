@@ -38,7 +38,7 @@ import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
-import { parseMemo } from "~utils/functions";
+import { parseMemo, splitString } from "~utils/functions";
 
 interface InitialState {
   fastSign?: boolean;
@@ -58,6 +58,7 @@ interface InitialState {
 const Component: FC = () => {
   const { t } = useTranslation();
   const RETRY_TIMEOUT = 120000; //2min
+  const CLOSE_TIMEOUT = 60000; //1min
   const initialState: InitialState = { step: 1, hasError: false };
   const [state, setState] = useState(initialState);
   const {
@@ -101,6 +102,12 @@ const Component: FC = () => {
       });
   };
 
+  const initCloseTimer = (timeout: number) => {
+    setTimeout(() => {
+      handleClose();
+    }, timeout);
+  };
+
   const handlePending = (preSignedImageHash: string): void => {
     const retryTimeout = setTimeout(() => {
       setStoredTransaction({ ...transaction, status: "error" }).then(() => {
@@ -132,6 +139,7 @@ const Component: FC = () => {
                   step: 4,
                   transaction: { ...transaction, txHash },
                 }));
+                initCloseTimer(CLOSE_TIMEOUT);
               });
             })
             .catch(() => {});
@@ -254,7 +262,6 @@ const Component: FC = () => {
             ) >= 0
         );
         const walletCore = new WalletCoreProvider();
-
         walletCore
           .getCore()
           .then(({ chainRef, walletCore }) => {
@@ -277,7 +284,11 @@ const Component: FC = () => {
                   transaction.gasPrice = gasPrice;
                   try {
                     transaction.memo = toUtf8String(transaction.data);
-                  } catch (err) {}
+                  } catch (err) {
+                    if (!parsedMemo) {
+                      transaction.memo = transaction.data;
+                    }
+                  }
                   setStoredTransaction(transaction).then(() => {
                     setState((prevState) => ({
                       ...prevState,
@@ -351,10 +362,18 @@ const Component: FC = () => {
                       )} ${transaction.chain.ticker}`}</span>
                     </div>
                   )}
-                  {transaction.memo && (
-                    <div className="list-item">
+                  {transaction.memo && !parsedMemo && (
+                    <div className="memo-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
-                      <span className="extra">{transaction.memo}</span>
+                      <span className="extra">
+                        <div>
+                          {splitString(transaction.memo, 32).map(
+                            (str, index) => (
+                              <div key={index}>{str}</div>
+                            )
+                          )}
+                        </div>
+                      </span>
                     </div>
                   )}
                   <div className="list-item">
@@ -407,11 +426,13 @@ const Component: FC = () => {
                 </span>
                 <div className="qrcode">
                   <QRCodeBorder className="border" />
-                  <QRCode size={312} value={sendKey} />
+                  <div className="qr-container" >
+                    <QRCode bordered size={275} value={sendKey} color="white" />
+                  </div>
                 </div>
               </div>
               <div className="footer">
-                <Button type="primary" shape="round" disabled={!fastSign} block>
+                <Button type="primary" shape="round" disabled block>
                   {t(messageKeys.FAST_SIGN)}
                 </Button>
                 <Button onClick={handleApp} type="default" shape="round" block>
@@ -465,10 +486,18 @@ const Component: FC = () => {
                     </div>
                   )}
 
-                  {transaction.memo && (
-                    <div className="list-item">
+                  {transaction.memo && !parsedMemo && (
+                    <div className="memo-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
-                      <span className="extra">{transaction.memo}</span>
+                      <span className="extra">
+                        <div>
+                          {splitString(transaction.memo, 32).map(
+                            (str, index) => (
+                              <div key={index}>{str}</div>
+                            )
+                          )}
+                        </div>
+                      </span>
                     </div>
                   )}
                   <div className="list-item">

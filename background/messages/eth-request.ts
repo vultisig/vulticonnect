@@ -5,11 +5,9 @@ import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import {
   getStoredChains,
-  getStoredEthProviderState,
   getStoredTransactions,
   getStoredVaults,
   setStoredChains,
-  setStoredEthProviderState,
   setStoredRequest,
   setStoredTransactions,
   setStoredVaults,
@@ -330,10 +328,6 @@ const handleRequest = (
           if (param?.chainId) {
             if (!isSupportedChain(param?.chainId)) {
               reject("Chain not Supported");
-              // _emit(
-              //   EventMethod.ERROR,
-              //   new Error(`Unsupported chain: ${param?.chainId}`)
-              // );
             } else {
               const existed =
                 storedChains.findIndex(({ id }) => id === param.chainId) >= 0;
@@ -344,7 +338,7 @@ const handleRequest = (
                     active: chain.id === param.chainId,
                   }))
                 )
-                  .then(() => resolve(null))
+                  .then(() => resolve(param.chainId))
                   .catch(reject);
               } else {
                 handleRequest({
@@ -354,7 +348,7 @@ const handleRequest = (
                     params,
                   },
                 })
-                  .then(resolve)
+                  .then(() => resolve(param.chainId))
                   .catch(reject);
               }
             }

@@ -1,9 +1,8 @@
 import type { PlasmoCSConfig } from "plasmo";
 import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
 import { type EIP1193Provider, announceProvider } from "mipd";
-import { RequestMethod } from "~utils/constants";
-import type { Messaging } from "~utils/interfaces";
-
+import { EventMethod, RequestMethod } from "~utils/constants";
+import type { Messaging, VaultProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import { VULTI_ICON_RAW_SVG } from "~static/icons/vulti-raw";
 export const config: PlasmoCSConfig = {
@@ -11,14 +10,6 @@ export const config: PlasmoCSConfig = {
   world: "MAIN",
   run_at: "document_start",
 };
-
-enum EventMethod {
-  ACCOUNTS_CHANGED = "ACCOUNTS_CHANGED",
-  CONNECT = "CONNECT",
-  DISCONNECT = "DISCONNECT",
-  ERROR = "ERROR",
-  MESSAGE = "MESSAGE",
-}
 
 type RequestArguments = {
   method: string;
@@ -29,6 +20,7 @@ interface EthereumProvider {
   isMetaMask: boolean;
   isVultiConnect: boolean;
   _events: Record<string, Function[]>;
+  networkVersion: string;
   enable(): Promise<string[]>;
   isConnected(): boolean;
   on(event: string, callback: (data: any) => void): void;
@@ -37,13 +29,14 @@ interface EthereumProvider {
   _emit(event: string, data: any): void;
   _connect(): void;
   _disconnect(error?: { code: number; message: string }): void;
+  getVaults(): Promise<VaultProps[]>;
 }
 
 const ethereumProvider: EthereumProvider = {
   isMetaMask: true,
   isVultiConnect: true,
+  networkVersion: "1",
   _events: {},
-
   isConnected: () => true,
   request: (body) => {
     return new Promise((resolve, reject) => {
@@ -54,11 +47,23 @@ const ethereumProvider: EthereumProvider = {
         name: "eth-request",
         body,
       })
-        .then(resolve)
+        .then((result) => {
+          const { method, params } = body;
+          switch (method) {
+            case RequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
+              ethereumProvider._emit(EventMethod.CHAIN_CHANGED, result);
+              break;
+            }
+            case RequestMethod.WALLET_REVOKE_PERMISSIONS: {
+              ethereumProvider._emit(EventMethod.DISCONNECT, result);
+              break;
+            }
+          }
+          resolve(result);
+        })
         .catch(reject);
     });
   },
-
   enable: () => {
     return new Promise((resolve, reject) => {
       ethereumProvider
@@ -118,16 +123,7 @@ const ethereumProvider: EthereumProvider = {
   },
 
   _connect: () => {
-    ethereumProvider
-      .request({
-        method: RequestMethod.ETH_CHAIN_ID,
-        params: [],
-      })
-      .then((chainId) => {
-        ethereumProvider._emit(EventMethod.CONNECT, {
-          chainId,
-        });
-      });
+    ethereumProvider._emit(EventMethod.CONNECT, "");
   },
 
   _disconnect: (error) => {
@@ -136,10 +132,21 @@ const ethereumProvider: EthereumProvider = {
       error || { code: 4900, message: "Provider disconnected" }
     );
   },
+
+  getVaults: (): Promise<VaultProps[]> => {
+    return new Promise((resolve) => {
+      sendToBackgroundViaRelay<
+        Messaging.GetVaults.Request,
+        Messaging.GetVaults.Response
+      >({ name: "get-vaults" }).then(({ vaults }) => {
+        resolve(vaults);
+      });
+    });
+  },
 };
 
-ethereumProvider._connect();
 window.vultisig = ethereumProvider;
+window.vultisig._connect();
 if (!window.ethereum) window.ethereum = ethereumProvider;
 announceProvider({
   info: {

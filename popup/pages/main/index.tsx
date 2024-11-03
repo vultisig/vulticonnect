@@ -1,16 +1,7 @@
 import { useEffect, useState, type FC } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  Button,
-  Empty,
-  Flex,
-  message,
-  Modal,
-  Select,
-  Switch,
-  Tooltip,
-} from "antd";
+import { Button, Empty, message, Modal, Select, Switch, Tooltip } from "antd";
 
 import {
   getIsPriority,
@@ -20,13 +11,17 @@ import {
   setStoredChains,
   setStoredVaults,
 } from "~utils/storage";
-import type { ChainProps, Messaging, VaultProps } from "~utils/interfaces";
+import type { Messaging, VaultProps } from "~utils/interfaces";
 import messageKeys from "~utils/message-keys";
-
 import { BrokenLinkBold, ChevronRight, SettingsGear, Vultisig } from "~icons";
 import routeKeys from "~utils/route-keys";
+import {
+  chains,
+  EventMethod,
+  evmSupportedChains,
+  RequestMethod,
+} from "~utils/constants";
 import { sendToBackground } from "@plasmohq/messaging";
-import { ChainKey, chains, evmSupportedChains } from "~utils/constants";
 interface SelectOption {
   value: string;
   label: JSX.Element;
@@ -188,7 +183,7 @@ const Component: FC = () => {
           </div>
           <div className="view">
             <Button onClick={handleViewinWeb} shape="round" block>
-              {t(messageKeys.VIEW_IN_WEB)}
+              {t(messageKeys.VIEW_IN_AIRDROP)}
             </Button>
           </div>
           <span className="divider">{t(messageKeys.CURRENT_NETWORK)}</span>

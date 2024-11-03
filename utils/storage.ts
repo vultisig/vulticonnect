@@ -139,14 +139,9 @@ export const setStoredTransaction = (
   transaction: TransactionProps
 ): Promise<void> => {
   return new Promise((resolve) => {
-    getStoredVaults().then((vaults) => {
-      setStoredVaults(
-        vaults.map((vault) => ({
-          ...vault,
-          transactions: vault.transactions.map((t) =>
-            t.id === transaction.id ? transaction : t
-          ),
-        }))
+    getStoredTransactions().then((transactions) => {
+      setStoredTransactions(
+        transactions.map((tx) => (tx.id === transaction.id ? transaction : tx))
       ).then(resolve);
     });
   });
