@@ -11,6 +11,7 @@ export default keyMirror({
   CANCEL: true,
   CHOOSE_VAULT: true,
   CLOSE: true,
+  CONTINE_IN_NEW_WINDOW: true,
   CONNECT: true,
   CONNECT_WITH_VULTISIG: true,
   CONNECTED_DAPPS: true,

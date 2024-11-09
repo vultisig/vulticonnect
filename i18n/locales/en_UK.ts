@@ -9,6 +9,7 @@ export default {
   // C
   [messageKeys.CANCEL]: "Cancel",
   [messageKeys.CHOOSE_VAULT]: "Choose Vault",
+  [messageKeys.CONTINE_IN_NEW_WINDOW]: "Continue in the opened window",
   [messageKeys.CONNECT]: "Connect",
   [messageKeys.CLOSE]: "Close",
   [messageKeys.CONNECTED_DAPPS]: "Connected Apps",
