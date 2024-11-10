@@ -134,7 +134,6 @@ export default class TransactionProvider {
         isNativeToken: true,
         logo: transaction.chain.ticker.toLowerCase(),
       });
-
       this.provider
         .getTransactionCount(transaction.from)
         .then((nonce) => {
@@ -353,5 +352,14 @@ export default class TransactionProvider {
         );
       });
     });
+  };
+
+  public getDerivePath = (chain: string) => {
+    const coin = this.chainRef[chain];
+    return this.walletCore.CoinTypeExt.derivationPath(coin);
+  };
+
+  public getHexPubKey = () => {
+    return this.keysignPayload.coin.hexPublicKey;
   };
 }

@@ -1,7 +1,6 @@
 import { ChainKey, Currency, Language } from "utils/constants";
 
 export namespace Messaging {
-
   export namespace GetVaults {
     export type Request = any;
     export type Response = { vaults: VaultProps[] };
@@ -21,6 +20,16 @@ export namespace Messaging {
 export interface AccountsProps {
   chain: ChainKey;
   sender: string;
+}
+
+export interface FastSignInput {
+  public_key: string;
+  messages: string[];
+  session: string;
+  hex_encryption_key: string;
+  derive_path: string;
+  is_ecdsa: boolean;
+  vault_password: string;
 }
 
 export interface ChainProps {

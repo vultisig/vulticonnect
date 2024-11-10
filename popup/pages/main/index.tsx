@@ -22,6 +22,7 @@ import {
   RequestMethod,
 } from "~utils/constants";
 import { sendToBackground } from "@plasmohq/messaging";
+import React from "react";
 interface SelectOption {
   value: string;
   label: JSX.Element;
