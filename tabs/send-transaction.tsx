@@ -27,6 +27,7 @@ import WalletCoreProvider from "~utils/wallet-core-provider";
 import {
   ChevronLeft,
   QRCodeBorder,
+  ShareArrowIcon,
   SquareArrow,
   SquareBehindSquare,
 } from "~icons";
@@ -39,6 +40,7 @@ import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
 import { parseMemo, splitString } from "~utils/functions";
+import html2canvas from "html2canvas";
 
 interface InitialState {
   fastSign?: boolean;
@@ -100,6 +102,22 @@ const Component: FC = () => {
           content: t(messageKeys.UNSUCCESSFUL_COPY_LINK),
         });
       });
+  };
+
+  const exportQRCode = () => {
+    const qrContainer = document.querySelector(".qrcode") as HTMLElement;
+    if (qrContainer) {
+      html2canvas(qrContainer, {
+        backgroundColor: null,
+        logging: false,
+        useCORS: true,
+      }).then((canvas) => {
+        const link = document.createElement("a");
+        link.download = "qr-code.jpg";
+        link.href = canvas.toDataURL("image/jpeg");
+        link.click();
+      });
+    }
   };
 
   const initCloseTimer = (timeout: number) => {
@@ -333,6 +351,12 @@ const Component: FC = () => {
                 className="icon icon-left"
               />
             )}
+            {step === 2 && (
+              <ShareArrowIcon
+                onClick={() => exportQRCode()}
+                className="icon icon-right"
+              />
+            )}
             <span
               className="progress"
               style={{ width: `${(100 / 4) * step}%` }}
@@ -426,7 +450,7 @@ const Component: FC = () => {
                 </span>
                 <div className="qrcode">
                   <QRCodeBorder className="border" />
-                  <div className="qr-container" >
+                  <div className="qr-container">
                     <QRCode bordered size={275} value={sendKey} color="white" />
                   </div>
                 </div>
