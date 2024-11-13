@@ -32,6 +32,12 @@ export enum ChainKey {
   SUI = "Sui",
   THORCHAIN = "THORChain",
   ZKSYNC = "Zksync",
+  TON = "Ton",
+}
+
+export enum TssKeysignType {
+  ECDSA = "ECDSA",
+  EdDSA = "EdDSA",
 }
 
 export enum Currency {

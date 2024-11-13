@@ -1,6 +1,6 @@
 import { Interface } from "ethers";
 import api from "./api";
-import { evmSupportedChains } from "./constants";
+import { ChainKey, evmSupportedChains, TssKeysignType } from "./constants";
 import type { ParsedMemo } from "./interfaces";
 
 const hexToAscii = (value: string): string => {
@@ -139,6 +139,18 @@ function splitString(str: string, size: number): string[] {
   return result;
 }
 
+function getTssKeysignType(chain: ChainKey): TssKeysignType {
+  switch (chain) {
+    case ChainKey.SOLANA:
+    case ChainKey.POLKADOT:
+    case ChainKey.SUI:
+    case ChainKey.TON:
+      TssKeysignType.EdDSA;
+    default:
+      return TssKeysignType.ECDSA;
+  }
+}
+
 export {
   hexToAscii,
   toCamelCase,
@@ -147,4 +159,5 @@ export {
   parseMemo,
   isSupportedChain,
   splitString,
+  getTssKeysignType,
 };

@@ -1,5 +1,6 @@
 import { ConfigProvider, theme } from "antd";
 import type { FC, ReactNode } from "react";
+import React from "react";
 
 const Component: FC<{ children: ReactNode }> = ({ children }) => (
   <ConfigProvider

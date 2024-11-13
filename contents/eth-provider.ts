@@ -242,5 +242,5 @@ const intervalRef = setInterval(() => {
         prioritize = false;
       }
     })
-    .catch((err) => {});
+    .catch((err) => { });
 }, 500);

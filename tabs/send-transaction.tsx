@@ -1,9 +1,9 @@
 import { useEffect, useState, type FC } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, QRCode, message } from "antd";
+import { Button, Form, Input, QRCode, message } from "antd";
 import { formatUnits, toUtf8String } from "ethers";
 
-import { errorKey, explorerUrl } from "~utils/constants";
+import { errorKey, explorerUrl, TssKeysignType } from "~utils/constants";
 import {
   getStoredCurrency,
   getStoredLanguage,
@@ -38,7 +38,8 @@ import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
-import { parseMemo, splitString } from "~utils/functions";
+import { getTssKeysignType, parseMemo, splitString } from "~utils/functions";
+import React from "react";
 
 interface InitialState {
   fastSign?: boolean;
@@ -55,11 +56,19 @@ interface InitialState {
   errorDescription?: string;
 }
 
+interface FormProps {
+  password: string;
+}
 const Component: FC = () => {
   const { t } = useTranslation();
   const RETRY_TIMEOUT = 120000; //2min
   const CLOSE_TIMEOUT = 60000; //1min
-  const initialState: InitialState = { step: 1, hasError: false };
+  const [form] = Form.useForm();
+  const [connectedDevices, setConnectedDevices] = useState(0);
+  const initialState: InitialState = {
+    step: 1,
+    hasError: false,
+  };
   const [state, setState] = useState(initialState);
   const {
     fastSign,
@@ -83,6 +92,57 @@ const Component: FC = () => {
 
   const handleClose = (): void => {
     window.close();
+  };
+
+  const handleFastSign = (): void => {
+    if (connectedDevices >= 1) handleStep(3);
+    else
+      messageApi.open({
+        type: "warning",
+        content: t(messageKeys.SCAN_FIRST),
+      });
+  };
+
+  const handleSubmitFastSignPassword = (): void => {
+    txProvider.getPreSignedInputData().then((preSignedInputData) => {
+      txProvider
+        .getPreSignedImageHash(preSignedInputData)
+        .then((preSignedImageHash) => {
+          const tssType = getTssKeysignType(transaction.chain.name);
+          // this.walletCore.CoinTypeExt.derivationPath(coin),
+          form
+            .validateFields()
+            .then(({ password }: FormProps) => {
+              api.fastVault
+                .signWithServer({
+                  vault_password: password,
+                  hex_encryption_key: txProvider.getHexPubKey(),
+                  is_ecdsa:
+                    getTssKeysignType(transaction.chain.name) ===
+                    TssKeysignType.ECDSA,
+                  derive_path: txProvider.getDerivePath(transaction.chain.name),
+                  messages: [preSignedImageHash],
+                  public_key:
+                    tssType === TssKeysignType.ECDSA
+                      ? vault.publicKeyEcdsa
+                      : vault.publicKeyEddsa,
+                  session: transaction.id,
+                })
+                .then(() => {
+                  setState((prevState) => ({ ...prevState, step: 4 }));
+                  handlePending(preSignedImageHash);
+                })
+                .catch((err) => {
+                  console.error(err);
+                  messageApi.open({
+                    type: "error",
+                    content: t(messageKeys.SIGNING_ERROR),
+                  });
+                });
+            })
+            .catch(() => {});
+        });
+    });
   };
 
   const handleCopy = (): void => {
@@ -136,7 +196,7 @@ const Component: FC = () => {
               }).then(() => {
                 setState((prevState) => ({
                   ...prevState,
-                  step: 4,
+                  step: 5,
                   transaction: { ...transaction, txHash },
                 }));
                 initCloseTimer(CLOSE_TIMEOUT);
@@ -166,6 +226,7 @@ const Component: FC = () => {
     api.transaction
       .getDevices(transaction.id)
       .then(({ data }) => {
+        setConnectedDevices(data?.length);
         if (data?.length > 1) {
           api.transaction.setStart(transaction.id, data).then(() => {
             setStoredTransaction({ ...transaction, status: "pending" }).then(
@@ -176,7 +237,7 @@ const Component: FC = () => {
                     txProvider
                       .getPreSignedImageHash(preSignedInputData)
                       .then((preSignedImageHash) => {
-                        setState((prevState) => ({ ...prevState, step: 3 }));
+                        setState((prevState) => ({ ...prevState, step: 4 }));
 
                         handlePending(preSignedImageHash);
                       });
@@ -211,17 +272,18 @@ const Component: FC = () => {
               txProvider
                 .getTransactionKey(vault.publicKeyEcdsa, transaction.id)
                 .then((sendKey) => {
-                  api.checkVaultExist(vault.publicKeyEcdsa).then((fastSign) => {
-                    setState((prevState) => ({
-                      ...prevState,
-                      fastSign,
-                      loading: false,
-                      sendKey,
-                      step,
-                    }));
-
-                    handleStart();
-                  });
+                  api.fastVault
+                    .checkVaultExist(vault.publicKeyEcdsa)
+                    .then((fastSign) => {
+                      setState((prevState) => ({
+                        ...prevState,
+                        fastSign,
+                        loading: false,
+                        sendKey,
+                        step,
+                      }));
+                      handleStart();
+                    });
                 })
                 .catch(() => {
                   setState((prevState) => ({ ...prevState, loading: false }));
@@ -322,7 +384,7 @@ const Component: FC = () => {
               {t(
                 step === 1
                   ? messageKeys.VERIFY_SEND
-                  : step === 4
+                  : step === 5
                   ? messageKeys.TRANSACTION_SUCCESSFUL
                   : messageKeys.SIGN_TRANSACTION
               )}
@@ -330,6 +392,12 @@ const Component: FC = () => {
             {step === 2 && (
               <ChevronLeft
                 onClick={() => handleStep(1)}
+                className="icon icon-left"
+              />
+            )}
+            {step === 3 && (
+              <ChevronLeft
+                onClick={() => handleStep(2)}
                 className="icon icon-left"
               />
             )}
@@ -426,13 +494,19 @@ const Component: FC = () => {
                 </span>
                 <div className="qrcode">
                   <QRCodeBorder className="border" />
-                  <div className="qr-container" >
+                  <div className="qr-container">
                     <QRCode bordered size={275} value={sendKey} color="white" />
                   </div>
                 </div>
               </div>
               <div className="footer">
-                <Button type="primary" shape="round" disabled block>
+                <Button
+                  onClick={handleFastSign}
+                  type="primary"
+                  shape="round"
+                  disabled={!fastSign}
+                  block
+                >
                   {t(messageKeys.FAST_SIGN)}
                 </Button>
                 <Button onClick={handleApp} type="default" shape="round" block>
@@ -441,6 +515,29 @@ const Component: FC = () => {
               </div>
             </>
           ) : step === 3 ? (
+            <>
+              <div className="content">
+                <div className="content">
+                  <Form form={form}>
+                    <Form.Item name="password" rules={[{ required: true }]}>
+                      <Input placeholder="FastSign Password" type="password" />
+                    </Form.Item>
+                    <Button htmlType="submit" />
+                  </Form>
+                </div>
+                <div className="footer">
+                  <Button
+                    onClick={handleSubmitFastSignPassword}
+                    type="primary"
+                    shape="round"
+                    block
+                  >
+                    Submit
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : step === 4 ? (
             <>
               <div className="content">
                 <VultiLoading />

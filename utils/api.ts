@@ -2,7 +2,7 @@ import axios from "axios";
 
 import { toCamelCase, toSnakeCase } from "~utils/functions";
 import type { Currency } from "~utils/constants";
-import type { SignatureProps } from "~utils/interfaces";
+import type { FastSignInput, SignatureProps } from "~utils/interfaces";
 
 const api = axios.create({
   headers: { accept: "application/json" },
@@ -87,18 +87,7 @@ export default {
       );
     },
   },
-  checkVaultExist: (ecdsa: string): Promise<boolean> => {
-    return new Promise((resolve) => {
-      api
-        .get(`https://api.vultisig.com/vault/exist/${ecdsa}`)
-        .then(() => {
-          resolve(true);
-        })
-        .catch(() => {
-          resolve(false);
-        });
-    });
-  },
+
   cryptoCurrency: (cmcId: number, currency: Currency): Promise<number> => {
     return new Promise((resolve) => {
       api
@@ -158,5 +147,27 @@ export default {
           reject("Error getting FunctionSelector Text");
         });
     });
+  },
+  fastVault: {
+    checkVaultExist: (ecdsa: string): Promise<boolean> => {
+      return new Promise((resolve) => {
+        api
+          .get(`https://api.vultisig.com/vault/exist/${ecdsa}`)
+          .then(() => {
+            resolve(true);
+          })
+          .catch(() => {
+            resolve(false);
+          });
+      });
+    },
+    signWithServer: async (input: FastSignInput) => {
+      return new Promise((resolve, reject) => {
+        const url = `https://api.vultisig.com/vault/sign`;
+        api
+          .post(url, input)
+          .then(resolve).catch(reject);
+      });
+    },
   },
 };
