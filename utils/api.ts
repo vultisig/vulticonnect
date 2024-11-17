@@ -2,7 +2,11 @@ import axios from "axios";
 
 import { toCamelCase, toSnakeCase } from "~utils/functions";
 import type { Currency } from "~utils/constants";
-import type { SignatureProps } from "~utils/interfaces";
+import type {
+  SignatureProps,
+  ThorchainAccountDataResponse,
+} from "~utils/interfaces";
+import { resolve } from "path";
 
 const api = axios.create({
   headers: { accept: "application/json" },
@@ -150,4 +154,49 @@ export default {
         });
     });
   },
+  thorchain: {
+    fetchAccountNumber: async (address: string) => {
+      return new Promise<ThorchainAccountDataResponse>((resolve, reject) => {
+        const url = `https://thornode.ninerealms.com/auth/accounts/${address}`;
+        api
+          .get(url, {
+            headers: {
+              "X-Client-ID": "vultisig",
+            },
+          })
+          .then((res) => {
+            resolve(res.data.result.value);
+          })
+          .catch(reject);
+      });
+    },
+    getFeeData: () => {
+      return new Promise((resolve, reject) => {
+        const url = "https://thornode.ninerealms.com/thorchain/network";
+        api
+          .get(url)
+          .then((res) => {
+            console.log("getFeeData");
+            console.log(res);
+            resolve(res.data.nativeTxFeeRune);
+          })
+          .catch(reject);
+      });
+    },
+
+    getTHORChainChainID(): Promise<string> {
+      return new Promise((resolve, reject) => {
+        const url = "https://rpc.ninerealms.com/status";
+        api
+          .get(url)
+          .then((res) => {
+            const network = res.data.result.nodeInfo.network;
+            resolve(network);
+          })
+          .catch(reject);
+      });
+    },
+  },
 };
+// https://api.vultisig.com/router/complete/8adb9484-1281-488a-9317-55b7342305a4/keysign
+// {"Msg":"urEXgamwaKXGaYqmnk2qDdpaZIByR5ExGX1B5ODcPGk=","R":"9a2c1d9a52b5d139b8a54e97ef9b969315b1c8687bfd5e27bc5fda565734f28e","S":"42539d630bd95967d7c5a3a3c4c66fdbc31fbb7183fcd983f60b37b7bbd7399c","DerSignature":"30450221009a2c1d9a52b5d139b8a54e97ef9b969315b1c8687bfd5e27bc5fda565734f28e022042539d630bd95967d7c5a3a3c4c66fdbc31fbb7183fcd983f60b37b7bbd7399c","RecoveryID":"00"}

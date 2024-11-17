@@ -3,36 +3,25 @@ import { JsonRpcProvider, type TransactionRequest } from "ethers";
 import {
   ChainKey,
   chains,
-  EVMRequestMethod,
   rpcUrl,
   ThorRequestMethod,
 } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import {
-  getStoredChains,
   getStoredTransactions,
   getStoredVaults,
-  setStoredChains,
   setStoredRequest,
   setStoredTransactions,
   setStoredVaults,
 } from "~utils/storage";
 import axios from "axios";
-import { isSupportedChain } from "~utils/functions";
 
 let rpcProvider: JsonRpcProvider;
 
 const initializeProvider = (chainKey: string) => {
   const rpc = rpcUrl[chainKey];
   rpcProvider = new JsonRpcProvider(rpc);
-};
-
-const updateProvider = (chainKey: string) => {
-  if (rpcProvider) {
-    const rpc = rpcUrl[chainKey];
-    rpcProvider = new JsonRpcProvider(rpc);
-  }
 };
 
 const getAccounts = (
@@ -107,84 +96,82 @@ const sendTransaction = (
   transactionHash: string;
 }> => {
   return new Promise((resolve, reject) => {
-    getStoredChains().then((chains) => {
-      getStoredTransactions().then((transactions) => {
-        const chain = chains.find((chain) => chain.id === activeChain);
-        const uuid = uuidv4();
-        setStoredTransactions([
-          {
-            ...transaction,
-            chain,
-            id: uuid,
-            status: "default",
-          },
-          ...transactions,
-        ]).then(() => {
-          let createdWindowId: number;
+    getStoredTransactions().then((transactions) => {
+      const chain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
+      const uuid = uuidv4();
+      setStoredTransactions([
+        {
+          ...transaction,
+          chain,
+          id: uuid,
+          status: "default",
+        },
+        ...transactions,
+      ]).then(() => {
+        let createdWindowId: number;
 
-          chrome.windows.getCurrent({ populate: true }, (currentWindow) => {
-            const height = 639;
-            const width = 376;
-            let left = 0;
-            let top = 0;
+        chrome.windows.getCurrent({ populate: true }, (currentWindow) => {
+          const height = 639;
+          const width = 376;
+          let left = 0;
+          let top = 0;
 
-            if (
-              currentWindow &&
-              currentWindow.left !== undefined &&
-              currentWindow.top !== undefined &&
-              currentWindow.width !== undefined
-            ) {
-              left = currentWindow.left + currentWindow.width - width;
-              top = currentWindow.top;
-            }
+          if (
+            currentWindow &&
+            currentWindow.left !== undefined &&
+            currentWindow.top !== undefined &&
+            currentWindow.width !== undefined
+          ) {
+            left = currentWindow.left + currentWindow.width - width;
+            top = currentWindow.top;
+          }
 
-            chrome.windows.create(
-              {
-                url: chrome.runtime.getURL("tabs/send-transaction.html"),
-                type: "popup",
-                height,
-                left,
-                top,
-                width,
-              },
-              (window) => {
-                createdWindowId = window.id;
-                getStoredTransactions().then((transactions) => {
-                  setStoredTransactions(
-                    transactions.map((transaction) =>
-                      transaction.id === uuid
-                        ? { ...transaction, windowId: createdWindowId }
-                        : transaction
-                    )
-                  );
-                });
-              }
-            );
-          });
-
-          chrome.windows.onRemoved.addListener((closedWindowId) => {
-            if (closedWindowId === createdWindowId) {
+          chrome.windows.create(
+            {
+              url: chrome.runtime.getURL("tabs/send-transaction.html"),
+              type: "popup",
+              height,
+              left,
+              top,
+              width,
+            },
+            (window) => {
+              createdWindowId = window.id;
               getStoredTransactions().then((transactions) => {
-                const transaction = transactions.find(
-                  ({ windowId }) => windowId === createdWindowId
+                setStoredTransactions(
+                  transactions.map((transaction) =>
+                    transaction.id === uuid
+                      ? { ...transaction, windowId: createdWindowId }
+                      : transaction
+                  )
                 );
-                if (transaction?.status !== "default") {
-                  getStoredVaults().then((vaults) => {
-                    setStoredVaults(
-                      vaults.map((vault) => ({
-                        ...vault,
-                        transactions: [transaction, ...vault.transactions],
-                      }))
-                    ).then(() => {
-                      resolve({ transactionHash: transaction.txHash });
-                    });
-                  });
-                } else {
-                  reject();
-                }
               });
             }
-          });
+          );
+        });
+
+        chrome.windows.onRemoved.addListener((closedWindowId) => {
+          if (closedWindowId === createdWindowId) {
+            getStoredTransactions().then((transactions) => {
+              const transaction = transactions.find(
+                ({ windowId }) => windowId === createdWindowId
+              );
+              if (transaction?.status !== "default") {
+                getStoredVaults().then((vaults) => {
+                  setStoredVaults(
+                    vaults.map((vault) => ({
+                      ...vault,
+                      transactions: [transaction, ...vault.transactions],
+                    }))
+                  ).then(() => {
+                    resolve({ transactionHash: transaction.txHash });
+                  });
+                });
+              } else {
+                reject();
+              }
+            });
+          }
         });
       });
     });
@@ -194,13 +181,13 @@ const sendTransaction = (
 const handleRequest = (
   req: PlasmoMessaging.Request<
     keyof MessagesMetadata,
-    Messaging.EthRequest.Request
+    Messaging.ThorRequest.Request
   >
-): Promise<Messaging.EthRequest.Response> => {
+): Promise<Messaging.ThorRequest.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = req.body;
-    console.log(req.body);
-
+    const THORChain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
+    initializeProvider(THORChain.name);
     switch (method) {
       case ThorRequestMethod.REQUEST_ACCOUNTS: {
         getAccounts(ChainKey.THORCHAIN, req.sender.origin).then(
@@ -210,8 +197,34 @@ const handleRequest = (
         );
         break;
       }
+      case ThorRequestMethod.SEND_TRANSACTION: {
+        const [transaction] = params as TransactionProps[];
+        if (transaction) {
+          sendTransaction(transaction, THORChain.id)
+            .then(({ transactionHash }) => {
+              resolve(transactionHash);
+            })
+            .catch(reject);
+        } else {
+          reject();
+        }
+        break;
+      }
+      case ThorRequestMethod.GET_TRANSACTION_BY_HASH: {
+        const [hash] = params;
+        axios
+          .post(rpcUrl[THORChain.name], {
+            id: 1,
+            jsonrpc: "2.0",
+            method: "tx",
+            params: [hash.hash,false],
+          })
+          .then((res) => {
+            resolve(res.data.result);
+          });
+        break;
+      }
       default: {
-        // _emit(EventMethod.ERROR, new Error(`Unsupported method: ${method}`));
         reject(`Unsupported method: ${method}`);
 
         break;
