@@ -167,7 +167,6 @@ export default class ThorchainTransactionProvider {
           },
         });
         this.keysignPayload = keysignPayload;
-
         resolve(keysignPayload);
       });
     });

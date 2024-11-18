@@ -1,29 +1,6 @@
-import {
-  JsonRpcProvider,
-  Transaction,
-  encodeBase64,
-  formatUnits,
-  hexlify,
-  isHexString,
-  keccak256,
-  randomBytes,
-  toUtf8Bytes,
-  toUtf8String,
-} from "ethers";
-import { create, toBinary } from "@bufbuild/protobuf";
-import { TW, type WalletCore } from "@trustwallet/wallet-core";
+import {  type WalletCore } from "@trustwallet/wallet-core";
 import type { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
 
-import {
-  EthereumSpecificSchema,
-  type EthereumSpecific,
-} from "~protos/blockchain_specific_pb";
-import { CoinSchema } from "~protos/coin_pb";
-import {
-  KeysignMessageSchema,
-  KeysignPayloadSchema,
-  type KeysignPayload,
-} from "~protos/keysign_message_pb";
 
 import { ChainKey, Currency, rpcUrl } from "~utils/constants";
 import type {

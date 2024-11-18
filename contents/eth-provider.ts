@@ -48,6 +48,8 @@ const ethereumProvider: EthereumProvider = {
   _events: {},
   isConnected: () => true,
   request: (body) => {
+    console.log(body);
+
     return new Promise((resolve, reject) => {
       sendToBackgroundViaRelay<
         Messaging.EthRequest.Request,

@@ -19,13 +19,6 @@ const initializeProvider = (chainKey: string) => {
   rpcProvider = new JsonRpcProvider(rpc);
 };
 
-const updateProvider = (chainKey: string) => {
-  if (rpcProvider) {
-    const rpc = rpcUrl[chainKey];
-    rpcProvider = new JsonRpcProvider(rpc);
-  }
-};
-
 const getAccounts = (
   chain: ChainKey,
   sender: string
@@ -100,7 +93,6 @@ const sendTransaction = (
   return new Promise((resolve, reject) => {
     getStoredTransactions().then((transactions) => {
       const chain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
-      // const chain = chains.find((chain) => chain.id === activeChain);
       const uuid = uuidv4();
       setStoredTransactions([
         {
@@ -219,7 +211,6 @@ const handleRequest = (
         break;
       }
       default: {
-        // _emit(EventMethod.ERROR, new Error(`Unsupported method: ${method}`));
         reject(`Unsupported method: ${method}`);
 
         break;
