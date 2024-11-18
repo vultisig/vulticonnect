@@ -39,7 +39,6 @@ interface EthereumProvider {
   _emit(event: string, data: any): void;
   _connect(): void;
   _disconnect(error?: { code: number; message: string }): void;
-  getVaults(): Promise<VaultProps[]>;
 }
 
 const ethereumProvider: EthereumProvider = {
@@ -144,17 +143,6 @@ const ethereumProvider: EthereumProvider = {
       error || { code: 4900, message: "Provider disconnected" }
     );
   },
-
-  getVaults: (): Promise<VaultProps[]> => {
-    return new Promise((resolve) => {
-      sendToBackgroundViaRelay<
-        Messaging.GetVaults.Request,
-        Messaging.GetVaults.Response
-      >({ name: "get-vaults" }).then(({ vaults }) => {
-        resolve(vaults);
-      });
-    });
-  },
 };
 
 const thorchainProvider: ThorchainProvider = {
@@ -209,7 +197,19 @@ window.thorchain = thorchainProvider;
 const providers = {
   ethereum: ethereumProvider,
   thorchain: thorchainProvider,
+  getVaults: (): Promise<VaultProps[]> => {
+    return new Promise((resolve) => {
+      sendToBackgroundViaRelay<
+        Messaging.GetVaults.Request,
+        Messaging.GetVaults.Response
+      >({ name: "get-vaults" }).then(({ vaults }) => {
+        resolve(vaults);
+      });
+    });
+  },
 };
+
+window.vultisig = providers;
 
 if (!window.ethereum) window.ethereum = ethereumProvider;
 announceProvider({
