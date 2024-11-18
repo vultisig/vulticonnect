@@ -54,6 +54,7 @@ export default {
   [messageKeys.REALOAD_MESSAGE]: "Please reload your webpage to see effects",
   [messageKeys.REMOVING_VAULT_WARNING]: "You are removing Vault",
   [messageKeys.RENAME_VAULT]: "Rename Vault",
+  [messageKeys.RETRY_ERROR]: "An error happened! Please retry",
   // S
   [messageKeys.SAVE]: "Save",
   [messageKeys.SCAN_QR_WITH_DEVICE]: "Scan QR code with pair device",

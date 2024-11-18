@@ -153,7 +153,7 @@ export enum ThorRequestMethod {
   ETH_GET_STORAGEAT = "eth_getStorageAt",
   ETH_GET_TRANSACTION_BY_BLOCK_HASH_AND_INDEX = "eth_getTransactionByBlockHashAndIndex",
   ETH_GET_TRANSACTION_BY_BLOCK_NUMBER_AND_INDEX = "eth_getTransactionByBlockNumberAndIndex",
-  ETH_GET_TRANSACTION_BY_HASH = "eth_getTransactionByHash",
+  GET_TRANSACTION_BY_HASH = "get_transaction_by_hash",
   ETH_GET_TRANSACTION_COUNT = "eth_getTransactionCount",
   ETH_GET_TRANSACTION_RECEIPT = "eth_getTransactionReceipt",
   ETH_GET_UNCLE_COUNT_BY_BLOCK_HASH = "eth_getUncleCountByBlockHash",
@@ -164,7 +164,7 @@ export enum ThorRequestMethod {
   ETH_NEW_PENDING_TRANSACTION_FILTER = "eth_newPendingTransactionFilter",
   REQUEST_ACCOUNTS = "request_accounts",
   ETH_SEND_RAW_TRANSACTION = "eth_sendRawTransaction",
-  ETH_SEND_TRANSACTION = "eth_sendTransaction",
+  SEND_TRANSACTION = "send_transaction",
   ETH_SIGN = "eth_sign",
   ETH_SIGN_TYPED_DATA_V4 = "eth_signTypedData_v4",
   ETH_SUBSCRIBE = "eth_subscribe",
@@ -260,7 +260,7 @@ export const explorerUrl: ChainExplorerRef = {
   [ChainKey.POLKADOT]: "https://polkadot.subscan.io/account",
   [ChainKey.POLYGON]: "https://polygonscan.com",
   [ChainKey.SOLANA]: "https://explorer.solana.com",
-  [ChainKey.THORCHAIN]: "https://thorchain.net/tx",
+  [ChainKey.THORCHAIN]: "https://thorchain.net",
   [ChainKey.ZKSYNC]: "https://explorer.zksync.io",
 };
 
@@ -275,6 +275,7 @@ export const rpcUrl: ChainRpcRef = {
   [ChainKey.ETHEREUM]: "https://ethereum-rpc.publicnode.com",
   [ChainKey.POLYGON]: "https://polygon-bor-rpc.publicnode.com",
   [ChainKey.ZKSYNC]: "https://mainnet.era.zksync.io",
+  [ChainKey.THORCHAIN]: "https://rpc.ninerealms.com/",
 };
 
 export const chains: ChainProps[] = [
@@ -421,7 +422,7 @@ export const chains: ChainProps[] = [
   {
     cmcId: 4157,
     decimals: 8,
-    id: "Thorchain_thorchain",
+    id: "Thorchain_1",
     name: ChainKey.THORCHAIN,
     ticker: "RUNE",
   },

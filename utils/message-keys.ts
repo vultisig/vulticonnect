@@ -59,6 +59,7 @@ export default keyMirror({
   REALOAD_MESSAGE: true,
   REMOVING_VAULT_WARNING: true,
   RENAME_VAULT: true,
+  RETRY_ERROR:true,
   // S
   SAVE: true,
   SCAN_QR_WITH_DEVICE: true,

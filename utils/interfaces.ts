@@ -74,6 +74,7 @@ export interface ChainRpcRef {
   [ChainKey.ETHEREUM]: string;
   [ChainKey.POLYGON]: string;
   [ChainKey.ZKSYNC]: string;
+  [ChainKey.THORCHAIN]: string;
 }
 
 export interface CurrencyRef {
@@ -147,4 +148,22 @@ export interface VaultProps {
 export interface ParsedMemo {
   signature: string;
   inputs: string;
+}
+
+export interface ThorchainAccountDataResponse {
+  address: string;
+  publicKey: {
+    type: string;
+    value: string;
+  };
+  accountNumber: string;
+  sequence: string;
+}
+
+export interface SpecificThorchain {
+  fee: number;
+  gasPrice: number;
+  accountNumber: number;
+  sequence: number;
+  isDeposit: boolean;
 }
