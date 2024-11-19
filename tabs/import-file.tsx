@@ -1,41 +1,31 @@
-import { useEffect, useState, type FC } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useState, type FC } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Upload, type UploadProps } from "antd";
 import { readBarcodesFromImageFile, type ReaderOptions } from "zxing-wasm";
-import { UAParser } from "ua-parser-js";
 import { toCamelCase } from "~utils/functions";
 import { chains, errorKey } from "~utils/constants";
 import { getStoredVaults, setStoredVaults } from "~utils/storage";
 import type { VaultProps } from "~utils/interfaces";
-import useGoBack from "~hooks/go-back";
 import AddressProvider from "~utils/address-provider";
 import WalletCoreProvider from "~utils/wallet-core-provider";
 import messageKeys from "~utils/message-keys";
-import routeKeys from "~utils/route-keys";
-
-import { ChevronLeft, CrossShapeBold } from "~icons";
+import { CrossShapeBold } from "~icons";
+import "~styles/index.scss";
+import "~popup/index.scss";
+import "./import-file.scss";
 
 interface InitialState {
-  file?: File;
+  file?: File | Blob;
   loading: boolean;
   status: "default" | "error" | "success";
   vault?: VaultProps;
-  isWindows?: boolean;
 }
 
 const Component: FC = () => {
   const { t } = useTranslation();
-  const initialState: InitialState = {
-    loading: false,
-    status: "default",
-    isWindows: true,
-  };
+  const initialState: InitialState = { loading: false, status: "default" };
   const [state, setState] = useState(initialState);
   const { file, loading, status, vault } = state;
-  const location = useLocation();
-  const navigate = useNavigate();
-  const goBack = useGoBack();
   const walletCore = new WalletCoreProvider();
 
   const handleStart = (): void => {
@@ -54,7 +44,7 @@ const Component: FC = () => {
           setStoredVaults(modifiedVaults).then(() => {
             setState((prevState) => ({ ...prevState, loading: false }));
 
-            navigate(routeKeys.main, { state: true });
+            handleClose();
           });
         } else {
           walletCore
@@ -82,8 +72,8 @@ const Component: FC = () => {
 
                 setStoredVaults(modifiedVaults).then(() => {
                   setState((prevState) => ({ ...prevState, loading: false }));
-
-                  navigate(routeKeys.main, { state: true });
+                  handleClose();
+                  // navigate(routeKeys.main, { state: true });
                 });
               });
             })
@@ -93,6 +83,10 @@ const Component: FC = () => {
         }
       });
     }
+  };
+
+  const handleClose = () => {
+    window.close();
   };
 
   const handleClear = (): void => {
@@ -121,7 +115,7 @@ const Component: FC = () => {
     }
   };
 
-  const handleUpload = (file: File): false => {
+  const handleUpload = (file: File | Blob): false => {
     setState(initialState);
 
     const reader = new FileReader();
@@ -181,51 +175,6 @@ const Component: FC = () => {
     return false;
   };
 
-  const componentDidMount = (): void => {
-    let parser = new UAParser();
-    let parserResults = parser.getResult();
-    if (parserResults.os.name != "Windows") {
-      setState({ ...state, isWindows: false });
-      chrome.windows.getCurrent({ populate: true }, (currentWindow) => {
-        let createdWindowId: number;
-        const height = 639;
-        const width = 376;
-        let left = 0;
-        let top = 0;
-
-        if (
-          currentWindow &&
-          currentWindow.left !== undefined &&
-          currentWindow.top !== undefined &&
-          currentWindow.width !== undefined
-        ) {
-          left = currentWindow.left + currentWindow.width - width;
-          top = currentWindow.top;
-        }
-        chrome.windows.create(
-          {
-            url: chrome.runtime.getURL("tabs/import-file.html"),
-            type: "panel",
-            height,
-            left,
-            top,
-            width,
-          },
-          (window) => {
-            createdWindowId = window.id;
-          }
-        );
-
-        chrome.windows.onRemoved.addListener((closedWindowId) => {
-          if (closedWindowId === createdWindowId) {
-            navigate(routeKeys.main, { state: true });
-          }
-        });
-      });
-    }
-  };
-
-  useEffect(componentDidMount, []);
   const props: UploadProps = {
     multiple: false,
     showUploadList: false,
@@ -233,16 +182,10 @@ const Component: FC = () => {
     fileList: [],
   };
 
-  return state.isWindows ? (
+  return (
     <div className="layout import-page">
       <div className="header">
         <span className="heading">{t(messageKeys.IMPORT_VAULT)}</span>
-        {location.state && (
-          <ChevronLeft
-            className="icon icon-left"
-            onClick={() => goBack(routeKeys.main)}
-          />
-        )}
       </div>
       <div className="content">
         <Upload.Dragger {...props} className={status}>
@@ -295,12 +238,6 @@ const Component: FC = () => {
         >
           {t(messageKeys.IMPORT_VAULT)}
         </Button>
-      </div>
-    </div>
-  ) : (
-    <div className="layout import-page">
-      <div className="content">
-        <div className="hint">{t(messageKeys.CONTINE_IN_NEW_WINDOW)}</div>
       </div>
     </div>
   );

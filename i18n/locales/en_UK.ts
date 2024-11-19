@@ -9,6 +9,7 @@ export default {
   // C
   [messageKeys.CANCEL]: "Cancel",
   [messageKeys.CHOOSE_VAULT]: "Choose Vault",
+  [messageKeys.CONTINE_IN_NEW_WINDOW]: "Continue in the opened window",
   [messageKeys.CONNECT]: "Connect",
   [messageKeys.CLOSE]: "Close",
   [messageKeys.CONNECTED_DAPPS]: "Connected Apps",
@@ -83,7 +84,7 @@ export default {
   [messageKeys.VAULT_SETTINGS]: "Vault Settings",
   [messageKeys.VERIFY_SEND]: "Verify Send",
   [messageKeys.VIEW_TX]: "VIEW TX",
-  [messageKeys.VIEW_IN_WEB]: "View in web",
+  [messageKeys.VIEW_IN_AIRDROP]: "View in Airdrop",
   [messageKeys.VULT_TOKEN]: "The $VULT Token",
   [messageKeys.VULTISIG]: "Vultisig",
   [messageKeys.CONNECT_WITH_VULTISIG]: "Connect With Vultisig",

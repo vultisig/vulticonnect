@@ -183,7 +183,7 @@ const Component: FC = () => {
           </div>
           <div className="view">
             <Button onClick={handleViewinWeb} shape="round" block>
-              {t(messageKeys.VIEW_IN_WEB)}
+              {t(messageKeys.VIEW_IN_AIRDROP)}
             </Button>
           </div>
           <span className="divider">{t(messageKeys.CURRENT_NETWORK)}</span>

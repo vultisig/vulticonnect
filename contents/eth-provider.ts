@@ -31,6 +31,7 @@ interface EthereumProvider {
   isMetaMask: boolean;
   isVultiConnect: boolean;
   _events: Record<string, Function[]>;
+  networkVersion: string;
   enable(): Promise<string[]>;
   isConnected(): boolean;
   on(event: string, callback: (data: any) => void): void;
@@ -44,6 +45,7 @@ interface EthereumProvider {
 const ethereumProvider: EthereumProvider = {
   isMetaMask: true,
   isVultiConnect: true,
+  networkVersion: "1",
   _events: {},
   isConnected: () => true,
   request: (body) => {
@@ -72,7 +74,6 @@ const ethereumProvider: EthereumProvider = {
         .catch(reject);
     });
   },
-
   enable: () => {
     return new Promise((resolve, reject) => {
       ethereumProvider

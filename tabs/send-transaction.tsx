@@ -27,6 +27,7 @@ import WalletCoreProvider from "~utils/wallet-core-provider";
 import {
   ChevronLeft,
   QRCodeBorder,
+  ShareArrowIcon,
   SquareArrow,
   SquareBehindSquare,
 } from "~icons";
@@ -38,11 +39,12 @@ import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
-import { parseMemo } from "~utils/functions";
 import EVMTransactionProvider from "~utils/evm-tx-provider";
 import type ThorchainTransactionProvider from "~utils/thorchain-tx-provider";
 import { create } from "@bufbuild/protobuf";
 import { CoinSchema } from "~protos/coin_pb";
+import { parseMemo, splitString } from "~utils/functions";
+import html2canvas from "html2canvas";
 
 interface InitialState {
   fastSign?: boolean;
@@ -104,6 +106,22 @@ const Component: FC = () => {
           content: t(messageKeys.UNSUCCESSFUL_COPY_LINK),
         });
       });
+  };
+
+  const exportQRCode = () => {
+    const qrContainer = document.querySelector(".qrcode") as HTMLElement;
+    if (qrContainer) {
+      html2canvas(qrContainer, {
+        backgroundColor: null,
+        logging: false,
+        useCORS: true,
+      }).then((canvas) => {
+        const link = document.createElement("a");
+        link.download = "qr-code.jpg";
+        link.href = canvas.toDataURL("image/jpeg");
+        link.click();
+      });
+    }
   };
 
   const initCloseTimer = (timeout: number) => {
@@ -333,7 +351,9 @@ const Component: FC = () => {
                   try {
                     transaction.memo = toUtf8String(transaction.data);
                   } catch (err) {
-                    transaction.memo = transaction.data;
+                    if (!parsedMemo) {
+                      transaction.memo = transaction.data;
+                    }
                   }
                   setStoredTransaction(transaction).then(() => {
                     setState((prevState) => ({
@@ -379,6 +399,12 @@ const Component: FC = () => {
                 className="icon icon-left"
               />
             )}
+            {step === 2 && (
+              <ShareArrowIcon
+                onClick={() => exportQRCode()}
+                className="icon icon-right"
+              />
+            )}
             <span
               className="progress"
               style={{ width: `${(100 / 4) * step}%` }}
@@ -408,10 +434,18 @@ const Component: FC = () => {
                       )} ${transaction.chain.ticker}`}</span>
                     </div>
                   )}
-                  {transaction.memo && (
-                    <div className="list-item">
+                  {transaction.memo && !parsedMemo && (
+                    <div className="memo-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
-                      <span className="extra">{transaction.memo}</span>
+                      <span className="extra">
+                        <div>
+                          {splitString(transaction.memo, 32).map(
+                            (str, index) => (
+                              <div key={index}>{str}</div>
+                            )
+                          )}
+                        </div>
+                      </span>
                     </div>
                   )}
                   <div className="list-item">
@@ -464,7 +498,9 @@ const Component: FC = () => {
                 </span>
                 <div className="qrcode">
                   <QRCodeBorder className="border" />
-                  <QRCode size={312} value={sendKey} />
+                  <div className="qr-container">
+                    <QRCode bordered size={275} value={sendKey} color="white" />
+                  </div>
                 </div>
               </div>
               <div className="footer">
@@ -522,10 +558,18 @@ const Component: FC = () => {
                     </div>
                   )}
 
-                  {transaction.memo && (
-                    <div className="list-item">
+                  {transaction.memo && !parsedMemo && (
+                    <div className="memo-item">
                       <span className="label">{t(messageKeys.MEMO)}</span>
-                      <span className="extra">{transaction.memo}</span>
+                      <span className="extra">
+                        <div>
+                          {splitString(transaction.memo, 32).map(
+                            (str, index) => (
+                              <div key={index}>{str}</div>
+                            )
+                          )}
+                        </div>
+                      </span>
                     </div>
                   )}
                   <div className="list-item">

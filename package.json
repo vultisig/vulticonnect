@@ -1,7 +1,7 @@
 {
   "name": "vulticonnect",
   "displayName": "Vulticonnect",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "description": "VultiConnect is a Chrome extension that integrates Vultisig into web applications, enabling users to securely sign transactions.",
   "author": "https://vultisig.com",
   "scripts": {
@@ -17,6 +17,7 @@
     "axios": "^1.7.7",
     "crypto": "^1.0.1",
     "ethers": "^6.13.3",
+    "html2canvas": "^1.4.1",
     "i18next": "^23.15.1",
     "keymirror": "^0.1.1",
     "long": "^5.2.3",
@@ -26,6 +27,7 @@
     "react-dom": "18.3.1",
     "react-i18next": "^15.0.2",
     "react-router-dom": "^6.26.2",
+    "ua-parser-js": "^1.0.39",
     "uuid": "^10.0.0",
     "zxing-wasm": "^1.2.12"
   },
