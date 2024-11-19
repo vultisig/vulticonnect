@@ -37,49 +37,33 @@ import type {
   TransactionProps,
   VaultProps,
 } from "~utils/interfaces";
-import api from "./api";
-import { checkERC20Function } from "./functions";
+import api from "../../api";
+import { checkERC20Function } from "../../functions";
 import { resolve } from "path";
 import { createHash } from "crypto";
-import { SignedTransactionResult } from "./signed-transaction-result";
+import { SignedTransactionResult } from "../../signed-transaction-result";
+import { BaseTransactionProvider } from "../base-transaction-provider";
 
 interface ChainRef {
   [chainKey: string]: CoinType;
 }
 
-export default class ThorchainTransactionProvider {
+export default class ThorchainTransactionProvider extends BaseTransactionProvider {
   private gasPrice: bigint;
-  private keysignPayload: KeysignPayload;
   private maxPriorityFeePerGas: bigint;
-  private nonce: bigint;
-
-  private provider: JsonRpcProvider;
 
   constructor(
-    private chainKey: ChainKey,
-    private chainRef: ChainRef,
-    private dataEncoder: (data: Uint8Array) => Promise<string>,
-    private walletCore: WalletCore
+    chainKey: ChainKey,
+    chainRef: ChainRef,
+    dataEncoder: (data: Uint8Array) => Promise<string>,
+    walletCore: WalletCore
   ) {
+    super(chainKey, chainRef, dataEncoder, walletCore);
     this.chainKey = chainKey;
     this.chainRef = chainRef;
     this.dataEncoder = dataEncoder;
     this.walletCore = walletCore;
-
-    this.provider = new JsonRpcProvider(rpcUrl[this.chainKey]);
   }
-
-  private encryptionKeyHex = (): string => {
-    const keyBytes = randomBytes(32);
-
-    return Array.from(keyBytes)
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("");
-  };
-
-  private stripHexPrefix = (hex: string): string => {
-    return hex.startsWith("0x") ? hex.slice(2) : hex;
-  };
 
   public getEstimateTransactionFee = (
     cmcId: number,
@@ -169,27 +153,6 @@ export default class ThorchainTransactionProvider {
         this.keysignPayload = keysignPayload;
         resolve(keysignPayload);
       });
-    });
-  };
-
-  public getPreSignedImageHash = (
-    preSignedInputData: Uint8Array
-  ): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const preHashes = this.walletCore.TransactionCompiler.preImageHashes(
-        this.chainRef[this.chainKey],
-        preSignedInputData
-      );
-
-      const preSigningOutput =
-        TW.TxCompiler.Proto.PreSigningOutput.decode(preHashes);
-      if (preSigningOutput.errorMessage !== "")
-        reject(preSigningOutput.errorMessage);
-
-      const imageHash = this.walletCore.HexCoding.encode(
-        preSigningOutput.dataHash
-      )?.replace(/^0x/, "");
-      resolve(imageHash);
     });
   };
 
@@ -324,27 +287,6 @@ export default class ThorchainTransactionProvider {
     });
   };
 
-  public getTransactionKey = (
-    publicKeyEcdsa: string,
-    transactionId: string
-  ): Promise<string> => {
-    return new Promise((resolve) => {
-      const keysignMessage = create(KeysignMessageSchema, {
-        sessionId: transactionId,
-        serviceName: "VultiConnect",
-        encryptionKeyHex: this.encryptionKeyHex(),
-        useVultisigRelay: true,
-        keysignPayload: this.keysignPayload,
-      });
-      const binary = toBinary(KeysignMessageSchema, keysignMessage);
-
-      this.dataEncoder(binary).then((base64EncodedData) => {
-        resolve(
-          `vultisig://vultisig.com?type=SignTransaction&vault=${publicKeyEcdsa}&jsonData=${base64EncodedData}`
-        );
-      });
-    });
-  };
   private getSignature(signature: SignatureProps): Uint8Array {
     const rData = this.walletCore.HexCoding.decode(signature.R);
     const sData = this.walletCore.HexCoding.decode(signature.S);
@@ -359,6 +301,7 @@ export default class ThorchainTransactionProvider {
     combinedData.set(recoveryIDdata, rData.length + sData.length);
     return combinedData;
   }
+
   private calculateFee(_coin?: Coin): Promise<number> {
     return new Promise((resolve, reject) => {
       api.thorchain.getFeeData().then((feeData) => {

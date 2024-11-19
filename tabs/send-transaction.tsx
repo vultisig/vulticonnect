@@ -21,7 +21,6 @@ import i18n from "~i18n/config";
 import api from "~utils/api";
 import messageKeys from "~utils/message-keys";
 import DataConverterProvider from "~utils/data-converter-provider";
-import TransactionProvider from "~utils/transaction-provider";
 import WalletCoreProvider from "~utils/wallet-core-provider";
 
 import {
@@ -39,12 +38,15 @@ import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
-import EVMTransactionProvider from "~utils/evm-tx-provider";
-import type ThorchainTransactionProvider from "~utils/thorchain-tx-provider";
 import { create } from "@bufbuild/protobuf";
 import { CoinSchema } from "~protos/coin_pb";
 import { parseMemo, splitString } from "~utils/functions";
 import html2canvas from "html2canvas";
+import type { BaseTransactionProvider } from "~utils/transaction-provider/base-transaction-provider";
+import TransactionProvider from "~utils/transaction-provider/transaction-provider";
+import type EVMTransactionProvider from "~utils/transaction-provider/evm/evm-tx-provider";
+import type ThorchainTransactionProvider from "~utils/transaction-provider/thorchain/thorchain-tx-provider";
+import type MayaTransactionProvider from "~utils/transaction-provider/maya/maya-tx-provider";
 
 interface InitialState {
   fastSign?: boolean;
@@ -53,7 +55,7 @@ interface InitialState {
   sendKey?: string;
   step: number;
   transaction?: TransactionProps;
-  txProvider?: EVMTransactionProvider | ThorchainTransactionProvider;
+  txProvider?: BaseTransactionProvider;
   parsedMemo?: ParsedMemo;
   vault?: VaultProps;
   hasError?: boolean;
@@ -307,7 +309,10 @@ const Component: FC = () => {
               walletCore
             );
             // Improve
-            if (transaction.chain.name != ChainKey.THORCHAIN) {
+            if (
+              transaction.chain.name != ChainKey.THORCHAIN &&
+              transaction.chain.name != ChainKey.MAYACHAIN
+            ) {
               parseMemo(transaction.data)
                 .then((memo) => {
                   setState({ ...state, parsedMemo: memo });
@@ -344,7 +349,11 @@ const Component: FC = () => {
                 isNativeToken: true,
                 logo: transaction.chain.ticker.toLowerCase(),
               });
-              (txProvider as ThorchainTransactionProvider)
+              (
+                txProvider as
+                  | ThorchainTransactionProvider
+                  | MayaTransactionProvider
+              )
                 .getSpecificTransactionInfo(coin)
                 .then((thorchainSpecific) => {
                   transaction.gasPrice = String(thorchainSpecific.gasPrice);

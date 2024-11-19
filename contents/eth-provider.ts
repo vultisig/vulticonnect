@@ -27,6 +27,17 @@ interface ThorchainProvider {
   addListener(event: string, callback: (data: any) => void): void;
 }
 
+interface MayaProvider {
+  isVultiConnect: boolean;
+  request(args: RequestArguments): Promise<string | string[]>;
+  on(event: string, callback: (data: any) => void): void;
+  removeListener(event: string, callback: Function): void;
+  _emit(event: string, data: any): void;
+  connect(): void;
+  disconnect(error?: { code: number; message: string }): void;
+  addListener(event: string, callback: (data: any) => void): void;
+}
+
 interface EthereumProvider {
   isMetaMask: boolean;
   isVultiConnect: boolean;
@@ -192,10 +203,58 @@ const thorchainProvider: ThorchainProvider = {
   },
 };
 
-window.thorchain = thorchainProvider;
+const mayaProvider: MayaProvider = {
+  isVultiConnect: true,
+  request: (body) => {
+    return new Promise((resolve, reject) => {
+      sendToBackgroundViaRelay<
+        Messaging.MayaRequest.Request,
+        Messaging.MayaRequest.Response
+      >({
+        name: "maya-request",
+        body,
+      })
+        .then((result) => {
+          resolve(result);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+  },
+  on: (event, callback) => {
+    // TODO
+    return;
+  },
+  addListener: (event: string, callback: (data: any) => void) => {
+    // TODO
+    return;
+  },
+  removeListener: (event, callback) => {
+    // TODO
+    return;
+  },
+
+  _emit: (event, data) => {
+    // TODO
+    return;
+  },
+
+  connect: () => {
+    // TODO
+    return;
+  },
+
+  disconnect: (error) => {
+    // TODO
+    return;
+  },
+};
+
 const providers = {
   ethereum: ethereumProvider,
   thorchain: thorchainProvider,
+  maya: mayaProvider,
   getVaults: (): Promise<VaultProps[]> => {
     return new Promise((resolve) => {
       sendToBackgroundViaRelay<
@@ -207,7 +266,8 @@ const providers = {
     });
   },
 };
-
+window.thorchain = thorchainProvider;
+window.maya = mayaProvider;
 window.vultisig = providers;
 
 if (!window.ethereum) window.ethereum = ethereumProvider;
@@ -302,6 +362,11 @@ const intervalRef = setInterval(() => {
           },
           thorchain: {
             value: { ...thorchainProvider },
+            configurable: false,
+            writable: false,
+          },
+          maya: {
+            value: { ...mayaProvider },
             configurable: false,
             writable: false,
           },

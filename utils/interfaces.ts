@@ -20,6 +20,11 @@ export namespace Messaging {
     export type Request = any;
     export type Response = string | string[];
   }
+  
+  export namespace MayaRequest {
+    export type Request = any;
+    export type Response = string | string[];
+  }
 }
 
 export interface AccountsProps {
@@ -151,6 +156,16 @@ export interface ParsedMemo {
 }
 
 export interface ThorchainAccountDataResponse {
+  address: string;
+  publicKey: {
+    type: string;
+    value: string;
+  };
+  accountNumber: string;
+  sequence: string;
+}
+
+export interface MayaAccountDataResponse {
   address: string;
   publicKey: {
     type: string;

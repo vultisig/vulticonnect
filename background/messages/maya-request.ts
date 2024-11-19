@@ -1,6 +1,6 @@
 import type { MessagesMetadata, PlasmoMessaging } from "@plasmohq/messaging";
 import { JsonRpcProvider } from "ethers";
-import { ChainKey, chains, rpcUrl, ThorRequestMethod } from "~utils/constants";
+import { ChainKey, chains, MayaRequestMethod, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -10,7 +10,6 @@ import {
   setStoredTransactions,
   setStoredVaults,
 } from "~utils/storage";
-import api from "~utils/api";
 
 let rpcProvider: JsonRpcProvider;
 
@@ -92,7 +91,7 @@ const sendTransaction = (
 }> => {
   return new Promise((resolve, reject) => {
     getStoredTransactions().then((transactions) => {
-      const chain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
+      const chain = chains.find((chain) => chain.name == ChainKey.MAYACHAIN);
       const uuid = uuidv4();
       setStoredTransactions([
         {
@@ -176,26 +175,26 @@ const sendTransaction = (
 const handleRequest = (
   req: PlasmoMessaging.Request<
     keyof MessagesMetadata,
-    Messaging.ThorRequest.Request
+    Messaging.MayaRequest.Request
   >
-): Promise<Messaging.ThorRequest.Response> => {
+): Promise<Messaging.MayaRequest.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = req.body;
-    const THORChain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
-    initializeProvider(THORChain.name);
+    const MAYAChain = chains.find((chain) => chain.name == ChainKey.MAYACHAIN);
+    initializeProvider(MAYAChain.name);
     switch (method) {
-      case ThorRequestMethod.REQUEST_ACCOUNTS: {
-        getAccounts(ChainKey.THORCHAIN, req.sender.origin).then(
+      case MayaRequestMethod.REQUEST_ACCOUNTS: {
+        getAccounts(ChainKey.MAYACHAIN, req.sender.origin).then(
           ({ accounts }) => {
             resolve(accounts[0]);
           }
         );
         break;
       }
-      case ThorRequestMethod.SEND_TRANSACTION: {
+      case MayaRequestMethod.SEND_TRANSACTION: {
         const [transaction] = params as TransactionProps[];
         if (transaction) {
-          sendTransaction(transaction, THORChain.id)
+          sendTransaction(transaction, MAYAChain.id)
             .then(({ transactionHash }) => {
               resolve(transactionHash);
             })
@@ -203,11 +202,6 @@ const handleRequest = (
         } else {
           reject();
         }
-        break;
-      }
-      case ThorRequestMethod.GET_TRANSACTION_BY_HASH: {
-        const [hash] = params;
-        api.thorchain.getTransactionByHash(hash).then(resolve).catch(reject);
         break;
       }
       default: {

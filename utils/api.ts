@@ -3,6 +3,7 @@ import axios from "axios";
 import { toCamelCase, toSnakeCase } from "~utils/functions";
 import type { Currency } from "~utils/constants";
 import type {
+  MayaAccountDataResponse,
   SignatureProps,
   ThorchainAccountDataResponse,
 } from "~utils/interfaces";
@@ -214,5 +215,19 @@ export default {
           .catch(reject);
       });
     },
+  },
+  maya: {
+    fetchAccountNumber: async (address: string) => {
+      return new Promise<MayaAccountDataResponse>((resolve, reject) => {
+        const url = `https://mayanode.mayachain.info/auth/accounts/${address}`;
+        api
+          .get(url)
+          .then((res) => {
+            resolve(res.data.result.value);
+          })
+          .catch(reject);
+      });
+    },
+
   },
 };
