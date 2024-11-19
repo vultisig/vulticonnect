@@ -1,7 +1,7 @@
 import { useEffect, useState, type FC } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-
+import packageJson from '~/package.json';
 import { getStoredCurrency, getStoredLanguage } from "~utils/storage";
 import { Currency, Language, languageName } from "~utils/constants";
 import useGoBack from "~hooks/go-back";
@@ -108,6 +108,15 @@ const Component: FC = () => {
             <span className="label">{t(messageKeys.VULT_TOKEN)}</span>
           </a>
         </div>
+      </div>
+      <div className="footer">
+        <a
+          target="_blank"
+          href="https://chromewebstore.google.com/detail/vulticonnect/ggafhcdaplkhmmnlbfjpnnkepdfjaelb"
+          className="version"
+        >
+          VULTICONNECT V{packageJson.version}
+        </a>
       </div>
     </div>
   );

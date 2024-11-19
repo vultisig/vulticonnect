@@ -16,6 +16,7 @@
     "antd": "^5.21.2",
     "axios": "^1.7.7",
     "ethers": "^6.13.3",
+    "html2canvas": "^1.4.1",
     "i18next": "^23.15.1",
     "keymirror": "^0.1.1",
     "mipd": "^0.0.7",
@@ -24,6 +25,7 @@
     "react-dom": "18.3.1",
     "react-i18next": "^15.0.2",
     "react-router-dom": "^6.26.2",
+    "ua-parser-js": "^1.0.39",
     "uuid": "^10.0.0",
     "zxing-wasm": "^1.2.12"
   },
