@@ -551,4 +551,18 @@ export const evmSupportedChains: ChainProps[] = [
     name: ChainKey.POLYGON,
     ticker: "MATIC",
   },
+  {
+    cmcId: 23534,
+    decimals: 10,
+    id: "MayaChain-1",
+    name: ChainKey.MAYACHAIN,
+    ticker: "CACAO",
+  },
+  {
+    cmcId: 4157,
+    decimals: 8,
+    id: "Thorchain_1",
+    name: ChainKey.THORCHAIN,
+    ticker: "RUNE",
+  }
 ];
