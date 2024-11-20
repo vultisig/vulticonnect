@@ -1,5 +1,4 @@
 import type { MessagesMetadata, PlasmoMessaging } from "@plasmohq/messaging";
-import { JsonRpcProvider } from "ethers";
 import { ChainKey, chains, MayaRequestMethod, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
@@ -11,12 +10,6 @@ import {
   setStoredVaults,
 } from "~utils/storage";
 
-let rpcProvider: JsonRpcProvider;
-
-const initializeProvider = (chainKey: string) => {
-  const rpc = rpcUrl[chainKey];
-  rpcProvider = new JsonRpcProvider(rpc);
-};
 
 const getAccounts = (
   chain: ChainKey,
@@ -180,8 +173,7 @@ const handleRequest = (
 ): Promise<Messaging.MayaRequest.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = req.body;
-    const MAYAChain = chains.find((chain) => chain.name == ChainKey.MAYACHAIN);
-    initializeProvider(MAYAChain.name);
+    const MAYAChain = chains.find((chain) => chain.name == ChainKey.MAYACHAIN);    
     switch (method) {
       case MayaRequestMethod.REQUEST_ACCOUNTS: {
         getAccounts(ChainKey.MAYACHAIN, req.sender.origin).then(
@@ -214,8 +206,8 @@ const handleRequest = (
 };
 
 const handler: PlasmoMessaging.MessageHandler<
-  Messaging.ThorRequest.Request,
-  Messaging.ThorRequest.Response
+  Messaging.MayaRequest.Request,
+  Messaging.MayaRequest.Response
 > = async (req, res) => {
   handleRequest(req).then((result) => {
     res.send(result);
