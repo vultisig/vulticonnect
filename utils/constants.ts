@@ -7,13 +7,7 @@ import type {
   CurrencyRef,
   LanguageRef,
 } from "~utils/interfaces";
-export enum CosmosChain {
-  THORChain = "THORChain",
-  Cosmos = "Cosmos",
-  MayaChain = "MayaChain",
-  Dydx = "Dydx",
-  Kujira = "Kujira",
-}
+
 export enum ChainKey {
   ARBITRUM = "Arbitrum",
   AVALANCHE = "Avalanche",
@@ -40,6 +34,24 @@ export enum ChainKey {
   ZKSYNC = "Zksync",
 }
 
+export enum EVMChain {
+  AVALANCHE = ChainKey.AVALANCHE,
+  ARBITRUM = ChainKey.ARBITRUM,
+  BASE = ChainKey.BASE,
+  BSCCHAIN = ChainKey.BSCCHAIN,
+  CRONOSCHAIN = ChainKey.CRONOSCHAIN,
+  ETHEREUM = ChainKey.ETHEREUM,
+  OPTIMISM = ChainKey.OPTIMISM,
+  POLYGON = ChainKey.POLYGON,
+}
+
+export enum CosmosChain {
+  THORChain = ChainKey.THORCHAIN,
+  Gaia = ChainKey.GAIACHAIN,
+  MayaChain = ChainKey.MAYACHAIN,
+  Dydx = ChainKey.DYDX,
+  Kujira = ChainKey.KUJIRA,
+}
 export enum Currency {
   AUD = "AUD",
   CAD = "CAD",
@@ -128,17 +140,12 @@ export enum EVMRequestMethod {
   WEB3_CLIENT_VERSION = "web3_clientVersion",
 }
 
-export enum ThorRequestMethod {
+export enum RequestMethod {
   GET_TRANSACTION_BY_HASH = "get_transaction_by_hash",
   REQUEST_ACCOUNTS = "request_accounts",
   SEND_TRANSACTION = "send_transaction",
 }
 
-export enum MayaRequestMethod {
-  GET_TRANSACTION_BY_HASH = "get_transaction_by_hash",
-  REQUEST_ACCOUNTS = "request_accounts",
-  SEND_TRANSACTION = "send_transaction",
-}
 
 export const storageKey = keyMirror({
   CURRENCY: true,
@@ -324,7 +331,7 @@ export const chains: ChainProps[] = [
   {
     cmcId: 3794,
     decimals: 6,
-    id: "",
+    id: "cosmoshub-4",
     name: ChainKey.GAIACHAIN,
     ticker: "ATOM",
   },

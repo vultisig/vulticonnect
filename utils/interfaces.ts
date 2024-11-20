@@ -20,8 +20,13 @@ export namespace Messaging {
     export type Request = any;
     export type Response = string | string[];
   }
-  
+
   export namespace MayaRequest {
+    export type Request = any;
+    export type Response = string | string[];
+  }
+
+  export namespace CosmosRequest {
     export type Request = any;
     export type Response = string | string[];
   }
@@ -174,11 +179,29 @@ export interface MayaAccountDataResponse {
   accountNumber: string;
   sequence: string;
 }
-
-export interface SpecificThorchain {
-  fee: number;
+export interface BaseSpecificTransactionInfo {
   gasPrice: number;
+  fee: number;
+}
+
+export interface SpecificThorchain extends BaseSpecificTransactionInfo {
   accountNumber: number;
   sequence: number;
   isDeposit: boolean;
+}
+
+export interface SpecificCosmos extends BaseSpecificTransactionInfo {
+  accountNumber: number;
+  sequence: number;
+  gas: number;
+  transactionType: number;
+}
+
+export interface CosmosAccountData {
+  accountNumber: string;
+  sequence: string;
+}
+
+export interface CosmosAccountDataResponse {
+  account: CosmosAccountData;
 }

@@ -3,7 +3,13 @@ import { useTranslation } from "react-i18next";
 import { Button, QRCode, message } from "antd";
 import { formatUnits, toUtf8String } from "ethers";
 
-import { ChainKey, errorKey, explorerUrl } from "~utils/constants";
+import {
+  ChainKey,
+  CosmosChain,
+  errorKey,
+  EVMChain,
+  explorerUrl,
+} from "~utils/constants";
 import {
   getStoredCurrency,
   getStoredLanguage,
@@ -47,6 +53,7 @@ import TransactionProvider from "~utils/transaction-provider/transaction-provide
 import type EVMTransactionProvider from "~utils/transaction-provider/evm/evm-tx-provider";
 import type ThorchainTransactionProvider from "~utils/transaction-provider/thorchain/thorchain-tx-provider";
 import type MayaTransactionProvider from "~utils/transaction-provider/maya/maya-tx-provider";
+import type CosmosTransactionProvider from "~utils/transaction-provider/cosmos/cosmos-tx-provider";
 
 interface InitialState {
   fastSign?: boolean;
@@ -301,7 +308,7 @@ const Component: FC = () => {
         walletCore
           .getCore()
           .then(({ chainRef, walletCore }) => {
-            const dataConverter = new DataConverterProvider();
+            const dataConverter = new DataConverterProvider();         
             const txProvider = TransactionProvider.createProvider(
               transaction.chain.name,
               chainRef,
@@ -310,8 +317,9 @@ const Component: FC = () => {
             );
             // Improve
             if (
-              transaction.chain.name != ChainKey.THORCHAIN &&
-              transaction.chain.name != ChainKey.MAYACHAIN
+              (Object.values(EVMChain) as unknown as ChainKey[]).includes(
+                transaction.chain.name
+              )
             ) {
               parseMemo(transaction.data)
                 .then((memo) => {
@@ -320,7 +328,7 @@ const Component: FC = () => {
                 .catch();
 
               (txProvider as EVMTransactionProvider).getFeeData().then(() => {
-                txProvider
+                (txProvider as EVMTransactionProvider)
                   .getEstimateTransactionFee(transaction.chain.cmcId, currency)
                   .then((gasPrice) => {
                     transaction.gasPrice = gasPrice;
@@ -353,10 +361,11 @@ const Component: FC = () => {
                 txProvider as
                   | ThorchainTransactionProvider
                   | MayaTransactionProvider
+                  | CosmosTransactionProvider
               )
                 .getSpecificTransactionInfo(coin)
-                .then((thorchainSpecific) => {
-                  transaction.gasPrice = String(thorchainSpecific.gasPrice);
+                .then((blockchainSpecific) => {
+                  transaction.gasPrice = String(blockchainSpecific.gasPrice);
                   try {
                     transaction.memo = toUtf8String(transaction.data);
                   } catch (err) {

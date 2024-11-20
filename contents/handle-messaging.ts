@@ -61,3 +61,14 @@ relay(
     return openResult;
   }
 );
+
+relay(
+  {
+    name: "cosmos-request" as const,
+  },
+  async (req) => {
+    const openResult = await sendToBackground(req);
+
+    return openResult;
+  }
+);

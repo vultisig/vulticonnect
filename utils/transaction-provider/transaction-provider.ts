@@ -5,6 +5,7 @@ import { ChainKey, Currency, rpcUrl } from "~utils/constants";
 import ThorchainTransactionProvider from "./thorchain/thorchain-tx-provider";
 import EVMTransactionProvider from "./evm/evm-tx-provider";
 import MayaTransactionProvider from "./maya/maya-tx-provider";
+import GaiaTransactionProvider from "./gaia/gaia-tx-provider";
 
 interface ChainRef {
   [chainKey: string]: CoinType;
@@ -28,6 +29,14 @@ export default class TransactionProvider {
       }
       case ChainKey.MAYACHAIN: {
         return new MayaTransactionProvider(
+          chainKey,
+          chainRef,
+          dataEncoder,
+          walletCore
+        );
+      }
+      case ChainKey.GAIACHAIN: {
+        return new GaiaTransactionProvider(
           chainKey,
           chainRef,
           dataEncoder,

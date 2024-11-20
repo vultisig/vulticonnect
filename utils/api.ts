@@ -3,6 +3,8 @@ import axios from "axios";
 import { toCamelCase, toSnakeCase } from "~utils/functions";
 import type { Currency } from "~utils/constants";
 import type {
+  CosmosAccountData,
+  CosmosAccountDataResponse,
   MayaAccountDataResponse,
   SignatureProps,
   ThorchainAccountDataResponse,
@@ -228,6 +230,18 @@ export default {
           .catch(reject);
       });
     },
-
+  },
+  cosmos: {
+    getAccountData(url: string): Promise<CosmosAccountData> {
+      return new Promise((resolve, reject) => {
+        api
+          .get<CosmosAccountDataResponse>(url)
+          .then((response) => {
+            if (!response.data.account) reject("no account found");
+            else resolve(response.data.account);
+          })
+          .catch(reject);
+      });
+    },
   },
 };

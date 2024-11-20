@@ -10,7 +10,6 @@ import {
   setStoredVaults,
 } from "~utils/storage";
 
-
 const getAccounts = (
   chain: ChainKey,
   sender: string
@@ -84,7 +83,7 @@ const sendTransaction = (
 }> => {
   return new Promise((resolve, reject) => {
     getStoredTransactions().then((transactions) => {
-      const chain = chains.find((chain) => chain.name == ChainKey.MAYACHAIN);
+      const chain = chains.find((chain) => chain.id == activeChain);
       const uuid = uuidv4();
       setStoredTransactions([
         {
@@ -168,15 +167,17 @@ const sendTransaction = (
 const handleRequest = (
   req: PlasmoMessaging.Request<
     keyof MessagesMetadata,
-    Messaging.MayaRequest.Request
+    Messaging.CosmosRequest.Request
   >
-): Promise<Messaging.MayaRequest.Response> => {
+): Promise<Messaging.CosmosRequest.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = req.body;
-    const MAYAChain = chains.find((chain) => chain.name == ChainKey.MAYACHAIN);    
+    const activeChain = chains.find(
+      (chain) => chain.name == ChainKey.GAIACHAIN
+    );
     switch (method) {
       case RequestMethod.REQUEST_ACCOUNTS: {
-        getAccounts(ChainKey.MAYACHAIN, req.sender.origin).then(
+        getAccounts(activeChain.name, req.sender.origin).then(
           ({ accounts }) => {
             resolve(accounts[0]);
           }
@@ -186,7 +187,7 @@ const handleRequest = (
       case RequestMethod.SEND_TRANSACTION: {
         const [transaction] = params as TransactionProps[];
         if (transaction) {
-          sendTransaction(transaction, MAYAChain.id)
+          sendTransaction(transaction, activeChain.id)
             .then(({ transactionHash }) => {
               resolve(transactionHash);
             })
@@ -206,8 +207,8 @@ const handleRequest = (
 };
 
 const handler: PlasmoMessaging.MessageHandler<
-  Messaging.MayaRequest.Request,
-  Messaging.MayaRequest.Response
+  Messaging.CosmosRequest.Request,
+  Messaging.CosmosRequest.Response
 > = async (req, res) => {
   handleRequest(req).then((result) => {
     res.send(result);

@@ -1,6 +1,6 @@
 import type { MessagesMetadata, PlasmoMessaging } from "@plasmohq/messaging";
 import { JsonRpcProvider } from "ethers";
-import { ChainKey, chains, rpcUrl, ThorRequestMethod } from "~utils/constants";
+import { ChainKey, chains, RequestMethod, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -184,7 +184,7 @@ const handleRequest = (
     const THORChain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
     initializeProvider(THORChain.name);
     switch (method) {
-      case ThorRequestMethod.REQUEST_ACCOUNTS: {
+      case RequestMethod.REQUEST_ACCOUNTS: {
         getAccounts(ChainKey.THORCHAIN, req.sender.origin).then(
           ({ accounts }) => {
             resolve(accounts[0]);
@@ -192,7 +192,7 @@ const handleRequest = (
         );
         break;
       }
-      case ThorRequestMethod.SEND_TRANSACTION: {
+      case RequestMethod.SEND_TRANSACTION: {
         const [transaction] = params as TransactionProps[];
         if (transaction) {
           sendTransaction(transaction, THORChain.id)
@@ -205,7 +205,7 @@ const handleRequest = (
         }
         break;
       }
-      case ThorRequestMethod.GET_TRANSACTION_BY_HASH: {
+      case RequestMethod.GET_TRANSACTION_BY_HASH: {
         const [hash] = params;
         api.thorchain.getTransactionByHash(hash).then(resolve).catch(reject);
         break;

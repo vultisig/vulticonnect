@@ -2,6 +2,7 @@ interface Window {
   ethereum: any;
   vultiConnect: { getVaults: () => Promise<VaultProps[]> };
   maya: any;
+  cosmos: any;
   vultisig: any;
   thorchain: any;
   lodash: unknown;
