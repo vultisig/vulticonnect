@@ -28,7 +28,7 @@ export default class AddressProvider {
   ): Promise<AddressProps> => {
     return new Promise((resolve, reject) => {
       const coin = this.chainRef[chain];
-
+      
       api
         .derivePublicKey({
           publicKeyEcdsa: vault.publicKeyEcdsa,
@@ -95,6 +95,8 @@ export default class AddressProvider {
     vault: VaultProps
   ): Promise<AddressProps> => {
     return new Promise((resolve, reject) => {
+      console.log(chain);
+      
       switch (chain) {
         // EDDSA
         case ChainKey.POLKADOT:
@@ -107,6 +109,13 @@ export default class AddressProvider {
         // ECDSA
         case ChainKey.MAYACHAIN: {
           this.getECDSAAddress(chain, vault, "maya")
+            .then(resolve)
+            .catch(reject);
+
+          break;
+        }
+        case ChainKey.OSMOSIS: {
+          this.getECDSAAddress(chain, vault, "osmo")
             .then(resolve)
             .catch(reject);
 

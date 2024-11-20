@@ -26,6 +26,7 @@ export enum ChainKey {
   LITECOIN = "Litecoin",
   MAYACHAIN = "MayaChain",
   OPTIMISM = "Optimism",
+  OSMOSIS = "Osmosis",
   POLKADOT = "Polkadot",
   POLYGON = "Polygon",
   SOLANA = "Solana",
@@ -51,6 +52,7 @@ export enum CosmosChain {
   MayaChain = ChainKey.MAYACHAIN,
   Dydx = ChainKey.DYDX,
   Kujira = ChainKey.KUJIRA,
+  Osmosis = ChainKey.OSMOSIS,
 }
 export enum Currency {
   AUD = "AUD",
@@ -144,8 +146,10 @@ export enum RequestMethod {
   GET_TRANSACTION_BY_HASH = "get_transaction_by_hash",
   REQUEST_ACCOUNTS = "request_accounts",
   SEND_TRANSACTION = "send_transaction",
+  CHAIN_ID = "chain_id",
+  WALLET_ADD_CHAIN = "wallet_add_chain",
+  WALLET_SWITCH_CHAIN = "wallet_switch_chain",
 }
-
 
 export const storageKey = keyMirror({
   CURRENCY: true,
@@ -218,6 +222,7 @@ export const explorerUrl: ChainExplorerRef = {
   [ChainKey.DYDX]: "https://www.mintscan.io/dydx",
   [ChainKey.ETHEREUM]: "https://etherscan.io",
   [ChainKey.GAIACHAIN]: "https://www.mintscan.io/cosmos",
+  [ChainKey.OSMOSIS]: "https://www.mintscan.io/osmosis",
   [ChainKey.KUJIRA]: "https://finder.kujira.network",
   [ChainKey.LITECOIN]: "https://blockchair.com/litecoin",
   [ChainKey.MAYACHAIN]: "https://www.mayascan.org",
@@ -362,6 +367,13 @@ export const chains: ChainProps[] = [
     id: "",
     name: ChainKey.OPTIMISM,
     ticker: "ETH",
+  },
+  {
+    cmcId: 12220,
+    decimals: 6,
+    id: "osmosis-1",
+    name: ChainKey.OSMOSIS,
+    ticker: "OSMO",
   },
   {
     cmcId: 6636,

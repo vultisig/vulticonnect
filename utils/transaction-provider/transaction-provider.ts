@@ -43,6 +43,14 @@ export default class TransactionProvider {
           walletCore
         );
       }
+      case ChainKey.OPTIMISM: {
+        return new GaiaTransactionProvider(
+          chainKey,
+          chainRef,
+          dataEncoder,
+          walletCore
+        );
+      }
       default: {
         return new EVMTransactionProvider(
           chainKey,

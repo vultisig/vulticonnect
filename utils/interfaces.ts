@@ -71,6 +71,7 @@ export interface ChainExplorerRef {
   [ChainKey.SOLANA]: string;
   [ChainKey.THORCHAIN]: string;
   [ChainKey.ZKSYNC]: string;
+  [ChainKey.OSMOSIS]: string;
 }
 
 export interface ChainRpcRef {

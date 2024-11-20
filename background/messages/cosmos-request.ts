@@ -3,12 +3,15 @@ import { ChainKey, chains, RequestMethod, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import {
+    getStoredChains,
   getStoredTransactions,
   getStoredVaults,
+  setStoredChains,
   setStoredRequest,
   setStoredTransactions,
   setStoredVaults,
 } from "~utils/storage";
+import { isSupportedChain } from "~utils/functions";
 
 const getAccounts = (
   chain: ChainKey,
@@ -172,37 +175,106 @@ const handleRequest = (
 ): Promise<Messaging.CosmosRequest.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = req.body;
-    const activeChain = chains.find(
-      (chain) => chain.name == ChainKey.GAIACHAIN
-    );
-    switch (method) {
-      case RequestMethod.REQUEST_ACCOUNTS: {
-        getAccounts(activeChain.name, req.sender.origin).then(
-          ({ accounts }) => {
-            resolve(accounts[0]);
-          }
-        );
-        break;
-      }
-      case RequestMethod.SEND_TRANSACTION: {
-        const [transaction] = params as TransactionProps[];
-        if (transaction) {
-          sendTransaction(transaction, activeChain.id)
-            .then(({ transactionHash }) => {
-              resolve(transactionHash);
-            })
-            .catch(reject);
-        } else {
-          reject();
-        }
-        break;
-      }
-      default: {
-        reject(`Unsupported method: ${method}`);
+    getStoredChains().then((storedChains) => {
+      // check if its cosmos chain
+      let activeChain = chains.find((chain) => chain.name == ChainKey.GAIACHAIN);
 
-        break;
+      switch (method) {
+        case RequestMethod.REQUEST_ACCOUNTS: {
+          getAccounts(activeChain.name, req.sender.origin).then(
+            ({ accounts }) => {
+              resolve(accounts[0]);
+            }
+          );
+          break;
+        }
+        case RequestMethod.SEND_TRANSACTION: {
+          const [transaction] = params as TransactionProps[];
+          if (transaction) {
+            sendTransaction(transaction, activeChain.id)
+              .then(({ transactionHash }) => {
+                resolve(transactionHash);
+              })
+              .catch(reject);
+          } else {
+            reject();
+          }
+          break;
+        }
+        case RequestMethod.CHAIN_ID: {
+          resolve(activeChain.id);
+          break;
+        }
+        case RequestMethod.WALLET_ADD_CHAIN: {
+          const [param] = params;
+
+          if (param?.chainId) {
+            const supportedChain = chains.find(
+              ({ id }) => id === param.chainId
+            );
+
+            if (supportedChain) {
+              setStoredChains([
+                { ...supportedChain, active: true },
+                ...storedChains
+                  .filter(({ name }) => name !== supportedChain.name)
+                  .map((chain) => ({
+                    ...chain,
+                    active: false,
+                  })),
+              ])
+                .then(() => resolve(null))
+                .catch(reject);
+            } else {
+              reject(); // unsuported chain
+            }
+          } else {
+            reject(); // chainId is required
+          }
+
+          break;
+        }
+        case RequestMethod.WALLET_SWITCH_CHAIN: {
+          const [param] = params;
+          if (param?.chainId) {
+            if (!isSupportedChain(param?.chainId)) {
+              reject("Chain not Supported");
+            } else {
+              const existed =
+                storedChains.findIndex(({ id }) => id === param.chainId) >= 0;
+              if (existed) {
+                setStoredChains(
+                  storedChains.map((chain) => ({
+                    ...chain,
+                    active: chain.id === param.chainId,
+                  }))
+                )
+                  .then(() => resolve(param.chainId))
+                  .catch(reject);
+              } else {
+                handleRequest({
+                  ...req,
+                  body: {
+                    method: RequestMethod.WALLET_ADD_CHAIN,
+                    params,
+                  },
+                })
+                  .then(() => resolve(param.chainId))
+                  .catch(reject);
+              }
+            }
+          } else {
+            reject(); // chainId is required
+          }
+          break;
+        }
+        default: {
+          reject(`Unsupported method: ${method}`);
+
+          break;
+        }
       }
-    }
+    });
   });
 };
 
