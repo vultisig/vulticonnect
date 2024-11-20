@@ -1,16 +1,13 @@
 import {
   JsonRpcProvider,
   Transaction,
-  encodeBase64,
   formatUnits,
   hexlify,
-  isHexString,
   keccak256,
-  randomBytes,
   toUtf8Bytes,
   toUtf8String,
 } from "ethers";
-import { create, toBinary } from "@bufbuild/protobuf";
+import { create } from "@bufbuild/protobuf";
 import { TW, type WalletCore } from "@trustwallet/wallet-core";
 import type { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
 
@@ -20,7 +17,6 @@ import {
 } from "~protos/blockchain_specific_pb";
 import { CoinSchema } from "~protos/coin_pb";
 import {
-  KeysignMessageSchema,
   KeysignPayloadSchema,
   type KeysignPayload,
 } from "~protos/keysign_message_pb";
@@ -61,18 +57,6 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
     this.provider = new JsonRpcProvider(rpcUrl[this.chainKey]);
   }
 
-  // private encryptionKeyHex = (): string => {
-  //   const keyBytes = randomBytes(32);
-
-  //   return Array.from(keyBytes)
-  //     .map((byte) => byte.toString(16).padStart(2, "0"))
-  //     .join("");
-  // };
-
-  // private stripHexPrefix = (hex: string): string => {
-  //   return hex.startsWith("0x") ? hex.slice(2) : hex;
-  // };
-
   public getEstimateTransactionFee = (
     cmcId: number,
     currency: Currency
@@ -101,16 +85,12 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
         .getFeeData()
         .then(({ gasPrice, maxFeePerGas, maxPriorityFeePerGas }) => {
           this.gasPrice = gasPrice;
-          // this.maxFeePerGas = maxFeePerGas;
           this.maxPriorityFeePerGas = maxPriorityFeePerGas;
-
           resolve();
         })
         .catch(() => {
           this.gasPrice = BigInt(0);
-          // this.maxFeePerGas = BigInt(0);
           this.maxPriorityFeePerGas = BigInt(0);
-
           resolve();
         });
     });
@@ -186,27 +166,6 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
         });
     });
   };
-
-  // public getPreSignedImageHash = (
-  //   preSignedInputData: Uint8Array
-  // ): Promise<string> => {
-  //   return new Promise((resolve, reject) => {
-  //     const preHashes = this.walletCore.TransactionCompiler.preImageHashes(
-  //       this.chainRef[this.chainKey],
-  //       preSignedInputData
-  //     );
-
-  //     const preSigningOutput =
-  //       TW.TxCompiler.Proto.PreSigningOutput.decode(preHashes);
-  //     if (preSigningOutput.errorMessage !== "")
-  //       reject(preSigningOutput.errorMessage);
-
-  //     const imageHash = this.walletCore.HexCoding.encode(
-  //       preSigningOutput.dataHash
-  //     )?.replace(/^0x/, "");
-  //     resolve(imageHash);
-  //   });
-  // };
 
   public getPreSignedInputData = (): Promise<Uint8Array> => {
     return new Promise((resolve, reject) => {
@@ -335,26 +294,4 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
     });
   };
 
-  // public getTransactionKey = (
-  //   publicKeyEcdsa: string,
-  //   transactionId: string
-  // ): Promise<string> => {
-  //   return new Promise((resolve) => {
-  //     const keysignMessage = create(KeysignMessageSchema, {
-  //       sessionId: transactionId,
-  //       serviceName: "VultiConnect",
-  //       encryptionKeyHex: this.encryptionKeyHex(),
-  //       useVultisigRelay: true,
-  //       keysignPayload: this.keysignPayload,
-  //     });
-
-  //     const binary = toBinary(KeysignMessageSchema, keysignMessage);
-
-  //     this.dataEncoder(binary).then((base64EncodedData) => {
-  //       resolve(
-  //         `vultisig://vultisig.com?type=SignTransaction&vault=${publicKeyEcdsa}&jsonData=${base64EncodedData}`
-  //       );
-  //     });
-  //   });
-  // };
 }

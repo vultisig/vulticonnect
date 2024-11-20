@@ -1,36 +1,20 @@
-import {
-  JsonRpcProvider,
-  Transaction,
-  encodeBase64,
-  formatUnits,
-  hexlify,
-  isHexString,
-  keccak256,
-  randomBytes,
-  sha256,
-  toUtf8Bytes,
-  toUtf8String,
-} from "ethers";
-import { create, toBinary } from "@bufbuild/protobuf";
+import { create } from "@bufbuild/protobuf";
 import { TW, type WalletCore } from "@trustwallet/wallet-core";
 import type { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
 import Long from "long";
 import {
-  EthereumSpecificSchema,
   THORChainSpecificSchema,
-  type EthereumSpecific,
   type THORChainSpecific,
 } from "~protos/blockchain_specific_pb";
 import { CoinSchema, type Coin } from "~protos/coin_pb";
 import {
-  KeysignMessageSchema,
   KeysignPayloadSchema,
   type KeysignPayload,
 } from "~protos/keysign_message_pb";
 import SigningMode = TW.Cosmos.Proto.SigningMode;
 import BroadcastMode = TW.Cosmos.Proto.BroadcastMode;
 import TxCompiler = TW.TxCompiler;
-import { ChainKey, Currency, rpcUrl } from "~utils/constants";
+import { ChainKey } from "~utils/constants";
 import type {
   SignatureProps,
   SpecificThorchain,
@@ -38,8 +22,6 @@ import type {
   VaultProps,
 } from "~utils/interfaces";
 import api from "../../api";
-import { checkERC20Function } from "../../functions";
-import { resolve } from "path";
 import { createHash } from "crypto";
 import { SignedTransactionResult } from "../../signed-transaction-result";
 import { BaseTransactionProvider } from "../base-transaction-provider";
@@ -49,9 +31,6 @@ interface ChainRef {
 }
 
 export default class ThorchainTransactionProvider extends BaseTransactionProvider {
-  private gasPrice: bigint;
-  private maxPriorityFeePerGas: bigint;
-
   constructor(
     chainKey: ChainKey,
     chainRef: ChainRef,
@@ -64,28 +43,6 @@ export default class ThorchainTransactionProvider extends BaseTransactionProvide
     this.dataEncoder = dataEncoder;
     this.walletCore = walletCore;
   }
-
-  public getEstimateTransactionFee = (
-    cmcId: number,
-    currency: Currency
-  ): Promise<string> => {
-    return new Promise((resolve) => {
-      api
-        .cryptoCurrency(cmcId, currency)
-        .then((price) => {
-          const gwei = formatUnits(
-            (this.gasPrice + this.maxPriorityFeePerGas) *
-              BigInt(this.getGasLimit()),
-            "gwei"
-          );
-
-          resolve((parseInt(gwei) * 1e-9 * price).toValueFormat(currency));
-        })
-        .catch(() => {
-          resolve((0).toValueFormat(currency));
-        });
-    });
-  };
 
   public getSpecificTransactionInfo = (
     coin: Coin
@@ -105,11 +62,6 @@ export default class ThorchainTransactionProvider extends BaseTransactionProvide
         });
       });
     });
-  };
-
-  public getGasLimit = (): number => {
-    //TODO: update gaslimit based on chain and transaction type
-    return 600000;
   };
 
   public getKeysignPayload = (
@@ -132,7 +84,7 @@ export default class ThorchainTransactionProvider extends BaseTransactionProvide
         const thorchainSpecific = create(THORChainSpecificSchema, {
           accountNumber: BigInt(specificData.accountNumber),
           fee: BigInt(specificData.fee),
-          isDeposit: false,
+          isDeposit: specificData.isDeposit,
           sequence: BigInt(specificData.sequence),
         });
 
