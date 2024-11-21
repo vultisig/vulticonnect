@@ -19,6 +19,7 @@ import VultiError from "~components/vulti-error";
 
 import "~styles/index.scss";
 import "~tabs/get-vaults.scss";
+import React from "react";
 
 interface FormProps {
   uids: string[];

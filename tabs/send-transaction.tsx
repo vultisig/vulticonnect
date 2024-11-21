@@ -116,7 +116,7 @@ const Component: FC = () => {
               api.fastVault
                 .signWithServer({
                   vault_password: password,
-                  hex_encryption_key: txProvider.getHexPubKey(),
+                  hex_encryption_key: vault.hexChainCode,
                   is_ecdsa:
                     getTssKeysignType(transaction.chain.name) ===
                     TssKeysignType.ECDSA,
@@ -270,7 +270,7 @@ const Component: FC = () => {
             .getKeysignPayload(transaction, vault)
             .then(() => {
               txProvider
-                .getTransactionKey(vault.publicKeyEcdsa, transaction.id)
+                .getTransactionKey(vault.publicKeyEcdsa, transaction.id,vault.hexChainCode)
                 .then((sendKey) => {
                   api.fastVault
                     .checkVaultExist(vault.publicKeyEcdsa)
@@ -323,6 +323,8 @@ const Component: FC = () => {
                 address.toLowerCase() === transaction.from.toLowerCase()
             ) >= 0
         );
+
+
         const walletCore = new WalletCoreProvider();
         walletCore
           .getCore()

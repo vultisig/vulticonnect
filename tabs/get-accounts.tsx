@@ -21,6 +21,7 @@ import VultiLoading from "~components/vulti-loading";
 import "~styles/index.scss";
 import "~tabs/get-accounts.scss";
 import VultiError from "~components/vulti-error";
+import React from "react";
 
 interface FormProps {
   uids: string[];

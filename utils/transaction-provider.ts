@@ -69,7 +69,8 @@ export default class TransactionProvider {
   };
 
   private stripHexPrefix = (hex: string): string => {
-    return hex.startsWith("0x") ? hex.slice(2) : hex;
+    if (hex) return hex.startsWith("0x") ? hex.slice(2) : hex;
+    return;
   };
 
   public getEstimateTransactionFee = (
@@ -333,13 +334,14 @@ export default class TransactionProvider {
 
   public getTransactionKey = (
     publicKeyEcdsa: string,
-    transactionId: string
+    transactionId: string,
+    hexChainCode: string
   ): Promise<string> => {
     return new Promise((resolve) => {
       const keysignMessage = create(KeysignMessageSchema, {
         sessionId: transactionId,
         serviceName: "VultiConnect",
-        encryptionKeyHex: this.encryptionKeyHex(),
+        encryptionKeyHex: hexChainCode,
         useVultisigRelay: true,
         keysignPayload: this.keysignPayload,
       });
