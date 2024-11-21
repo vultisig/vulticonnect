@@ -144,6 +144,7 @@ export enum EVMRequestMethod {
 
 export enum RequestMethod {
   GET_TRANSACTION_BY_HASH = "get_transaction_by_hash",
+  GET_ACCOUNTS = "get_accounts",
   REQUEST_ACCOUNTS = "request_accounts",
   SEND_TRANSACTION = "send_transaction",
   CHAIN_ID = "chain_id",
@@ -315,7 +316,7 @@ export const chains: ChainProps[] = [
   {
     cmcId: 28324,
     decimals: 18,
-    id: "",
+    id: "dydx-1",
     name: ChainKey.DYDX,
     ticker: "DYDX",
   },
@@ -343,7 +344,7 @@ export const chains: ChainProps[] = [
   {
     cmcId: 15185,
     decimals: 6,
-    id: "",
+    id: "kaiyo-1",
     name: ChainKey.KUJIRA,
     ticker: "KUJI",
   },
@@ -405,7 +406,7 @@ export const chains: ChainProps[] = [
   },
 ];
 
-export const evmSupportedChains: ChainProps[] = [
+export const allSupportedChains: ChainProps[] = [
   {
     cmcId: 1027,
     decimals: 18,
@@ -483,5 +484,33 @@ export const evmSupportedChains: ChainProps[] = [
     id: "Thorchain_1",
     name: ChainKey.THORCHAIN,
     ticker: "RUNE",
+  },
+  {
+    cmcId: 12220,
+    decimals: 6,
+    id: "osmosis-1",
+    name: ChainKey.OSMOSIS,
+    ticker: "OSMO",
+  },
+  {
+    cmcId: 3794,
+    decimals: 6,
+    id: "cosmoshub-4",
+    name: ChainKey.GAIACHAIN,
+    ticker: "ATOM",
+  },
+  {
+    cmcId: 28324,
+    decimals: 18,
+    id: "dydx-1",
+    name: ChainKey.DYDX,
+    ticker: "DYDX",
+  },
+  {
+    cmcId: 15185,
+    decimals: 6,
+    id: "kaiyo-1",
+    name: ChainKey.KUJIRA,
+    ticker: "KUJI",
   },
 ];

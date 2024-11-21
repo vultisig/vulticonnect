@@ -18,7 +18,7 @@ import routeKeys from "~utils/route-keys";
 import {
   chains,
   EventMethod,
-  evmSupportedChains,
+  allSupportedChains,
   EVMRequestMethod,
 } from "~utils/constants";
 import { sendToBackground } from "@plasmohq/messaging";
@@ -133,7 +133,7 @@ const Component: FC = () => {
     getStoredVaults().then((vaults) => {
       const vault = vaults.find(({ active }) => active);
       const vaultSupportedChains = vault.chains.filter((vaultChain) =>
-        evmSupportedChains.some((chain) => chain.id === vaultChain.id)
+        allSupportedChains.some((chain) => chain.id === vaultChain.id)
       );
       const supportedChains = vaultSupportedChains.map((chain) => {
         return {

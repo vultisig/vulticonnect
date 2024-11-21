@@ -1,9 +1,15 @@
 import type { MessagesMetadata, PlasmoMessaging } from "@plasmohq/messaging";
-import { ChainKey, chains, RequestMethod, rpcUrl } from "~utils/constants";
+import {
+  ChainKey,
+  chains,
+  CosmosChain,
+  RequestMethod,
+  rpcUrl,
+} from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import {
-    getStoredChains,
+  getStoredChains,
   getStoredTransactions,
   getStoredVaults,
   setStoredChains,
@@ -176,10 +182,42 @@ const handleRequest = (
   return new Promise((resolve, reject) => {
     const { method, params } = req.body;
     getStoredChains().then((storedChains) => {
-      // check if its cosmos chain
-      let activeChain = chains.find((chain) => chain.name == ChainKey.GAIACHAIN);
+      // Cosmos Active Chain
+      let activeChain = storedChains.find(
+        (chain) =>
+          (Object.values(CosmosChain) as unknown as ChainKey[]).includes(
+            chain.name
+          ) && chain.active === true
+      );
+      if (!activeChain) {
+        activeChain = chains.find((chain) => chain.name == ChainKey.GAIACHAIN);
+        handleRequest({
+          ...req,
+          body: {
+            method: "wallet_add_chain",
+            params: [{ chainId: "cosmoshub-4" }],
+          },
+        });
+      }
 
       switch (method) {
+        case RequestMethod.GET_ACCOUNTS: {
+          getStoredVaults().then((vaults) => {
+            resolve(
+              vaults.flatMap(({ apps, chains }) =>
+                chains
+                  .filter(
+                    ({ name }) =>
+                      name === activeChain.name &&
+                      apps.indexOf(req.sender.origin) >= 0
+                  )
+                  .map(({ address }) => address)
+              )
+            );
+          });
+
+          break;
+        }
         case RequestMethod.REQUEST_ACCOUNTS: {
           getAccounts(activeChain.name, req.sender.origin).then(
             ({ accounts }) => {
