@@ -315,7 +315,7 @@ const Component: FC = () => {
                 .catch();
 
               (txProvider as EVMTransactionProvider).getFeeData().then(() => {
-                txProvider
+                (txProvider as EVMTransactionProvider)
                   .getEstimateTransactionFee(transaction.chain.cmcId, currency)
                   .then((gasPrice) => {
                     transaction.gasPrice = gasPrice;

@@ -184,6 +184,23 @@ const handleRequest = (
     const THORChain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
     initializeProvider(THORChain.name);
     switch (method) {
+      case ThorRequestMethod.GET_ACCOUNTS: {
+        getStoredVaults().then((vaults) => {
+          resolve(
+            vaults.flatMap(({ apps, chains }) =>
+              chains
+                .filter(
+                  ({ name }) =>
+                    name === THORChain.name &&
+                    apps.indexOf(req.sender.origin) >= 0
+                )
+                .map(({ address }) => address)
+            )
+          );
+        });
+
+        break;
+      }
       case ThorRequestMethod.REQUEST_ACCOUNTS: {
         getAccounts(ChainKey.THORCHAIN, req.sender.origin).then(
           ({ accounts }) => {
