@@ -345,7 +345,7 @@ const Component: FC = () => {
                 logo: transaction.chain.ticker.toLowerCase(),
               });
               (txProvider as ThorchainTransactionProvider)
-                .getSpecificTransactionInfo(coin)
+                .getSpecificTransactionInfo(coin,transaction.isDeposit?? false)
                 .then((thorchainSpecific) => {
                   transaction.gasPrice = String(thorchainSpecific.gasPrice);
                   try {

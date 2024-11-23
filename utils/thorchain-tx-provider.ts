@@ -54,7 +54,8 @@ export default class ThorchainTransactionProvider {
   };
 
   public getSpecificTransactionInfo = (
-    coin: Coin
+    coin: Coin,
+    isDeposit?: boolean
   ): Promise<SpecificThorchain> => {
     return new Promise<SpecificThorchain>((resolve) => {
       api.thorchain.fetchAccountNumber(coin.address).then((accountData) => {
@@ -64,9 +65,8 @@ export default class ThorchainTransactionProvider {
             gasPrice: fee,
             accountNumber: Number(accountData?.accountNumber),
             sequence: Number(accountData.sequence ?? 0),
-            isDeposit: false,
+            isDeposit: isDeposit ?? false,
           } as SpecificThorchain;
-
           resolve(specificThorchain);
         });
       });

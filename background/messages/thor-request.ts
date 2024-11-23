@@ -86,7 +86,8 @@ const getAccounts = (
 
 const sendTransaction = (
   transaction: TransactionProps,
-  activeChain: string
+  activeChain: string,
+  isDeposit?: boolean
 ): Promise<{
   transactionHash: string;
 }> => {
@@ -97,6 +98,7 @@ const sendTransaction = (
       setStoredTransactions([
         {
           ...transaction,
+          isDeposit,
           chain,
           id: uuid,
           status: "default",
@@ -213,6 +215,19 @@ const handleRequest = (
         const [transaction] = params as TransactionProps[];
         if (transaction) {
           sendTransaction(transaction, THORChain.id)
+            .then(({ transactionHash }) => {
+              resolve(transactionHash);
+            })
+            .catch(reject);
+        } else {
+          reject();
+        }
+        break;
+      }
+      case ThorRequestMethod.DEPOSIT_TRANSACTION: {
+        const [transaction] = params as TransactionProps[];
+        if (transaction) {
+          sendTransaction(transaction, THORChain.id, true)
             .then(({ transactionHash }) => {
               resolve(transactionHash);
             })

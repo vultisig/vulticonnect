@@ -132,6 +132,7 @@ export enum ThorRequestMethod {
   GET_TRANSACTION_BY_HASH = "get_transaction_by_hash",
   GET_ACCOUNTS = "get_accounts",
   REQUEST_ACCOUNTS = "request_accounts",
+  DEPOSIT_TRANSACTION = "deposit_transaction",
   SEND_TRANSACTION = "send_transaction",
 }
 

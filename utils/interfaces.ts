@@ -129,6 +129,7 @@ export interface TransactionProps {
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
   txHash?: string;
+  isDeposit:boolean,
   windowId?: number;
 }
 
