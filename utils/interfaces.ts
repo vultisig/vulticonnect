@@ -1,7 +1,6 @@
 import { ChainKey, Currency, Language } from "utils/constants";
 
 export namespace Messaging {
-
   export namespace GetVaults {
     export type Request = any;
     export type Response = { vaults: VaultProps[] };
@@ -14,6 +13,11 @@ export namespace Messaging {
 
   export namespace EthRequest {
     export type Request = { method: string; params?: Record<string, any>[] };
+    export type Response = string | string[];
+  }
+
+  export namespace ThorRequest {
+    export type Request = any;
     export type Response = string | string[];
   }
 }
@@ -70,6 +74,7 @@ export interface ChainRpcRef {
   [ChainKey.ETHEREUM]: string;
   [ChainKey.POLYGON]: string;
   [ChainKey.ZKSYNC]: string;
+  [ChainKey.THORCHAIN]: string;
 }
 
 export interface CurrencyRef {
@@ -124,6 +129,7 @@ export interface TransactionProps {
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
   txHash?: string;
+  isDeposit:boolean,
   windowId?: number;
 }
 
@@ -143,4 +149,22 @@ export interface VaultProps {
 export interface ParsedMemo {
   signature: string;
   inputs: string;
+}
+
+export interface ThorchainAccountDataResponse {
+  address: string;
+  publicKey: {
+    type: string;
+    value: string;
+  };
+  accountNumber: string;
+  sequence: string;
+}
+
+export interface SpecificThorchain {
+  fee: number;
+  gasPrice: number;
+  accountNumber: number;
+  sequence: number;
+  isDeposit: boolean;
 }

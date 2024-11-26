@@ -7,7 +7,13 @@ import type {
   CurrencyRef,
   LanguageRef,
 } from "~utils/interfaces";
-
+export enum CosmosChain {
+  THORChain = "THORChain",
+  Cosmos = "Cosmos",
+  MayaChain = "MayaChain",
+  Dydx = "Dydx",
+  Kujira = "Kujira",
+}
 export enum ChainKey {
   ARBITRUM = "Arbitrum",
   AVALANCHE = "Avalanche",
@@ -65,7 +71,8 @@ export enum EventMethod {
   ERROR = "ERROR",
   MESSAGE = "MESSAGE",
 }
-export enum RequestMethod {
+
+export enum EVMRequestMethod {
   ETH_ACCOUNTS = "eth_accounts",
   ETH_BLOB_BASE_FEE = "eth_blobBaseFee",
   ETH_BLOCK_NUMBER = "eth_blockNumber",
@@ -119,6 +126,14 @@ export enum RequestMethod {
   WALLET_SCAN_QR_CODE = "wallet_scanQRCode",
   WALLET_WATCH_ASSET = "wallet_watchAsset",
   WEB3_CLIENT_VERSION = "web3_clientVersion",
+}
+
+export enum ThorRequestMethod {
+  GET_TRANSACTION_BY_HASH = "get_transaction_by_hash",
+  GET_ACCOUNTS = "get_accounts",
+  REQUEST_ACCOUNTS = "request_accounts",
+  DEPOSIT_TRANSACTION = "deposit_transaction",
+  SEND_TRANSACTION = "send_transaction",
 }
 
 export const storageKey = keyMirror({
@@ -199,7 +214,7 @@ export const explorerUrl: ChainExplorerRef = {
   [ChainKey.POLKADOT]: "https://polkadot.subscan.io/account",
   [ChainKey.POLYGON]: "https://polygonscan.com",
   [ChainKey.SOLANA]: "https://explorer.solana.com",
-  [ChainKey.THORCHAIN]: "https://thorchain.net/tx",
+  [ChainKey.THORCHAIN]: "https://thorchain.net",
   [ChainKey.ZKSYNC]: "https://explorer.zksync.io",
 };
 
@@ -214,6 +229,7 @@ export const rpcUrl: ChainRpcRef = {
   [ChainKey.ETHEREUM]: "https://ethereum-rpc.publicnode.com",
   [ChainKey.POLYGON]: "https://polygon-bor-rpc.publicnode.com",
   [ChainKey.ZKSYNC]: "https://mainnet.era.zksync.io",
+  [ChainKey.THORCHAIN]: "https://rpc.ninerealms.com/",
 };
 
 export const chains: ChainProps[] = [
@@ -360,7 +376,7 @@ export const chains: ChainProps[] = [
   {
     cmcId: 4157,
     decimals: 8,
-    id: "",
+    id: "Thorchain_1",
     name: ChainKey.THORCHAIN,
     ticker: "RUNE",
   },

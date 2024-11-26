@@ -1,7 +1,7 @@
 import type { PlasmoCSConfig } from "plasmo";
 import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
 import { type EIP1193Provider, announceProvider } from "mipd";
-import { EventMethod, RequestMethod } from "~utils/constants";
+import { EventMethod, EVMRequestMethod } from "~utils/constants";
 import type { Messaging, VaultProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import { VULTI_ICON_RAW_SVG } from "~static/icons/vulti-raw";
@@ -16,6 +16,17 @@ type RequestArguments = {
   params?: Record<string, any>[];
 };
 
+interface ThorchainProvider {
+  isVultiConnect: boolean;
+  request(args: RequestArguments): Promise<string | string[]>;
+  on(event: string, callback: (data: any) => void): void;
+  removeListener(event: string, callback: Function): void;
+  _emit(event: string, data: any): void;
+  connect(): void;
+  disconnect(error?: { code: number; message: string }): void;
+  addListener(event: string, callback: (data: any) => void): void;
+}
+
 interface EthereumProvider {
   isMetaMask: boolean;
   isVultiConnect: boolean;
@@ -29,7 +40,6 @@ interface EthereumProvider {
   _emit(event: string, data: any): void;
   _connect(): void;
   _disconnect(error?: { code: number; message: string }): void;
-  getVaults(): Promise<VaultProps[]>;
 }
 
 const ethereumProvider: EthereumProvider = {
@@ -50,11 +60,11 @@ const ethereumProvider: EthereumProvider = {
         .then((result) => {
           const { method, params } = body;
           switch (method) {
-            case RequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
+            case EVMRequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
               ethereumProvider._emit(EventMethod.CHAIN_CHANGED, result);
               break;
             }
-            case RequestMethod.WALLET_REVOKE_PERMISSIONS: {
+            case EVMRequestMethod.WALLET_REVOKE_PERMISSIONS: {
               ethereumProvider._emit(EventMethod.DISCONNECT, result);
               break;
             }
@@ -68,7 +78,7 @@ const ethereumProvider: EthereumProvider = {
     return new Promise((resolve, reject) => {
       ethereumProvider
         .request({
-          method: RequestMethod.ETH_REQUEST_ACCOUNTS,
+          method: EVMRequestMethod.ETH_REQUEST_ACCOUNTS,
           params: [],
         })
         .then((accounts) => {
@@ -82,7 +92,7 @@ const ethereumProvider: EthereumProvider = {
     if (event === EventMethod.CONNECT && ethereumProvider.isConnected()) {
       ethereumProvider
         .request({
-          method: RequestMethod.ETH_CHAIN_ID,
+          method: EVMRequestMethod.ETH_CHAIN_ID,
           params: [],
         })
         .then((chainId) => {
@@ -132,7 +142,60 @@ const ethereumProvider: EthereumProvider = {
       error || { code: 4900, message: "Provider disconnected" }
     );
   },
+};
 
+const thorchainProvider: ThorchainProvider = {
+  isVultiConnect: true,
+  request: (body) => {
+    return new Promise((resolve, reject) => {
+      sendToBackgroundViaRelay<
+        Messaging.ThorRequest.Request,
+        Messaging.ThorRequest.Response
+      >({
+        name: "thor-request",
+        body,
+      })
+        .then((result) => {
+          resolve(result);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+  },
+  on: (event, callback) => {
+    // TODO
+    return;
+  },
+  addListener: (event: string, callback: (data: any) => void) => {
+    // TODO
+    return;
+  },
+  removeListener: (event, callback) => {
+    // TODO
+    return;
+  },
+
+  _emit: (event, data) => {
+    // TODO
+    return;
+  },
+
+  connect: () => {
+    // TODO
+    return;
+  },
+
+  disconnect: (error) => {
+    // TODO
+    return;
+  },
+};
+
+window.thorchain = thorchainProvider;
+const providers = {
+  ethereum: ethereumProvider,
+  thorchain: thorchainProvider,
   getVaults: (): Promise<VaultProps[]> => {
     return new Promise((resolve) => {
       sendToBackgroundViaRelay<
@@ -145,8 +208,8 @@ const ethereumProvider: EthereumProvider = {
   },
 };
 
-window.vultisig = ethereumProvider;
-window.vultisig._connect();
+window.vultisig = providers;
+
 if (!window.ethereum) window.ethereum = ethereumProvider;
 announceProvider({
   info: {
@@ -192,7 +255,7 @@ const intervalRef = setInterval(() => {
 
         Object.defineProperties(window, {
           vultisig: {
-            value: ethereumProvider,
+            value: providers,
             configurable: false,
             writable: false,
           },
@@ -234,6 +297,11 @@ const intervalRef = setInterval(() => {
                 }
               },
             },
+            configurable: false,
+            writable: false,
+          },
+          thorchain: {
+            value: { ...thorchainProvider },
             configurable: false,
             writable: false,
           },

@@ -3,7 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button, QRCode, message } from "antd";
 import { formatUnits, toUtf8String } from "ethers";
 
-import { errorKey, explorerUrl } from "~utils/constants";
+import { ChainKey, errorKey, explorerUrl } from "~utils/constants";
 import {
   getStoredCurrency,
   getStoredLanguage,
@@ -39,6 +39,10 @@ import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
+import EVMTransactionProvider from "~utils/evm-tx-provider";
+import type ThorchainTransactionProvider from "~utils/thorchain-tx-provider";
+import { create } from "@bufbuild/protobuf";
+import { CoinSchema } from "~protos/coin_pb";
 import { parseMemo, splitString } from "~utils/functions";
 import html2canvas from "html2canvas";
 
@@ -49,7 +53,7 @@ interface InitialState {
   sendKey?: string;
   step: number;
   transaction?: TransactionProps;
-  txProvider?: TransactionProvider;
+  txProvider?: EVMTransactionProvider | ThorchainTransactionProvider;
   parsedMemo?: ParsedMemo;
   vault?: VaultProps;
   hasError?: boolean;
@@ -126,7 +130,10 @@ const Component: FC = () => {
     }, timeout);
   };
 
-  const handlePending = (preSignedImageHash: string): void => {
+  const handlePending = (
+    preSignedImageHash: string,
+    preSignedInputData: Uint8Array
+  ): void => {
     const retryTimeout = setTimeout(() => {
       setStoredTransaction({ ...transaction, status: "error" }).then(() => {
         setState({
@@ -135,7 +142,6 @@ const Component: FC = () => {
           errorTitle: t(messageKeys.TIMEOUT_ERROR),
           errorDescription: t(messageKeys.SIGNING_TIMEOUT_DESCRIPTION),
         });
-        handleClose();
       });
     }, RETRY_TIMEOUT);
 
@@ -145,7 +151,12 @@ const Component: FC = () => {
         .then((data) => {
           clearTimeout(retryTimeout);
           txProvider
-            .getSignedTransaction(transaction, data as SignatureProps)
+            .getSignedTransaction(
+              transaction,
+              data as SignatureProps,
+              preSignedInputData,
+              vault
+            )
             .then((txHash) => {
               setStoredTransaction({
                 ...transaction,
@@ -171,7 +182,10 @@ const Component: FC = () => {
             clearTimeout(retryTimeout);
             setStoredTransaction({ ...transaction, status: "error" }).then(
               () => {
-                handleClose();
+                messageApi.open({
+                  type: "error",
+                  content: t(messageKeys.RETRY_ERROR),
+                });
               }
             );
           }
@@ -196,7 +210,7 @@ const Component: FC = () => {
                       .then((preSignedImageHash) => {
                         setState((prevState) => ({ ...prevState, step: 3 }));
 
-                        handlePending(preSignedImageHash);
+                        handlePending(preSignedImageHash, preSignedInputData);
                       });
                   });
               }
@@ -210,7 +224,10 @@ const Component: FC = () => {
       })
       .catch(() => {
         setStoredTransaction({ ...transaction, status: "error" }).then(() => {
-          handleClose();
+          messageApi.open({
+            type: "error",
+            content: t(messageKeys.RETRY_ERROR),
+          });
         });
       });
   };
@@ -222,7 +239,6 @@ const Component: FC = () => {
           setState((prevState) => ({ ...prevState, step }));
         } else {
           setState((prevState) => ({ ...prevState, loading: true }));
-
           txProvider
             .getKeysignPayload(transaction, vault)
             .then(() => {
@@ -284,22 +300,54 @@ const Component: FC = () => {
           .getCore()
           .then(({ chainRef, walletCore }) => {
             const dataConverter = new DataConverterProvider();
-            const txProvider = new TransactionProvider(
+            const txProvider = TransactionProvider.createProvider(
               transaction.chain.name,
               chainRef,
               dataConverter.compactEncoder,
               walletCore
             );
-            parseMemo(transaction.data)
-              .then((memo) => {
-                setState({ ...state, parsedMemo: memo });
-              })
-              .catch();
-            txProvider.getFeeData().then(() => {
-              txProvider
-                .getEstimateTransactionFee(transaction.chain.cmcId, currency)
-                .then((gasPrice) => {
-                  transaction.gasPrice = gasPrice;
+            // Improve
+            if (transaction.chain.name != ChainKey.THORCHAIN) {
+              parseMemo(transaction.data)
+                .then((memo) => {
+                  setState({ ...state, parsedMemo: memo });
+                })
+                .catch();
+
+              (txProvider as EVMTransactionProvider).getFeeData().then(() => {
+                (txProvider as EVMTransactionProvider)
+                  .getEstimateTransactionFee(transaction.chain.cmcId, currency)
+                  .then((gasPrice) => {
+                    transaction.gasPrice = gasPrice;
+                    try {
+                      transaction.memo = toUtf8String(transaction.data);
+                    } catch (err) {}
+                    setStoredTransaction(transaction).then(() => {
+                      setState((prevState) => ({
+                        ...prevState,
+                        currency,
+                        loaded: true,
+                        transaction,
+                        txProvider,
+                        vault,
+                      }));
+                    });
+                  });
+              });
+            } else {
+              const coin = create(CoinSchema, {
+                chain: transaction.chain.name,
+                ticker: transaction.chain.ticker,
+                address: transaction.from,
+                decimals: transaction.chain.decimals,
+                hexPublicKey: vault.hexChainCode,
+                isNativeToken: true,
+                logo: transaction.chain.ticker.toLowerCase(),
+              });
+              (txProvider as ThorchainTransactionProvider)
+                .getSpecificTransactionInfo(coin,transaction.isDeposit?? false)
+                .then((thorchainSpecific) => {
+                  transaction.gasPrice = String(thorchainSpecific.gasPrice);
                   try {
                     transaction.memo = toUtf8String(transaction.data);
                   } catch (err) {
@@ -318,7 +366,7 @@ const Component: FC = () => {
                     }));
                   });
                 });
-            });
+            }
           })
           .catch((error) => {
             console.log(error);

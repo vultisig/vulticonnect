@@ -39,3 +39,14 @@ relay(
     return openResult;
   }
 );
+
+relay(
+  {
+    name: "thor-request" as const,
+  },
+  async (req) => {
+    const openResult = await sendToBackground(req);
+
+    return openResult;
+  }
+);

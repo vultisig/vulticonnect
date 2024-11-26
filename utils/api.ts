@@ -2,7 +2,11 @@ import axios from "axios";
 
 import { toCamelCase, toSnakeCase } from "~utils/functions";
 import type { Currency } from "~utils/constants";
-import type { SignatureProps } from "~utils/interfaces";
+import type {
+  SignatureProps,
+  ThorchainAccountDataResponse,
+} from "~utils/interfaces";
+import { resolve } from "path";
 
 const api = axios.create({
   headers: { accept: "application/json" },
@@ -158,5 +162,57 @@ export default {
           reject("Error getting FunctionSelector Text");
         });
     });
+  },
+  thorchain: {
+    fetchAccountNumber: async (address: string) => {
+      return new Promise<ThorchainAccountDataResponse>((resolve, reject) => {
+        const url = `https://thornode.ninerealms.com/auth/accounts/${address}`;
+        api
+          .get(url, {
+            headers: {
+              "X-Client-ID": "vultisig",
+            },
+          })
+          .then((res) => {
+            resolve(res.data.result.value);
+          })
+          .catch(reject);
+      });
+    },
+    getFeeData: () => {
+      return new Promise((resolve, reject) => {
+        const url = "https://thornode.ninerealms.com/thorchain/network";
+        api
+          .get(url)
+          .then((res) => {
+            resolve(res.data.nativeTxFeeRune);
+          })
+          .catch(reject);
+      });
+    },
+
+    getTHORChainChainID(): Promise<string> {
+      return new Promise((resolve, reject) => {
+        const url = "https://rpc.ninerealms.com/status";
+        api
+          .get(url)
+          .then((res) => {
+            const network = res.data.result.nodeInfo.network;
+            resolve(network);
+          })
+          .catch(reject);
+      });
+    },
+    getTransactionByHash(hash: string): Promise<any> {
+      return new Promise((resolve, reject) => {
+        const url = "https://thornode.ninerealms.com/txs";
+        api
+          .get(`${url}/${hash}`)
+          .then((res) => {
+            resolve(res.data.tx);
+          })
+          .catch(reject);
+      });
+    },
   },
 };

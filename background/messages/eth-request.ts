@@ -1,6 +1,6 @@
 import type { MessagesMetadata, PlasmoMessaging } from "@plasmohq/messaging";
 import { JsonRpcProvider, type TransactionRequest } from "ethers";
-import { ChainKey, chains, RequestMethod, rpcUrl } from "~utils/constants";
+import { ChainKey, chains, EVMRequestMethod, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -197,7 +197,7 @@ const handleRequest = (
       const activeChain = storedChains.find(({ active }) => active);
       initializeProvider(activeChain.name);
       switch (method) {
-        case RequestMethod.ETH_ACCOUNTS: {
+        case EVMRequestMethod.ETH_ACCOUNTS: {
           getStoredVaults().then((vaults) => {
             resolve(
               vaults.flatMap(({ apps, chains }) =>
@@ -214,13 +214,13 @@ const handleRequest = (
 
           break;
         }
-        case RequestMethod.ETH_CHAIN_ID: {
+        case EVMRequestMethod.ETH_CHAIN_ID: {
           resolve(activeChain.id);
           updateProvider(activeChain.name);
 
           break;
         }
-        case RequestMethod.ETH_REQUEST_ACCOUNTS: {
+        case EVMRequestMethod.ETH_REQUEST_ACCOUNTS: {
           getAccounts(activeChain.name, req.sender.origin).then(
             ({ accounts }) => {
               resolve(accounts);
@@ -228,7 +228,7 @@ const handleRequest = (
           );
           break;
         }
-        case RequestMethod.ETH_SEND_TRANSACTION: {
+        case EVMRequestMethod.ETH_SEND_TRANSACTION: {
           const [transaction] = params as TransactionProps[];
 
           if (transaction) {
@@ -243,7 +243,7 @@ const handleRequest = (
 
           break;
         }
-        case RequestMethod.ETH_GET_TRANSACTION_BY_HASH: {
+        case EVMRequestMethod.ETH_GET_TRANSACTION_BY_HASH: {
           const [hash] = params;
           axios
             .post(rpcUrl[activeChain.name], {
@@ -257,13 +257,13 @@ const handleRequest = (
             });
           break;
         }
-        case RequestMethod.ETH_BLOCK_NUMBER: {
+        case EVMRequestMethod.ETH_BLOCK_NUMBER: {
           rpcProvider.getBlock("latest").then((block) => {
             resolve(String(block.number));
           });
           break;
         }
-        case RequestMethod.WALLET_ADD_ETHEREUM_CHAIN: {
+        case EVMRequestMethod.WALLET_ADD_ETHEREUM_CHAIN: {
           const [param] = params;
 
           if (param?.chainId) {
@@ -292,17 +292,17 @@ const handleRequest = (
 
           break;
         }
-        case RequestMethod.WALLET_GET_PERMISSIONS: {
+        case EVMRequestMethod.WALLET_GET_PERMISSIONS: {
           resolve([]);
 
           break;
         }
-        case RequestMethod.WALLET_REQUEST_PERMISSIONS: {
+        case EVMRequestMethod.WALLET_REQUEST_PERMISSIONS: {
           resolve([]);
 
           break;
         }
-        case RequestMethod.WALLET_REVOKE_PERMISSIONS: {
+        case EVMRequestMethod.WALLET_REVOKE_PERMISSIONS: {
           getStoredVaults().then((vaults) => {
             setStoredVaults(
               vaults.map((vault) => ({
@@ -313,7 +313,7 @@ const handleRequest = (
           });
           break;
         }
-        case RequestMethod.ETH_ESTIMATE_GAS: {
+        case EVMRequestMethod.ETH_ESTIMATE_GAS: {
           const tx = { ...params[0] } as TransactionRequest;
           rpcProvider
             .estimateGas(tx)
@@ -323,7 +323,7 @@ const handleRequest = (
             .catch(reject);
           break;
         }
-        case RequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
+        case EVMRequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
           const [param] = params;
           if (param?.chainId) {
             if (!isSupportedChain(param?.chainId)) {
@@ -344,7 +344,7 @@ const handleRequest = (
                 handleRequest({
                   ...req,
                   body: {
-                    method: RequestMethod.WALLET_ADD_ETHEREUM_CHAIN,
+                    method: EVMRequestMethod.WALLET_ADD_ETHEREUM_CHAIN,
                     params,
                   },
                 })
@@ -357,7 +357,7 @@ const handleRequest = (
           }
           break;
         }
-        case RequestMethod.ETH_GET_BALANCE: {
+        case EVMRequestMethod.ETH_GET_BALANCE: {
           const [address, tag] = params;
           rpcProvider
             .getBalance(String(address), String(tag))
@@ -367,7 +367,7 @@ const handleRequest = (
             .catch(reject);
           break;
         }
-        case RequestMethod.ETH_GET_BLOCK_BY_NUMBER: {
+        case EVMRequestMethod.ETH_GET_BLOCK_BY_NUMBER: {
           const [tag, refresh] = params;
           rpcProvider
             .getBlock(String(tag), Boolean(refresh))
@@ -377,7 +377,7 @@ const handleRequest = (
             .catch(reject);
           break;
         }
-        case RequestMethod.ETH_GAS_PRICE: {
+        case EVMRequestMethod.ETH_GAS_PRICE: {
           rpcProvider
             .getFeeData()
             .then((res) => {
@@ -386,7 +386,7 @@ const handleRequest = (
             .catch(reject);
           break;
         }
-        case RequestMethod.ETH_MAX_PRIORITY_FEE_PER_GAS: {
+        case EVMRequestMethod.ETH_MAX_PRIORITY_FEE_PER_GAS: {
           rpcProvider
             .getFeeData()
             .then((res) => {
@@ -395,12 +395,12 @@ const handleRequest = (
             .catch(reject);
           break;
         }
-        case RequestMethod.ETH_CALL: {
+        case EVMRequestMethod.ETH_CALL: {
           const [tx, tag] = params;
 
           resolve(rpcProvider.call(tx));
         }
-        case RequestMethod.ETH_GET_TRANSACTION_RECEIPT: {
+        case EVMRequestMethod.ETH_GET_TRANSACTION_RECEIPT: {
           const [param] = params;
           rpcProvider
             .getTransactionReceipt(String(param))

@@ -2,6 +2,7 @@ interface Window {
   ethereum: any;
   vultiConnect: { getVaults: () => Promise<VaultProps[]> };
   vultisig: any;
+  thorchain: any;
   lodash: unknown;
   providers: EthereumProvider[];
   vultiConnectRouter: {
@@ -13,3 +14,4 @@ interface Window {
     addProvider: (provider: EthereumProvider) => void;
   };
 }
+
