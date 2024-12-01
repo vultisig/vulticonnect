@@ -86,7 +86,8 @@ const getAccounts = (
 
 const sendTransaction = (
   transaction: TransactionProps,
-  activeChain: string
+  activeChain: string,
+  isDeposit?: boolean
 ): Promise<{
   transactionHash: string;
 }> => {
@@ -97,6 +98,7 @@ const sendTransaction = (
       setStoredTransactions([
         {
           ...transaction,
+          isDeposit,
           chain,
           id: uuid,
           status: "default",
@@ -184,6 +186,23 @@ const handleRequest = (
     const THORChain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
     initializeProvider(THORChain.name);
     switch (method) {
+      case RequestMethod.GET_ACCOUNTS: {
+        getStoredVaults().then((vaults) => {
+          resolve(
+            vaults.flatMap(({ apps, chains }) =>
+              chains
+                .filter(
+                  ({ name }) =>
+                    name === THORChain.name &&
+                    apps.indexOf(req.sender.origin) >= 0
+                )
+                .map(({ address }) => address)
+            )
+          );
+        });
+
+        break;
+      }
       case RequestMethod.REQUEST_ACCOUNTS: {
         getAccounts(ChainKey.THORCHAIN, req.sender.origin).then(
           ({ accounts }) => {
@@ -196,6 +215,19 @@ const handleRequest = (
         const [transaction] = params as TransactionProps[];
         if (transaction) {
           sendTransaction(transaction, THORChain.id)
+            .then(({ transactionHash }) => {
+              resolve(transactionHash);
+            })
+            .catch(reject);
+        } else {
+          reject();
+        }
+        break;
+      }
+      case RequestMethod.DEPOSIT_TRANSACTION: {
+        const [transaction] = params as TransactionProps[];
+        if (transaction) {
+          sendTransaction(transaction, THORChain.id, true)
             .then(({ transactionHash }) => {
               resolve(transactionHash);
             })

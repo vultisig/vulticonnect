@@ -150,6 +150,7 @@ export enum RequestMethod {
   CHAIN_ID = "chain_id",
   WALLET_ADD_CHAIN = "wallet_add_chain",
   WALLET_SWITCH_CHAIN = "wallet_switch_chain",
+  DEPOSIT_TRANSACTION = "deposit_transaction",
 }
 
 export const storageKey = keyMirror({
