@@ -6,34 +6,12 @@ import type {
   TransactionProps,
   VaultProps,
 } from "~utils/interfaces";
-import {
-  JsonRpcProvider,
-  Transaction,
-  encodeBase64,
-  formatUnits,
-  hexlify,
-  isHexString,
-  keccak256,
-  randomBytes,
-  toUtf8Bytes,
-  toUtf8String,
-} from "ethers";
-
+import { randomBytes } from "ethers";
 import { create, toBinary } from "@bufbuild/protobuf";
-
-
-import {
-  EthereumSpecificSchema,
-  type EthereumSpecific,
-} from "~protos/blockchain_specific_pb";
-import { CoinSchema } from "~protos/coin_pb";
 import {
   KeysignMessageSchema,
-  KeysignPayloadSchema,
   type KeysignPayload,
 } from "~protos/keysign_message_pb";
-
-
 
 interface ChainRef {
   [chainKey: string]: CoinType;
@@ -43,7 +21,7 @@ export abstract class BaseTransactionProvider {
   protected chainRef: ChainRef;
   protected dataEncoder: (data: Uint8Array) => Promise<string>;
   protected walletCore: WalletCore;
-  protected keysignPayload: KeysignPayload
+  protected keysignPayload: KeysignPayload;
   constructor(
     chainKey: ChainKey,
     chainRef: ChainRef,
@@ -82,9 +60,9 @@ export abstract class BaseTransactionProvider {
       if (preSigningOutput.errorMessage !== "")
         reject(preSigningOutput.errorMessage);
 
-      const imageHash = this.walletCore.HexCoding.encode(
-        preSigningOutput.dataHash
-      )?.replace(/^0x/, "");
+      const imageHash = this.stripHexPrefix(
+        this.walletCore.HexCoding.encode(preSigningOutput.dataHash)
+      );
       resolve(imageHash);
     });
   };
@@ -129,5 +107,4 @@ export abstract class BaseTransactionProvider {
   protected encodeData(data: Uint8Array): Promise<string> {
     return this.dataEncoder(data);
   }
-  
 }

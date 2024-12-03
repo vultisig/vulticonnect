@@ -4,10 +4,8 @@ import type { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
 import Long from "long";
 import {
   CosmosSpecificSchema,
-  MAYAChainSpecificSchema,
   TransactionType,
   type CosmosSpecific,
-  type MAYAChainSpecific,
 } from "~protos/blockchain_specific_pb";
 import { CoinSchema, type Coin } from "~protos/coin_pb";
 import {

@@ -5,7 +5,6 @@ import { formatUnits, toUtf8String } from "ethers";
 
 import {
   ChainKey,
-  CosmosChain,
   errorKey,
   EVMChain,
   explorerUrl,

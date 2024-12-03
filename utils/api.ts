@@ -9,7 +9,6 @@ import type {
   SignatureProps,
   ThorchainAccountDataResponse,
 } from "~utils/interfaces";
-import { resolve } from "path";
 
 const api = axios.create({
   headers: { accept: "application/json" },
