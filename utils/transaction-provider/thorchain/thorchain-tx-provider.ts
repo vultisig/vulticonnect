@@ -1,5 +1,4 @@
-import { randomBytes } from "ethers";
-import { create, toBinary } from "@bufbuild/protobuf";
+import { create } from "@bufbuild/protobuf";
 import { TW, type WalletCore } from "@trustwallet/wallet-core";
 import type { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
 import Long from "long";
@@ -9,12 +8,12 @@ import {
 } from "~protos/blockchain_specific_pb";
 import { CoinSchema, type Coin } from "~protos/coin_pb";
 import {
-  KeysignMessageSchema,
   KeysignPayloadSchema,
   type KeysignPayload,
 } from "~protos/keysign_message_pb";
 import SigningMode = TW.Cosmos.Proto.SigningMode;
 import BroadcastMode = TW.Cosmos.Proto.BroadcastMode;
+import TxCompiler = TW.TxCompiler;
 import { ChainKey } from "~utils/constants";
 import type {
   SignatureProps,
@@ -22,36 +21,28 @@ import type {
   TransactionProps,
   VaultProps,
 } from "~utils/interfaces";
-import api from "./api";
+import api from "../../api";
 import { createHash } from "crypto";
-import { SignedTransactionResult } from "./signed-transaction-result";
+import { SignedTransactionResult } from "../../signed-transaction-result";
+import { BaseTransactionProvider } from "../base-transaction-provider";
 
 interface ChainRef {
   [chainKey: string]: CoinType;
 }
 
-export default class ThorchainTransactionProvider {
-  private keysignPayload: KeysignPayload;
-
+export default class ThorchainTransactionProvider extends BaseTransactionProvider {
   constructor(
-    private chainKey: ChainKey,
-    private chainRef: ChainRef,
-    private dataEncoder: (data: Uint8Array) => Promise<string>,
-    private walletCore: WalletCore
+    chainKey: ChainKey,
+    chainRef: ChainRef,
+    dataEncoder: (data: Uint8Array) => Promise<string>,
+    walletCore: WalletCore
   ) {
+    super(chainKey, chainRef, dataEncoder, walletCore);
     this.chainKey = chainKey;
     this.chainRef = chainRef;
     this.dataEncoder = dataEncoder;
     this.walletCore = walletCore;
   }
-
-  private encryptionKeyHex = (): string => {
-    const keyBytes = randomBytes(32);
-
-    return Array.from(keyBytes)
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("");
-  };
 
   public getSpecificTransactionInfo = (
     coin: Coin,
@@ -114,27 +105,6 @@ export default class ThorchainTransactionProvider {
         this.keysignPayload = keysignPayload;
         resolve(keysignPayload);
       });
-    });
-  };
-
-  public getPreSignedImageHash = (
-    preSignedInputData: Uint8Array
-  ): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const preHashes = this.walletCore.TransactionCompiler.preImageHashes(
-        this.chainRef[this.chainKey],
-        preSignedInputData
-      );
-
-      const preSigningOutput =
-        TW.TxCompiler.Proto.PreSigningOutput.decode(preHashes);
-      if (preSigningOutput.errorMessage !== "")
-        reject(preSigningOutput.errorMessage);
-
-      const imageHash = this.walletCore.HexCoding.encode(
-        preSigningOutput.dataHash
-      )?.replace(/^0x/, "");
-      resolve(imageHash);
     });
   };
 
@@ -269,28 +239,6 @@ export default class ThorchainTransactionProvider {
     });
   };
 
-  public getTransactionKey = (
-    publicKeyEcdsa: string,
-    transactionId: string
-  ): Promise<string> => {
-    return new Promise((resolve) => {
-      const keysignMessage = create(KeysignMessageSchema, {
-        sessionId: transactionId,
-        serviceName: "VultiConnect",
-        encryptionKeyHex: this.encryptionKeyHex(),
-        useVultisigRelay: true,
-        keysignPayload: this.keysignPayload,
-      });
-      const binary = toBinary(KeysignMessageSchema, keysignMessage);
-
-      this.dataEncoder(binary).then((base64EncodedData) => {
-        resolve(
-          `vultisig://vultisig.com?type=SignTransaction&vault=${publicKeyEcdsa}&jsonData=${base64EncodedData}`
-        );
-      });
-    });
-  };
-  
   private getSignature(signature: SignatureProps): Uint8Array {
     const rData = this.walletCore.HexCoding.decode(signature.R);
     const sData = this.walletCore.HexCoding.decode(signature.S);
@@ -305,7 +253,6 @@ export default class ThorchainTransactionProvider {
     combinedData.set(recoveryIDdata, rData.length + sData.length);
     return combinedData;
   }
-  
   private calculateFee(_coin?: Coin): Promise<number> {
     return new Promise((resolve, reject) => {
       api.thorchain.getFeeData().then((feeData) => {

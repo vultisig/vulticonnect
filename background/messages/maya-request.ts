@@ -1,5 +1,4 @@
 import type { MessagesMetadata, PlasmoMessaging } from "@plasmohq/messaging";
-import { JsonRpcProvider } from "ethers";
 import { ChainKey, chains, RequestMethod, rpcUrl } from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
@@ -10,14 +9,7 @@ import {
   setStoredTransactions,
   setStoredVaults,
 } from "~utils/storage";
-import api from "~utils/api";
 
-let rpcProvider: JsonRpcProvider;
-
-const initializeProvider = (chainKey: string) => {
-  const rpc = rpcUrl[chainKey];
-  rpcProvider = new JsonRpcProvider(rpc);
-};
 
 const getAccounts = (
   chain: ChainKey,
@@ -86,19 +78,17 @@ const getAccounts = (
 
 const sendTransaction = (
   transaction: TransactionProps,
-  activeChain: string,
-  isDeposit?: boolean
+  activeChain: string
 ): Promise<{
   transactionHash: string;
 }> => {
   return new Promise((resolve, reject) => {
     getStoredTransactions().then((transactions) => {
-      const chain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
+      const chain = chains.find((chain) => chain.name == ChainKey.MAYACHAIN);
       const uuid = uuidv4();
       setStoredTransactions([
         {
           ...transaction,
-          isDeposit,
           chain,
           id: uuid,
           status: "default",
@@ -178,33 +168,15 @@ const sendTransaction = (
 const handleRequest = (
   req: PlasmoMessaging.Request<
     keyof MessagesMetadata,
-    Messaging.ThorRequest.Request
+    Messaging.MayaRequest.Request
   >
-): Promise<Messaging.ThorRequest.Response> => {
+): Promise<Messaging.MayaRequest.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = req.body;
-    const THORChain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
-    initializeProvider(THORChain.name);
+    const MAYAChain = chains.find((chain) => chain.name == ChainKey.MAYACHAIN);    
     switch (method) {
-      case RequestMethod.GET_ACCOUNTS: {
-        getStoredVaults().then((vaults) => {
-          resolve(
-            vaults.flatMap(({ apps, chains }) =>
-              chains
-                .filter(
-                  ({ name }) =>
-                    name === THORChain.name &&
-                    apps.indexOf(req.sender.origin) >= 0
-                )
-                .map(({ address }) => address)
-            )
-          );
-        });
-
-        break;
-      }
       case RequestMethod.REQUEST_ACCOUNTS: {
-        getAccounts(ChainKey.THORCHAIN, req.sender.origin).then(
+        getAccounts(ChainKey.MAYACHAIN, req.sender.origin).then(
           ({ accounts }) => {
             resolve(accounts[0]);
           }
@@ -214,7 +186,7 @@ const handleRequest = (
       case RequestMethod.SEND_TRANSACTION: {
         const [transaction] = params as TransactionProps[];
         if (transaction) {
-          sendTransaction(transaction, THORChain.id)
+          sendTransaction(transaction, MAYAChain.id)
             .then(({ transactionHash }) => {
               resolve(transactionHash);
             })
@@ -222,24 +194,6 @@ const handleRequest = (
         } else {
           reject();
         }
-        break;
-      }
-      case RequestMethod.DEPOSIT_TRANSACTION: {
-        const [transaction] = params as TransactionProps[];
-        if (transaction) {
-          sendTransaction(transaction, THORChain.id, true)
-            .then(({ transactionHash }) => {
-              resolve(transactionHash);
-            })
-            .catch(reject);
-        } else {
-          reject();
-        }
-        break;
-      }
-      case RequestMethod.GET_TRANSACTION_BY_HASH: {
-        const [hash] = params;
-        api.thorchain.getTransactionByHash(hash).then(resolve).catch(reject);
         break;
       }
       default: {
@@ -252,8 +206,8 @@ const handleRequest = (
 };
 
 const handler: PlasmoMessaging.MessageHandler<
-  Messaging.ThorRequest.Request,
-  Messaging.ThorRequest.Response
+  Messaging.MayaRequest.Request,
+  Messaging.MayaRequest.Response
 > = async (req, res) => {
   handleRequest(req).then((result) => {
     res.send(result);

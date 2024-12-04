@@ -3,7 +3,12 @@ import { useTranslation } from "react-i18next";
 import { Button, QRCode, message } from "antd";
 import { formatUnits, toUtf8String } from "ethers";
 
-import { ChainKey, errorKey, explorerUrl } from "~utils/constants";
+import {
+  ChainKey,
+  errorKey,
+  EVMChain,
+  explorerUrl,
+} from "~utils/constants";
 import {
   getStoredCurrency,
   getStoredLanguage,
@@ -21,7 +26,6 @@ import i18n from "~i18n/config";
 import api from "~utils/api";
 import messageKeys from "~utils/message-keys";
 import DataConverterProvider from "~utils/data-converter-provider";
-import TransactionProvider from "~utils/transaction-provider";
 import WalletCoreProvider from "~utils/wallet-core-provider";
 
 import {
@@ -39,12 +43,16 @@ import "~styles/index.scss";
 import "~tabs/send-transaction.scss";
 import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
-import EVMTransactionProvider from "~utils/evm-tx-provider";
-import type ThorchainTransactionProvider from "~utils/thorchain-tx-provider";
 import { create } from "@bufbuild/protobuf";
 import { CoinSchema } from "~protos/coin_pb";
 import { parseMemo, splitString } from "~utils/functions";
 import html2canvas from "html2canvas";
+import type { BaseTransactionProvider } from "~utils/transaction-provider/base-transaction-provider";
+import TransactionProvider from "~utils/transaction-provider/transaction-provider";
+import type EVMTransactionProvider from "~utils/transaction-provider/evm/evm-tx-provider";
+import type ThorchainTransactionProvider from "~utils/transaction-provider/thorchain/thorchain-tx-provider";
+import type MayaTransactionProvider from "~utils/transaction-provider/maya/maya-tx-provider";
+import type CosmosTransactionProvider from "~utils/transaction-provider/cosmos/cosmos-tx-provider";
 
 interface InitialState {
   fastSign?: boolean;
@@ -53,7 +61,7 @@ interface InitialState {
   sendKey?: string;
   step: number;
   transaction?: TransactionProps;
-  txProvider?: EVMTransactionProvider | ThorchainTransactionProvider;
+  txProvider?: BaseTransactionProvider;
   parsedMemo?: ParsedMemo;
   vault?: VaultProps;
   hasError?: boolean;
@@ -299,7 +307,7 @@ const Component: FC = () => {
         walletCore
           .getCore()
           .then(({ chainRef, walletCore }) => {
-            const dataConverter = new DataConverterProvider();
+            const dataConverter = new DataConverterProvider();         
             const txProvider = TransactionProvider.createProvider(
               transaction.chain.name,
               chainRef,
@@ -307,7 +315,11 @@ const Component: FC = () => {
               walletCore
             );
             // Improve
-            if (transaction.chain.name != ChainKey.THORCHAIN) {
+            if (
+              (Object.values(EVMChain) as unknown as ChainKey[]).includes(
+                transaction.chain.name
+              )
+            ) {
               parseMemo(transaction.data)
                 .then((memo) => {
                   setState({ ...state, parsedMemo: memo });
@@ -344,10 +356,15 @@ const Component: FC = () => {
                 isNativeToken: true,
                 logo: transaction.chain.ticker.toLowerCase(),
               });
-              (txProvider as ThorchainTransactionProvider)
-                .getSpecificTransactionInfo(coin,transaction.isDeposit?? false)
-                .then((thorchainSpecific) => {
-                  transaction.gasPrice = String(thorchainSpecific.gasPrice);
+              (
+                txProvider as
+                  | ThorchainTransactionProvider
+                  | MayaTransactionProvider
+                  | CosmosTransactionProvider
+              )
+                .getSpecificTransactionInfo(coin)
+                .then((blockchainSpecific) => {
+                  transaction.gasPrice = String(blockchainSpecific.gasPrice);
                   try {
                     transaction.memo = toUtf8String(transaction.data);
                   } catch (err) {

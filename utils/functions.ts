@@ -1,6 +1,6 @@
 import { Interface } from "ethers";
 import api from "./api";
-import { evmSupportedChains } from "./constants";
+import { allSupportedChains } from "./constants";
 import type { ParsedMemo } from "./interfaces";
 
 const hexToAscii = (value: string): string => {
@@ -128,7 +128,7 @@ const processDecodedData = (data: any): any => {
 };
 
 const isSupportedChain = (chainId: string): boolean => {
-  return evmSupportedChains.some((chain) => chain.id === chainId);
+  return allSupportedChains.some((chain) => chain.id === chainId);
 };
 
 function splitString(str: string, size: number): string[] {

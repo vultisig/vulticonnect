@@ -112,6 +112,24 @@ export default class AddressProvider {
 
           break;
         }
+        case ChainKey.OSMOSIS: {
+          this.getECDSAAddress(chain, vault, "osmo")
+            .then(resolve)
+            .catch(reject);
+          break;
+        }
+        case ChainKey.DYDX: {
+          this.getECDSAAddress(chain, vault, "dydx")
+            .then(resolve)
+            .catch(reject);
+          break;
+        }
+        case ChainKey.KUJIRA: {
+          this.getECDSAAddress(chain, vault, "kujira")
+            .then(resolve)
+            .catch(reject);
+          break;
+        }
         case ChainKey.BITCOINCASH: {
           this.getECDSAAddress(chain, vault)
             .then(({ address, derivationKey }) => {

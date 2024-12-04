@@ -1,23 +1,23 @@
 import type { MessagesMetadata, PlasmoMessaging } from "@plasmohq/messaging";
-import { JsonRpcProvider } from "ethers";
-import { ChainKey, chains, RequestMethod, rpcUrl } from "~utils/constants";
+import {
+  ChainKey,
+  chains,
+  CosmosChain,
+  RequestMethod,
+  rpcUrl,
+} from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import {
+  getStoredChains,
   getStoredTransactions,
   getStoredVaults,
+  setStoredChains,
   setStoredRequest,
   setStoredTransactions,
   setStoredVaults,
 } from "~utils/storage";
-import api from "~utils/api";
-
-let rpcProvider: JsonRpcProvider;
-
-const initializeProvider = (chainKey: string) => {
-  const rpc = rpcUrl[chainKey];
-  rpcProvider = new JsonRpcProvider(rpc);
-};
+import { isSupportedChain } from "~utils/functions";
 
 const getAccounts = (
   chain: ChainKey,
@@ -86,19 +86,17 @@ const getAccounts = (
 
 const sendTransaction = (
   transaction: TransactionProps,
-  activeChain: string,
-  isDeposit?: boolean
+  activeChain: string
 ): Promise<{
   transactionHash: string;
 }> => {
   return new Promise((resolve, reject) => {
     getStoredTransactions().then((transactions) => {
-      const chain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
+      const chain = chains.find((chain) => chain.id == activeChain);
       const uuid = uuidv4();
       setStoredTransactions([
         {
           ...transaction,
-          isDeposit,
           chain,
           id: uuid,
           status: "default",
@@ -178,82 +176,149 @@ const sendTransaction = (
 const handleRequest = (
   req: PlasmoMessaging.Request<
     keyof MessagesMetadata,
-    Messaging.ThorRequest.Request
+    Messaging.CosmosRequest.Request
   >
-): Promise<Messaging.ThorRequest.Response> => {
+): Promise<Messaging.CosmosRequest.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = req.body;
-    const THORChain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
-    initializeProvider(THORChain.name);
-    switch (method) {
-      case RequestMethod.GET_ACCOUNTS: {
-        getStoredVaults().then((vaults) => {
-          resolve(
-            vaults.flatMap(({ apps, chains }) =>
-              chains
-                .filter(
-                  ({ name }) =>
-                    name === THORChain.name &&
-                    apps.indexOf(req.sender.origin) >= 0
-                )
-                .map(({ address }) => address)
-            )
-          );
+    getStoredChains().then((storedChains) => {
+      // Cosmos Active Chain
+      let activeChain = storedChains.find(
+        (chain) =>
+          (Object.values(CosmosChain) as unknown as ChainKey[]).includes(
+            chain.name
+          ) && chain.active === true
+      );
+      if (!activeChain) {
+        activeChain = chains.find((chain) => chain.name == ChainKey.GAIACHAIN);
+        handleRequest({
+          ...req,
+          body: {
+            method: "wallet_add_chain",
+            params: [{ chainId: "cosmoshub-4" }],
+          },
         });
-
-        break;
       }
-      case RequestMethod.REQUEST_ACCOUNTS: {
-        getAccounts(ChainKey.THORCHAIN, req.sender.origin).then(
-          ({ accounts }) => {
-            resolve(accounts[0]);
+
+      switch (method) {
+        case RequestMethod.GET_ACCOUNTS: {
+          getStoredVaults().then((vaults) => {
+            resolve(
+              vaults.flatMap(({ apps, chains }) =>
+                chains
+                  .filter(
+                    ({ name }) =>
+                      name === activeChain.name &&
+                      apps.indexOf(req.sender.origin) >= 0
+                  )
+                  .map(({ address }) => address)
+              )
+            );
+          });
+
+          break;
+        }
+        case RequestMethod.REQUEST_ACCOUNTS: {
+          getAccounts(activeChain.name, req.sender.origin).then(
+            ({ accounts }) => {
+              resolve(accounts[0]);
+            }
+          );
+          break;
+        }
+        case RequestMethod.SEND_TRANSACTION: {
+          const [transaction] = params as TransactionProps[];
+          if (transaction) {
+            sendTransaction(transaction, activeChain.id)
+              .then(({ transactionHash }) => {
+                resolve(transactionHash);
+              })
+              .catch(reject);
+          } else {
+            reject();
           }
-        );
-        break;
-      }
-      case RequestMethod.SEND_TRANSACTION: {
-        const [transaction] = params as TransactionProps[];
-        if (transaction) {
-          sendTransaction(transaction, THORChain.id)
-            .then(({ transactionHash }) => {
-              resolve(transactionHash);
-            })
-            .catch(reject);
-        } else {
-          reject();
+          break;
         }
-        break;
-      }
-      case RequestMethod.DEPOSIT_TRANSACTION: {
-        const [transaction] = params as TransactionProps[];
-        if (transaction) {
-          sendTransaction(transaction, THORChain.id, true)
-            .then(({ transactionHash }) => {
-              resolve(transactionHash);
-            })
-            .catch(reject);
-        } else {
-          reject();
+        case RequestMethod.CHAIN_ID: {
+          resolve(activeChain.id);
+          break;
         }
-        break;
-      }
-      case RequestMethod.GET_TRANSACTION_BY_HASH: {
-        const [hash] = params;
-        api.thorchain.getTransactionByHash(hash).then(resolve).catch(reject);
-        break;
-      }
-      default: {
-        reject(`Unsupported method: ${method}`);
+        case RequestMethod.WALLET_ADD_CHAIN: {
+          const [param] = params;
 
-        break;
+          if (param?.chainId) {
+            const supportedChain = chains.find(
+              ({ id }) => id === param.chainId
+            );
+
+            if (supportedChain) {
+              setStoredChains([
+                { ...supportedChain, active: true },
+                ...storedChains
+                  .filter(({ name }) => name !== supportedChain.name)
+                  .map((chain) => ({
+                    ...chain,
+                    active: false,
+                  })),
+              ])
+                .then(() => resolve(null))
+                .catch(reject);
+            } else {
+              reject(); // unsuported chain
+            }
+          } else {
+            reject(); // chainId is required
+          }
+
+          break;
+        }
+        case RequestMethod.WALLET_SWITCH_CHAIN: {
+          const [param] = params;
+          if (param?.chainId) {
+            if (!isSupportedChain(param?.chainId)) {
+              reject("Chain not Supported");
+            } else {
+              const existed =
+                storedChains.findIndex(({ id }) => id === param.chainId) >= 0;
+              if (existed) {
+                setStoredChains(
+                  storedChains.map((chain) => ({
+                    ...chain,
+                    active: chain.id === param.chainId,
+                  }))
+                )
+                  .then(() => resolve(param.chainId))
+                  .catch(reject);
+              } else {
+                handleRequest({
+                  ...req,
+                  body: {
+                    method: RequestMethod.WALLET_ADD_CHAIN,
+                    params,
+                  },
+                })
+                  .then(() => resolve(param.chainId))
+                  .catch(reject);
+              }
+            }
+          } else {
+            reject(); // chainId is required
+          }
+          break;
+        }
+        default: {
+          reject(`Unsupported method: ${method}`);
+
+          break;
+        }
       }
-    }
+    });
   });
 };
 
 const handler: PlasmoMessaging.MessageHandler<
-  Messaging.ThorRequest.Request,
-  Messaging.ThorRequest.Response
+  Messaging.CosmosRequest.Request,
+  Messaging.CosmosRequest.Response
 > = async (req, res) => {
   handleRequest(req).then((result) => {
     res.send(result);

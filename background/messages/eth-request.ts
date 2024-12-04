@@ -410,6 +410,9 @@ const handleRequest = (
             .catch(reject);
           break;
         }
+        case "net_version": {
+          resolve("1");
+        }
         default: {
           // _emit(EventMethod.ERROR, new Error(`Unsupported method: ${method}`));
           reject(`Unsupported method: ${method}`);

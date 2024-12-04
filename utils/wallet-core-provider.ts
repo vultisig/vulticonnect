@@ -37,6 +37,7 @@ export default class WalletCoreProvider {
               [ChainKey.LITECOIN]: walletCore.CoinType.litecoin,
               [ChainKey.MAYACHAIN]: walletCore.CoinType.thorchain,
               [ChainKey.OPTIMISM]: walletCore.CoinType.optimism,
+              [ChainKey.OSMOSIS]: walletCore.CoinType.osmosis,
               [ChainKey.POLKADOT]: walletCore.CoinType.polkadot,
               [ChainKey.POLYGON]: walletCore.CoinType.polygon,
               [ChainKey.SOLANA]: walletCore.CoinType.solana,

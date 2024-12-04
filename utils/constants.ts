@@ -7,13 +7,7 @@ import type {
   CurrencyRef,
   LanguageRef,
 } from "~utils/interfaces";
-export enum CosmosChain {
-  THORChain = "THORChain",
-  Cosmos = "Cosmos",
-  MayaChain = "MayaChain",
-  Dydx = "Dydx",
-  Kujira = "Kujira",
-}
+
 export enum ChainKey {
   ARBITRUM = "Arbitrum",
   AVALANCHE = "Avalanche",
@@ -32,6 +26,7 @@ export enum ChainKey {
   LITECOIN = "Litecoin",
   MAYACHAIN = "MayaChain",
   OPTIMISM = "Optimism",
+  OSMOSIS = "Osmosis",
   POLKADOT = "Polkadot",
   POLYGON = "Polygon",
   SOLANA = "Solana",
@@ -40,6 +35,25 @@ export enum ChainKey {
   ZKSYNC = "Zksync",
 }
 
+export enum EVMChain {
+  AVALANCHE = ChainKey.AVALANCHE,
+  ARBITRUM = ChainKey.ARBITRUM,
+  BASE = ChainKey.BASE,
+  BSCCHAIN = ChainKey.BSCCHAIN,
+  CRONOSCHAIN = ChainKey.CRONOSCHAIN,
+  ETHEREUM = ChainKey.ETHEREUM,
+  OPTIMISM = ChainKey.OPTIMISM,
+  POLYGON = ChainKey.POLYGON,
+}
+
+export enum CosmosChain {
+  THORChain = ChainKey.THORCHAIN,
+  Gaia = ChainKey.GAIACHAIN,
+  MayaChain = ChainKey.MAYACHAIN,
+  Dydx = ChainKey.DYDX,
+  Kujira = ChainKey.KUJIRA,
+  Osmosis = ChainKey.OSMOSIS,
+}
 export enum Currency {
   AUD = "AUD",
   CAD = "CAD",
@@ -128,12 +142,15 @@ export enum EVMRequestMethod {
   WEB3_CLIENT_VERSION = "web3_clientVersion",
 }
 
-export enum ThorRequestMethod {
+export enum RequestMethod {
   GET_TRANSACTION_BY_HASH = "get_transaction_by_hash",
   GET_ACCOUNTS = "get_accounts",
   REQUEST_ACCOUNTS = "request_accounts",
-  DEPOSIT_TRANSACTION = "deposit_transaction",
   SEND_TRANSACTION = "send_transaction",
+  CHAIN_ID = "chain_id",
+  WALLET_ADD_CHAIN = "wallet_add_chain",
+  WALLET_SWITCH_CHAIN = "wallet_switch_chain",
+  DEPOSIT_TRANSACTION = "deposit_transaction",
 }
 
 export const storageKey = keyMirror({
@@ -207,6 +224,7 @@ export const explorerUrl: ChainExplorerRef = {
   [ChainKey.DYDX]: "https://www.mintscan.io/dydx",
   [ChainKey.ETHEREUM]: "https://etherscan.io",
   [ChainKey.GAIACHAIN]: "https://www.mintscan.io/cosmos",
+  [ChainKey.OSMOSIS]: "https://www.mintscan.io/osmosis",
   [ChainKey.KUJIRA]: "https://finder.kujira.network",
   [ChainKey.LITECOIN]: "https://blockchair.com/litecoin",
   [ChainKey.MAYACHAIN]: "https://www.mayascan.org",
@@ -299,7 +317,7 @@ export const chains: ChainProps[] = [
   {
     cmcId: 28324,
     decimals: 18,
-    id: "",
+    id: "dydx-1",
     name: ChainKey.DYDX,
     ticker: "DYDX",
   },
@@ -320,14 +338,14 @@ export const chains: ChainProps[] = [
   {
     cmcId: 3794,
     decimals: 6,
-    id: "",
+    id: "cosmoshub-4",
     name: ChainKey.GAIACHAIN,
     ticker: "ATOM",
   },
   {
     cmcId: 15185,
     decimals: 6,
-    id: "",
+    id: "kaiyo-1",
     name: ChainKey.KUJIRA,
     ticker: "KUJI",
   },
@@ -341,7 +359,7 @@ export const chains: ChainProps[] = [
   {
     cmcId: 23534,
     decimals: 10,
-    id: "",
+    id: "MayaChain-1",
     name: ChainKey.MAYACHAIN,
     ticker: "CACAO",
   },
@@ -351,6 +369,13 @@ export const chains: ChainProps[] = [
     id: "",
     name: ChainKey.OPTIMISM,
     ticker: "ETH",
+  },
+  {
+    cmcId: 12220,
+    decimals: 6,
+    id: "osmosis-1",
+    name: ChainKey.OSMOSIS,
+    ticker: "OSMO",
   },
   {
     cmcId: 6636,
@@ -382,7 +407,7 @@ export const chains: ChainProps[] = [
   },
 ];
 
-export const evmSupportedChains: ChainProps[] = [
+export const allSupportedChains: ChainProps[] = [
   {
     cmcId: 1027,
     decimals: 18,
@@ -446,5 +471,47 @@ export const evmSupportedChains: ChainProps[] = [
     id: "0x89",
     name: ChainKey.POLYGON,
     ticker: "MATIC",
+  },
+  {
+    cmcId: 23534,
+    decimals: 10,
+    id: "MayaChain-1",
+    name: ChainKey.MAYACHAIN,
+    ticker: "CACAO",
+  },
+  {
+    cmcId: 4157,
+    decimals: 8,
+    id: "Thorchain_1",
+    name: ChainKey.THORCHAIN,
+    ticker: "RUNE",
+  },
+  {
+    cmcId: 12220,
+    decimals: 6,
+    id: "osmosis-1",
+    name: ChainKey.OSMOSIS,
+    ticker: "OSMO",
+  },
+  {
+    cmcId: 3794,
+    decimals: 6,
+    id: "cosmoshub-4",
+    name: ChainKey.GAIACHAIN,
+    ticker: "ATOM",
+  },
+  {
+    cmcId: 28324,
+    decimals: 18,
+    id: "dydx-1",
+    name: ChainKey.DYDX,
+    ticker: "DYDX",
+  },
+  {
+    cmcId: 15185,
+    decimals: 6,
+    id: "kaiyo-1",
+    name: ChainKey.KUJIRA,
+    ticker: "KUJI",
   },
 ];
