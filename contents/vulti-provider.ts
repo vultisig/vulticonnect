@@ -27,6 +27,18 @@ interface ThorchainProvider {
   addListener(event: string, callback: (data: any) => void): void;
 }
 
+
+interface BitcoinProvider {
+  isVultiConnect: boolean;
+  request(args: RequestArguments): Promise<string | string[]>;
+  on(event: string, callback: (data: any) => void): void;
+  removeListener(event: string, callback: Function): void;
+  _emit(event: string, data: any): void;
+  connect(): void;
+  disconnect(error?: { code: number; message: string }): void;
+  addListener(event: string, callback: (data: any) => void): void;
+}
+
 interface MayaProvider {
   isVultiConnect: boolean;
   request(args: RequestArguments): Promise<string | string[]>;
@@ -309,6 +321,55 @@ const cosmosProvider: CosmosProvider = {
     return;
   },
 };
+
+const bitcoinProvider: BitcoinProvider = {
+  isVultiConnect: true,
+  request: (body) => {
+    return new Promise((resolve, reject) => {
+      sendToBackgroundViaRelay<
+        Messaging.BitRequest.Request,
+        Messaging.BitRequest.Response
+      >({
+        name: "bit-request",
+        body,
+      })
+        .then((result) => {
+          resolve(result);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+  },
+  on: (event, callback) => {
+    // TODO
+    return;
+  },
+  addListener: (event: string, callback: (data: any) => void) => {
+    // TODO
+    return;
+  },
+  removeListener: (event, callback) => {
+    // TODO
+    return;
+  },
+
+  _emit: (event, data) => {
+    // TODO
+    return;
+  },
+
+  connect: () => {
+    // TODO
+    return;
+  },
+
+  disconnect: (error) => {
+    // TODO
+    return;
+  },
+};
+
 
 const providers = {
   ethereum: ethereumProvider,

@@ -30,6 +30,11 @@ export namespace Messaging {
     export type Request = any;
     export type Response = string | string[];
   }
+
+  export namespace BitRequest {
+    export type Request = any;
+    export type Response = string | string[];
+  }
 }
 
 export interface AccountsProps {
@@ -140,7 +145,7 @@ export interface TransactionProps {
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
   txHash?: string;
-  isDeposit:boolean,
+  isDeposit: boolean;
   windowId?: number;
 }
 

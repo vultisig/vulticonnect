@@ -72,3 +72,14 @@ relay(
     return openResult;
   }
 );
+
+relay(
+  {
+    name: "bit-request" as const,
+  },
+  async (req) => {
+    const openResult = await sendToBackground(req);
+
+    return openResult;
+  }
+);
