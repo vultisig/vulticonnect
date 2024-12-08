@@ -243,4 +243,30 @@ export default {
       });
     },
   },
+  utxo: {
+    blockchairStats: (chainName: string) => {
+      // TODO: Specify return type
+      return new Promise((resolve, reject) => {
+        const url = `https://api.vultisig.com/blockchair/${chainName}/stats`;
+        api
+          .get(url)
+          .then((res) => {
+            resolve(res.data.data);
+          })
+          .catch(reject);
+      });
+    },
+    blockchairDashboard: (address: string, coinName: string) => {
+      // TODO: Specify return type
+      return new Promise((resolve, reject) => {
+        const url = `https://api.vultisig.com//blockchair/${coinName}/dashboards/address/${address}?state=latest`;
+        api
+          .get(url)
+          .then((res) => {
+            resolve(res.data.data);
+          })
+          .catch(reject);
+      });
+    },
+  },
 };

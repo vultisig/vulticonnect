@@ -75,7 +75,7 @@ relay(
 
 relay(
   {
-    name: "bit-request" as const,
+    name: "utxo-request" as const,
   },
   async (req) => {
     const openResult = await sendToBackground(req);

@@ -15,8 +15,8 @@ importers:
         specifier: ^0.6.2
         version: 0.6.2(react@18.3.1)
       '@trustwallet/wallet-core':
-        specifier: 4.2.0-dev-rc1
-        version: 4.2.0-dev-rc1
+        specifier: ^4.1.21
+        version: 4.1.21
       antd:
         specifier: ^5.21.2
         version: 5.21.2(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
@@ -1535,8 +1535,8 @@ packages:
     resolution: {integrity: sha512-+PmQX0PiAYPMeVYe237LJAYvOMYW1j2rH5YROyS3b4CTVJum34HfRvKvAzozHAQG0TnHNdUfY9nCeUyRAs//cw==}
     engines: {node: '>=14.16'}
 
-  '@trustwallet/wallet-core@4.2.0-dev-rc1':
-    resolution: {integrity: sha512-IYWfT+0JR7kfQNQNsoSz1I6S+2WvkNHRni86xD0X0HzlJfxwzUKdtWoNdYY4rNL/zbgTOIx2OjKw3HD2mznHEw==}
+  '@trustwallet/wallet-core@4.1.21':
+    resolution: {integrity: sha512-GCeyjtDNMXDjof9B6R7U61T2fATbP0hpN1AQKI5JXhRl+czaiK8C8Y7ETOUzGZi+uDSdzDiculfC4gL5g+PWRg==}
 
   '@trysound/sax@0.2.0':
     resolution: {integrity: sha512-L7z9BgrNEcYyUYtF+HaEfiS5ebkh9jXqbszz7pC0hRBPaatV0XjSD3+eHrpqFemQfgwiFF0QPIarnIihIDn7OA==}
@@ -5563,7 +5563,7 @@ snapshots:
     dependencies:
       defer-to-connect: 2.0.1
 
-  '@trustwallet/wallet-core@4.2.0-dev-rc1':
+  '@trustwallet/wallet-core@4.1.21':
     dependencies:
       protobufjs: 7.4.0
 

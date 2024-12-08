@@ -93,7 +93,7 @@ const sendTransaction = (
 }> => {
   return new Promise((resolve, reject) => {
     getStoredTransactions().then((transactions) => {
-      const chain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
+      const chain = chains.find((chain) => chain.id == activeChain);
       const uuid = uuidv4();
       setStoredTransactions([
         {
@@ -178,13 +178,13 @@ const sendTransaction = (
 const handleRequest = (
   req: PlasmoMessaging.Request<
     keyof MessagesMetadata,
-    Messaging.BitRequest.Request
+    Messaging.UTXORequest.Request
   >
-): Promise<Messaging.BitRequest.Response> => {
+): Promise<Messaging.UTXORequest.Response> => {
   return new Promise((resolve, reject) => {
-    const { method, params } = req.body;
-    const BitCoin = chains.find((chain) => chain.name == ChainKey.BITCOIN);
-    initializeProvider(BitCoin.name);
+    const { method, params, chainKey } = req.body;
+    const UTXOChain = chains.find((chain) => chain.name == chainKey);
+    initializeProvider(UTXOChain.name);
     switch (method) {
       case RequestMethod.GET_ACCOUNTS: {
         getStoredVaults().then((vaults) => {
@@ -193,7 +193,7 @@ const handleRequest = (
               chains
                 .filter(
                   ({ name }) =>
-                    name === BitCoin.name &&
+                    name === UTXOChain.name &&
                     apps.indexOf(req.sender.origin) >= 0
                 )
                 .map(({ address }) => address)
@@ -204,17 +204,15 @@ const handleRequest = (
         break;
       }
       case RequestMethod.REQUEST_ACCOUNTS: {
-        getAccounts(ChainKey.THORCHAIN, req.sender.origin).then(
-          ({ accounts }) => {
-            resolve(accounts[0]);
-          }
-        );
+        getAccounts(UTXOChain.name, req.sender.origin).then(({ accounts }) => {
+          resolve(accounts[0]);
+        });
         break;
       }
       case RequestMethod.SEND_TRANSACTION: {
         const [transaction] = params as TransactionProps[];
         if (transaction) {
-          sendTransaction(transaction, BitCoin.id)
+          sendTransaction(transaction, UTXOChain.id)
             .then(({ transactionHash }) => {
               resolve(transactionHash);
             })
@@ -222,24 +220,6 @@ const handleRequest = (
         } else {
           reject();
         }
-        break;
-      }
-      case RequestMethod.DEPOSIT_TRANSACTION: {
-        const [transaction] = params as TransactionProps[];
-        if (transaction) {
-          sendTransaction(transaction, BitCoin.id, true)
-            .then(({ transactionHash }) => {
-              resolve(transactionHash);
-            })
-            .catch(reject);
-        } else {
-          reject();
-        }
-        break;
-      }
-      case RequestMethod.GET_TRANSACTION_BY_HASH: {
-        const [hash] = params;
-        api.thorchain.getTransactionByHash(hash).then(resolve).catch(reject);
         break;
       }
       default: {
@@ -252,8 +232,8 @@ const handleRequest = (
 };
 
 const handler: PlasmoMessaging.MessageHandler<
-  Messaging.BitRequest.Request,
-  Messaging.BitRequest.Response
+  Messaging.UTXORequest.Request,
+  Messaging.UTXORequest.Response
 > = async (req, res) => {
   handleRequest(req).then((result) => {
     res.send(result);

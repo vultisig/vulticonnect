@@ -3,12 +3,7 @@ import { useTranslation } from "react-i18next";
 import { Button, QRCode, message } from "antd";
 import { formatUnits, toUtf8String } from "ethers";
 
-import {
-  ChainKey,
-  errorKey,
-  EVMChain,
-  explorerUrl,
-} from "~utils/constants";
+import { ChainKey, errorKey, EVMChain, explorerUrl } from "~utils/constants";
 import {
   getStoredCurrency,
   getStoredLanguage,
@@ -53,6 +48,7 @@ import type EVMTransactionProvider from "~utils/transaction-provider/evm/evm-tx-
 import type ThorchainTransactionProvider from "~utils/transaction-provider/thorchain/thorchain-tx-provider";
 import type MayaTransactionProvider from "~utils/transaction-provider/maya/maya-tx-provider";
 import type CosmosTransactionProvider from "~utils/transaction-provider/cosmos/cosmos-tx-provider";
+import type UTXOTransactionProvider from "~utils/transaction-provider/utxo/utxo-tx-provider";
 
 interface InitialState {
   fastSign?: boolean;
@@ -207,23 +203,35 @@ const Component: FC = () => {
       .getDevices(transaction.id)
       .then(({ data }) => {
         if (data?.length > 1) {
-          api.transaction.setStart(transaction.id, data).then(() => {
-            setStoredTransaction({ ...transaction, status: "pending" }).then(
-              () => {
-                txProvider
-                  .getPreSignedInputData()
-                  .then((preSignedInputData) => {
-                    txProvider
-                      .getPreSignedImageHash(preSignedInputData)
-                      .then((preSignedImageHash) => {
-                        setState((prevState) => ({ ...prevState, step: 3 }));
-
-                        handlePending(preSignedImageHash, preSignedInputData);
-                      });
-                  });
-              }
-            );
-          });
+          api.transaction
+            .setStart(transaction.id, data)
+            .then(() => {
+              setStoredTransaction({ ...transaction, status: "pending" })
+                .then(() => {
+                  txProvider
+                    .getPreSignedInputData()
+                    .then((preSignedInputData) => {
+                      txProvider
+                        .getPreSignedImageHash(preSignedInputData)
+                        .then((preSignedImageHash) => {
+                          setState((prevState) => ({ ...prevState, step: 3 }));
+                          handlePending(preSignedImageHash, preSignedInputData);
+                        })
+                        .catch((err) => {
+                          console.error(err);
+                        });
+                    })
+                    .catch((err) => {
+                      console.error(err);
+                    });
+                })
+                .catch((err) => {
+                  console.log(err);
+                });
+            })
+            .catch((err) => {
+              console.log(err);
+            });
         } else {
           setTimeout(() => {
             handleStart();
@@ -307,7 +315,7 @@ const Component: FC = () => {
         walletCore
           .getCore()
           .then(({ chainRef, walletCore }) => {
-            const dataConverter = new DataConverterProvider();         
+            const dataConverter = new DataConverterProvider();
             const txProvider = TransactionProvider.createProvider(
               transaction.chain.name,
               chainRef,
@@ -361,10 +369,13 @@ const Component: FC = () => {
                   | ThorchainTransactionProvider
                   | MayaTransactionProvider
                   | CosmosTransactionProvider
+                  | UTXOTransactionProvider
               )
                 .getSpecificTransactionInfo(coin)
                 .then((blockchainSpecific) => {
-                  transaction.gasPrice = String(blockchainSpecific.gasPrice);
+                  transaction.gasPrice = blockchainSpecific.gasPrice
+                    .toFixed(coin.decimals)
+                    .toLocaleString();
                   try {
                     transaction.memo = toUtf8String(transaction.data);
                   } catch (err) {

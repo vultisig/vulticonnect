@@ -1,7 +1,7 @@
 import type { PlasmoCSConfig } from "plasmo";
 import { sendToBackgroundViaRelay } from "@plasmohq/messaging";
 import { type EIP1193Provider, announceProvider } from "mipd";
-import { EventMethod, EVMRequestMethod } from "~utils/constants";
+import { ChainKey, EventMethod, EVMRequestMethod } from "~utils/constants";
 import type { Messaging, VaultProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import { VULTI_ICON_RAW_SVG } from "~static/icons/vulti-raw";
@@ -27,8 +27,7 @@ interface ThorchainProvider {
   addListener(event: string, callback: (data: any) => void): void;
 }
 
-
-interface BitcoinProvider {
+interface UTXOProvider {
   isVultiConnect: boolean;
   request(args: RequestArguments): Promise<string | string[]>;
   on(event: string, callback: (data: any) => void): void;
@@ -322,16 +321,19 @@ const cosmosProvider: CosmosProvider = {
   },
 };
 
-const bitcoinProvider: BitcoinProvider = {
+const bitcoinProvider: UTXOProvider = {
   isVultiConnect: true,
   request: (body) => {
     return new Promise((resolve, reject) => {
       sendToBackgroundViaRelay<
-        Messaging.BitRequest.Request,
-        Messaging.BitRequest.Response
+        Messaging.UTXORequest.Request,
+        Messaging.UTXORequest.Response
       >({
-        name: "bit-request",
-        body,
+        name: "utxo-request",
+        body: {
+          ...body,
+          chainKey: ChainKey.BITCOIN,
+        },
       })
         .then((result) => {
           resolve(result);
@@ -370,12 +372,220 @@ const bitcoinProvider: BitcoinProvider = {
   },
 };
 
+const litecoinProvider: UTXOProvider = {
+  isVultiConnect: true,
+  request: (body) => {
+    return new Promise((resolve, reject) => {
+      sendToBackgroundViaRelay<
+        Messaging.UTXORequest.Request,
+        Messaging.UTXORequest.Response
+      >({
+        name: "utxo-request",
+        body: {
+          ...body,
+          chainKey: ChainKey.LITECOIN,
+        },
+      })
+        .then((result) => {
+          resolve(result);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+  },
+  on: (event, callback) => {
+    // TODO
+    return;
+  },
+  addListener: (event: string, callback: (data: any) => void) => {
+    // TODO
+    return;
+  },
+  removeListener: (event, callback) => {
+    // TODO
+    return;
+  },
+
+  _emit: (event, data) => {
+    // TODO
+    return;
+  },
+
+  connect: () => {
+    // TODO
+    return;
+  },
+
+  disconnect: (error) => {
+    // TODO
+    return;
+  },
+};
+
+const bitcoincashProvider: UTXOProvider = {
+  isVultiConnect: true,
+  request: (body) => {
+    return new Promise((resolve, reject) => {
+      sendToBackgroundViaRelay<
+        Messaging.UTXORequest.Request,
+        Messaging.UTXORequest.Response
+      >({
+        name: "utxo-request",
+        body: {
+          ...body,
+          chainKey: ChainKey.BITCOINCASH,
+        },
+      })
+        .then((result) => {
+          resolve(result);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+  },
+  on: (event, callback) => {
+    // TODO
+    return;
+  },
+  addListener: (event: string, callback: (data: any) => void) => {
+    // TODO
+    return;
+  },
+  removeListener: (event, callback) => {
+    // TODO
+    return;
+  },
+
+  _emit: (event, data) => {
+    // TODO
+    return;
+  },
+
+  connect: () => {
+    // TODO
+    return;
+  },
+
+  disconnect: (error) => {
+    // TODO
+    return;
+  },
+};
+
+const dashProvider: UTXOProvider = {
+  isVultiConnect: true,
+  request: (body) => {
+    return new Promise((resolve, reject) => {
+      sendToBackgroundViaRelay<
+        Messaging.UTXORequest.Request,
+        Messaging.UTXORequest.Response
+      >({
+        name: "utxo-request",
+        body: {
+          ...body,
+          chainKey: ChainKey.DASH,
+        },
+      })
+        .then((result) => {
+          resolve(result);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+  },
+  on: (event, callback) => {
+    // TODO
+    return;
+  },
+  addListener: (event: string, callback: (data: any) => void) => {
+    // TODO
+    return;
+  },
+  removeListener: (event, callback) => {
+    // TODO
+    return;
+  },
+
+  _emit: (event, data) => {
+    // TODO
+    return;
+  },
+
+  connect: () => {
+    // TODO
+    return;
+  },
+
+  disconnect: (error) => {
+    // TODO
+    return;
+  },
+};
+
+const dogecoinProvider: UTXOProvider = {
+  isVultiConnect: true,
+  request: (body) => {
+    return new Promise((resolve, reject) => {
+      sendToBackgroundViaRelay<
+        Messaging.UTXORequest.Request,
+        Messaging.UTXORequest.Response
+      >({
+        name: "utxo-request",
+        body: {
+          ...body,
+          chainKey: ChainKey.DOGECOIN,
+        },
+      })
+        .then((result) => {
+          resolve(result);
+        })
+        .catch((err) => {
+          console.log(err);
+        });
+    });
+  },
+  on: (event, callback) => {
+    // TODO
+    return;
+  },
+  addListener: (event: string, callback: (data: any) => void) => {
+    // TODO
+    return;
+  },
+  removeListener: (event, callback) => {
+    // TODO
+    return;
+  },
+
+  _emit: (event, data) => {
+    // TODO
+    return;
+  },
+
+  connect: () => {
+    // TODO
+    return;
+  },
+
+  disconnect: (error) => {
+    // TODO
+    return;
+  },
+};
 
 const providers = {
   ethereum: ethereumProvider,
   thorchain: thorchainProvider,
   maya: mayaProvider,
   cosmos: cosmosProvider,
+  bitcoin: bitcoinProvider,
+  litecoin: litecoinProvider,
+  bitcoincash: bitcoincashProvider,
+  dash: dashProvider,
+  dogecoin: dogecoinProvider,
   getVaults: (): Promise<VaultProps[]> => {
     return new Promise((resolve) => {
       sendToBackgroundViaRelay<
@@ -387,10 +597,16 @@ const providers = {
     });
   },
 };
+
 window.thorchain = thorchainProvider;
 window.maya = mayaProvider;
 window.vultisig = providers;
 window.cosmos = cosmosProvider;
+window.bitcoin = bitcoinProvider;
+window.litecoin = litecoinProvider;
+window.bitcoincash = litecoinProvider;
+window.dash = dashProvider;
+window.dogecoin = dogecoinProvider;
 
 if (!window.ethereum) window.ethereum = ethereumProvider;
 announceProvider({
