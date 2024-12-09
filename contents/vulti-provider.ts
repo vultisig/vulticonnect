@@ -16,7 +16,7 @@ type RequestArguments = {
   params?: Record<string, any>[];
 };
 
-interface ThorchainProvider {
+interface BaseProvider {
   isVultiConnect: boolean;
   request(args: RequestArguments): Promise<string | string[]>;
   on(event: string, callback: (data: any) => void): void;
@@ -27,53 +27,21 @@ interface ThorchainProvider {
   addListener(event: string, callback: (data: any) => void): void;
 }
 
-interface UTXOProvider {
-  isVultiConnect: boolean;
-  request(args: RequestArguments): Promise<string | string[]>;
-  on(event: string, callback: (data: any) => void): void;
-  removeListener(event: string, callback: Function): void;
-  _emit(event: string, data: any): void;
-  connect(): void;
-  disconnect(error?: { code: number; message: string }): void;
-  addListener(event: string, callback: (data: any) => void): void;
-}
-
-interface MayaProvider {
-  isVultiConnect: boolean;
-  request(args: RequestArguments): Promise<string | string[]>;
-  on(event: string, callback: (data: any) => void): void;
-  removeListener(event: string, callback: Function): void;
-  _emit(event: string, data: any): void;
-  connect(): void;
-  disconnect(error?: { code: number; message: string }): void;
-  addListener(event: string, callback: (data: any) => void): void;
-}
-
-interface CosmosProvider {
-  isVultiConnect: boolean;
-  request(args: RequestArguments): Promise<string | string[]>;
-  on(event: string, callback: (data: any) => void): void;
-  removeListener(event: string, callback: Function): void;
-  _emit(event: string, data: any): void;
-  connect(): void;
-  disconnect(error?: { code: number; message: string }): void;
-  addListener(event: string, callback: (data: any) => void): void;
-}
-
-interface EthereumProvider {
+interface EthereumProvider extends BaseProvider {
   isMetaMask: boolean;
-  isVultiConnect: boolean;
-  _events: Record<string, Function[]>;
   networkVersion: string;
   enable(): Promise<string[]>;
   isConnected(): boolean;
-  on(event: string, callback: (data: any) => void): void;
-  removeListener(event: string, callback: Function): void;
-  request(args: RequestArguments): Promise<string | string[]>;
-  _emit(event: string, data: any): void;
-  _connect(): void;
-  _disconnect(error?: { code: number; message: string }): void;
+  _events: Record<string, Function[]>;
 }
+
+interface UTXOProvider extends BaseProvider {}
+
+interface ThorchainProvider extends BaseProvider {}
+
+interface CosmosProvider extends BaseProvider {}
+
+interface MayaProvider extends BaseProvider {}
 
 const ethereumProvider: EthereumProvider = {
   isMetaMask: true,
@@ -165,15 +133,18 @@ const ethereumProvider: EthereumProvider = {
     }
   },
 
-  _connect: () => {
+  connect: () => {
     ethereumProvider._emit(EventMethod.CONNECT, "");
   },
 
-  _disconnect: (error) => {
+  disconnect: (error) => {
     ethereumProvider._emit(
       EventMethod.DISCONNECT,
       error || { code: 4900, message: "Provider disconnected" }
     );
+  },
+  addListener: function (event: string, callback: (data: any) => void): void {
+    throw new Error("Function not implemented.");
   },
 };
 
@@ -321,260 +292,29 @@ const cosmosProvider: CosmosProvider = {
   },
 };
 
-const bitcoinProvider: UTXOProvider = {
+const createUTXOProvider = (chainKey: ChainKey): UTXOProvider => ({
   isVultiConnect: true,
-  request: (body) => {
-    return new Promise((resolve, reject) => {
-      sendToBackgroundViaRelay<
-        Messaging.UTXORequest.Request,
-        Messaging.UTXORequest.Response
-      >({
-        name: "utxo-request",
-        body: {
-          ...body,
-          chainKey: ChainKey.BITCOIN,
-        },
-      })
-        .then((result) => {
-          resolve(result);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    });
-  },
-  on: (event, callback) => {
-    // TODO
-    return;
-  },
-  addListener: (event: string, callback: (data: any) => void) => {
-    // TODO
-    return;
-  },
-  removeListener: (event, callback) => {
-    // TODO
-    return;
-  },
+  request: (body) =>
+    sendToBackgroundViaRelay<
+      Messaging.UTXORequest.Request,
+      Messaging.UTXORequest.Response
+    >({
+      name: "utxo-request",
+      body: { ...body, chainKey },
+    }),
+  on: () => {},
+  addListener: () => {},
+  removeListener: () => {},
+  _emit: () => {},
+  connect: () => {},
+  disconnect: () => {},
+});
 
-  _emit: (event, data) => {
-    // TODO
-    return;
-  },
-
-  connect: () => {
-    // TODO
-    return;
-  },
-
-  disconnect: (error) => {
-    // TODO
-    return;
-  },
-};
-
-const litecoinProvider: UTXOProvider = {
-  isVultiConnect: true,
-  request: (body) => {
-    return new Promise((resolve, reject) => {
-      sendToBackgroundViaRelay<
-        Messaging.UTXORequest.Request,
-        Messaging.UTXORequest.Response
-      >({
-        name: "utxo-request",
-        body: {
-          ...body,
-          chainKey: ChainKey.LITECOIN,
-        },
-      })
-        .then((result) => {
-          resolve(result);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    });
-  },
-  on: (event, callback) => {
-    // TODO
-    return;
-  },
-  addListener: (event: string, callback: (data: any) => void) => {
-    // TODO
-    return;
-  },
-  removeListener: (event, callback) => {
-    // TODO
-    return;
-  },
-
-  _emit: (event, data) => {
-    // TODO
-    return;
-  },
-
-  connect: () => {
-    // TODO
-    return;
-  },
-
-  disconnect: (error) => {
-    // TODO
-    return;
-  },
-};
-
-const bitcoincashProvider: UTXOProvider = {
-  isVultiConnect: true,
-  request: (body) => {
-    return new Promise((resolve, reject) => {
-      sendToBackgroundViaRelay<
-        Messaging.UTXORequest.Request,
-        Messaging.UTXORequest.Response
-      >({
-        name: "utxo-request",
-        body: {
-          ...body,
-          chainKey: ChainKey.BITCOINCASH,
-        },
-      })
-        .then((result) => {
-          resolve(result);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    });
-  },
-  on: (event, callback) => {
-    // TODO
-    return;
-  },
-  addListener: (event: string, callback: (data: any) => void) => {
-    // TODO
-    return;
-  },
-  removeListener: (event, callback) => {
-    // TODO
-    return;
-  },
-
-  _emit: (event, data) => {
-    // TODO
-    return;
-  },
-
-  connect: () => {
-    // TODO
-    return;
-  },
-
-  disconnect: (error) => {
-    // TODO
-    return;
-  },
-};
-
-const dashProvider: UTXOProvider = {
-  isVultiConnect: true,
-  request: (body) => {
-    return new Promise((resolve, reject) => {
-      sendToBackgroundViaRelay<
-        Messaging.UTXORequest.Request,
-        Messaging.UTXORequest.Response
-      >({
-        name: "utxo-request",
-        body: {
-          ...body,
-          chainKey: ChainKey.DASH,
-        },
-      })
-        .then((result) => {
-          resolve(result);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    });
-  },
-  on: (event, callback) => {
-    // TODO
-    return;
-  },
-  addListener: (event: string, callback: (data: any) => void) => {
-    // TODO
-    return;
-  },
-  removeListener: (event, callback) => {
-    // TODO
-    return;
-  },
-
-  _emit: (event, data) => {
-    // TODO
-    return;
-  },
-
-  connect: () => {
-    // TODO
-    return;
-  },
-
-  disconnect: (error) => {
-    // TODO
-    return;
-  },
-};
-
-const dogecoinProvider: UTXOProvider = {
-  isVultiConnect: true,
-  request: (body) => {
-    return new Promise((resolve, reject) => {
-      sendToBackgroundViaRelay<
-        Messaging.UTXORequest.Request,
-        Messaging.UTXORequest.Response
-      >({
-        name: "utxo-request",
-        body: {
-          ...body,
-          chainKey: ChainKey.DOGECOIN,
-        },
-      })
-        .then((result) => {
-          resolve(result);
-        })
-        .catch((err) => {
-          console.log(err);
-        });
-    });
-  },
-  on: (event, callback) => {
-    // TODO
-    return;
-  },
-  addListener: (event: string, callback: (data: any) => void) => {
-    // TODO
-    return;
-  },
-  removeListener: (event, callback) => {
-    // TODO
-    return;
-  },
-
-  _emit: (event, data) => {
-    // TODO
-    return;
-  },
-
-  connect: () => {
-    // TODO
-    return;
-  },
-
-  disconnect: (error) => {
-    // TODO
-    return;
-  },
-};
+const bitcoinProvider = createUTXOProvider(ChainKey.BITCOIN);
+const litecoinProvider = createUTXOProvider(ChainKey.LITECOIN);
+const bitcoincashProvider = createUTXOProvider(ChainKey.BITCOINCASH);
+const dashProvider = createUTXOProvider(ChainKey.DASH);
+const dogecoinProvider = createUTXOProvider(ChainKey.DOGECOIN);
 
 const providers = {
   ethereum: ethereumProvider,
@@ -652,11 +392,7 @@ const intervalRef = setInterval(() => {
         });
 
         Object.defineProperties(window, {
-          vultisig: {
-            value: providers,
-            configurable: false,
-            writable: false,
-          },
+          vultisig: { value: providers, configurable: false, writable: false },
           ethereum: {
             get() {
               return window.vultiConnectRouter.currentProvider;
@@ -676,15 +412,10 @@ const intervalRef = setInterval(() => {
                 ...(window.ethereum ? [window.ethereum] : []),
               ],
               setDefaultProvider(vultiAsDefault: boolean) {
-                if (vultiAsDefault) {
-                  window.vultiConnectRouter.currentProvider = window.vultisig;
-                } else {
-                  const nonDefaultProvider =
-                    window.vultiConnectRouter?.lastInjectedProvider ??
+                window.vultiConnectRouter.currentProvider = vultiAsDefault
+                  ? window.vultisig
+                  : window.vultiConnectRouter?.lastInjectedProvider ??
                     window.ethereum;
-                  window.vultiConnectRouter.currentProvider =
-                    nonDefaultProvider;
-                }
               },
               addProvider(provider: EthereumProvider) {
                 if (!window.vultiConnectRouter?.providers?.includes(provider)) {
@@ -710,6 +441,31 @@ const intervalRef = setInterval(() => {
           },
           cosmos: {
             value: { ...cosmosProvider },
+            configurable: false,
+            writable: false,
+          },
+          bitcoin: {
+            value: { ...bitcoinProvider },
+            configurable: false,
+            writable: false,
+          },
+          litecoin: {
+            value: { ...litecoinProvider },
+            configurable: false,
+            writable: false,
+          },
+          bitcoincash: {
+            value: { ...bitcoincashProvider },
+            configurable: false,
+            writable: false,
+          },
+          dash: {
+            value: { ...dashProvider },
+            configurable: false,
+            writable: false,
+          },
+          dogecoin: {
+            value: { ...dogecoinProvider },
             configurable: false,
             writable: false,
           },
