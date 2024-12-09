@@ -222,6 +222,11 @@ const handleRequest = (
         }
         break;
       }
+      case RequestMethod.GET_TRANSACTION_BY_HASH: {
+        const [hash] = params;
+        api.utxo.blockchairGetTx(chainKey, hash).then(resolve).catch(reject);
+        break;
+      }
       default: {
         reject(`Unsupported method: ${method}`);
 

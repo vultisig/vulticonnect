@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { toCamelCase, toSnakeCase } from "~utils/functions";
-import type { Currency } from "~utils/constants";
+import { ChainKey, type Currency } from "~utils/constants";
 import type {
   CosmosAccountData,
   CosmosAccountDataResponse,
@@ -245,7 +245,7 @@ export default {
   utxo: {
     blockchairStats: (chainName: string) => {
       return new Promise((resolve, reject) => {
-        const url = `${VULTISIG_API}/blockchair/${chainName}/stats`;
+        const url = `${VULTISIG_API}/blockchair/${chainName.toLowerCase()}/stats`;
         api
           .get(url)
           .then((res) => {
@@ -261,6 +261,18 @@ export default {
           .get(url)
           .then((res) => {
             resolve(res.data.data);
+          })
+          .catch(reject);
+      });
+    },
+    blockchairGetTx: (chainName: string, txHash: string) => {
+      if (chainName === ChainKey.BITCOINCASH) chainName = "bitcoin-cash";
+      return new Promise((resolve, reject) => {
+        const url = `${VULTISIG_API}/blockchair/${chainName.toLowerCase()}/dashboards/transaction/${txHash}`;
+        api
+          .get(url)
+          .then((res) => {
+            resolve(res.data.data[txHash]);
           })
           .catch(reject);
       });
