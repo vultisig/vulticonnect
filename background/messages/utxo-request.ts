@@ -11,6 +11,7 @@ import {
   setStoredVaults,
 } from "~utils/storage";
 import api from "~utils/api";
+import { calculateWindowPosition } from "~utils/functions";
 
 let rpcProvider: JsonRpcProvider;
 
@@ -31,21 +32,8 @@ const getAccounts = (
       let createdWindowId: number;
 
       chrome.windows.getCurrent({ populate: true }, (currentWindow) => {
-        const height = 639;
-        const width = 376;
-        let left = 0;
-        let top = 0;
-
-        if (
-          currentWindow &&
-          currentWindow.left !== undefined &&
-          currentWindow.top !== undefined &&
-          currentWindow.width !== undefined
-        ) {
-          left = currentWindow.left + currentWindow.width - width;
-          top = currentWindow.top;
-        }
-
+        const { height, left, top, width } =
+          calculateWindowPosition(currentWindow);
         chrome.windows.create(
           {
             url: chrome.runtime.getURL("tabs/get-accounts.html"),
@@ -75,7 +63,8 @@ const getAccounts = (
                 ),
               });
             })
-            .catch(() => {
+            .catch((err) => {
+              console.error(`failed fetching utxo accounts: ${err} `);
               resolve({ accounts: [] });
             });
         }
@@ -108,21 +97,8 @@ const sendTransaction = (
         let createdWindowId: number;
 
         chrome.windows.getCurrent({ populate: true }, (currentWindow) => {
-          const height = 639;
-          const width = 376;
-          let left = 0;
-          let top = 0;
-
-          if (
-            currentWindow &&
-            currentWindow.left !== undefined &&
-            currentWindow.top !== undefined &&
-            currentWindow.width !== undefined
-          ) {
-            left = currentWindow.left + currentWindow.width - width;
-            top = currentWindow.top;
-          }
-
+          const { height, left, top, width } =
+            calculateWindowPosition(currentWindow);
           chrome.windows.create(
             {
               url: chrome.runtime.getURL("tabs/send-transaction.html"),

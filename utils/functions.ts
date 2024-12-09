@@ -139,6 +139,24 @@ function splitString(str: string, size: number): string[] {
   return result;
 }
 
+function calculateWindowPosition(currentWindow: chrome.windows.Window) {
+  const height = 639;
+  const width = 376;
+  let left = 0;
+  let top = 0;
+
+  if (
+    currentWindow &&
+    currentWindow.left !== undefined &&
+    currentWindow.top !== undefined &&
+    currentWindow.width !== undefined
+  ) {
+    left = currentWindow.left + currentWindow.width - width;
+    top = currentWindow.top;
+  }
+  return { height, left, top, width };
+}
+
 export {
   hexToAscii,
   toCamelCase,
@@ -147,4 +165,5 @@ export {
   parseMemo,
   isSupportedChain,
   splitString,
+  calculateWindowPosition
 };
