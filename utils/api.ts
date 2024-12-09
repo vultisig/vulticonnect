@@ -10,6 +10,8 @@ import type {
   ThorchainAccountDataResponse,
 } from "~utils/interfaces";
 
+const VULTISIG_API = "https://api.vultisig.com";
+
 const api = axios.create({
   headers: { accept: "application/json" },
   timeout: 10000,
@@ -60,7 +62,7 @@ export default {
       return new Promise((resolve, reject) => {
         api
           .get<SignatureProps>(
-            `https://api.vultisig.com/router/complete/${uuid}/keysign`,
+            `${VULTISIG_API}/router/complete/${uuid}/keysign`,
             {
               headers: { message_id: message },
             }
@@ -84,19 +86,16 @@ export default {
       });
     },
     getDevices: async (uuid: string) => {
-      return await api.get<string[]>(`https://api.vultisig.com/router/${uuid}`);
+      return await api.get<string[]>(`${VULTISIG_API}/router/${uuid}`);
     },
     setStart: async (uuid: string, devices: string[]) => {
-      return await api.post(
-        `https://api.vultisig.com/router/start/${uuid}`,
-        devices
-      );
+      return await api.post(`${VULTISIG_API}/router/start/${uuid}`, devices);
     },
   },
   checkVaultExist: (ecdsa: string): Promise<boolean> => {
     return new Promise((resolve) => {
       api
-        .get(`https://api.vultisig.com/vault/exist/${ecdsa}`)
+        .get(`${VULTISIG_API}/vault/exist/${ecdsa}`)
         .then(() => {
           resolve(true);
         })
@@ -109,7 +108,7 @@ export default {
     return new Promise((resolve) => {
       api
         .get<CryptoCurrency.Props>(
-          `https://api.vultisig.com/cmc/v2/cryptocurrency/quotes/latest?id=${cmcId}&aux=platform&convert=${currency}`
+          `${VULTISIG_API}/cmc/v2/cryptocurrency/quotes/latest?id=${cmcId}&aux=platform&convert=${currency}`
         )
         .then(({ data }) => {
           if (
@@ -245,9 +244,8 @@ export default {
   },
   utxo: {
     blockchairStats: (chainName: string) => {
-      // TODO: Specify return type
       return new Promise((resolve, reject) => {
-        const url = `https://api.vultisig.com/blockchair/${chainName}/stats`;
+        const url = `${VULTISIG_API}/blockchair/${chainName}/stats`;
         api
           .get(url)
           .then((res) => {
@@ -257,9 +255,8 @@ export default {
       });
     },
     blockchairDashboard: (address: string, coinName: string) => {
-      // TODO: Specify return type
       return new Promise((resolve, reject) => {
-        const url = `https://api.vultisig.com//blockchair/${coinName}/dashboards/address/${address}?state=latest`;
+        const url = `${VULTISIG_API}/blockchair/${coinName}/dashboards/address/${address}?state=latest`;
         api
           .get(url)
           .then((res) => {
