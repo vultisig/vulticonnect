@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { toCamelCase, toSnakeCase } from "~utils/functions";
-import type { Currency } from "~utils/constants";
+import { ChainKey, type Currency } from "~utils/constants";
 import type {
   CosmosAccountData,
   CosmosAccountDataResponse,
@@ -9,6 +9,8 @@ import type {
   SignatureProps,
   ThorchainAccountDataResponse,
 } from "~utils/interfaces";
+
+const VULTISIG_API = "https://api.vultisig.com";
 
 const api = axios.create({
   headers: { accept: "application/json" },
@@ -60,7 +62,7 @@ export default {
       return new Promise((resolve, reject) => {
         api
           .get<SignatureProps>(
-            `https://api.vultisig.com/router/complete/${uuid}/keysign`,
+            `${VULTISIG_API}/router/complete/${uuid}/keysign`,
             {
               headers: { message_id: message },
             }
@@ -84,19 +86,16 @@ export default {
       });
     },
     getDevices: async (uuid: string) => {
-      return await api.get<string[]>(`https://api.vultisig.com/router/${uuid}`);
+      return await api.get<string[]>(`${VULTISIG_API}/router/${uuid}`);
     },
     setStart: async (uuid: string, devices: string[]) => {
-      return await api.post(
-        `https://api.vultisig.com/router/start/${uuid}`,
-        devices
-      );
+      return await api.post(`${VULTISIG_API}/router/start/${uuid}`, devices);
     },
   },
   checkVaultExist: (ecdsa: string): Promise<boolean> => {
     return new Promise((resolve) => {
       api
-        .get(`https://api.vultisig.com/vault/exist/${ecdsa}`)
+        .get(`${VULTISIG_API}/vault/exist/${ecdsa}`)
         .then(() => {
           resolve(true);
         })
@@ -109,7 +108,7 @@ export default {
     return new Promise((resolve) => {
       api
         .get<CryptoCurrency.Props>(
-          `https://api.vultisig.com/cmc/v2/cryptocurrency/quotes/latest?id=${cmcId}&aux=platform&convert=${currency}`
+          `${VULTISIG_API}/cmc/v2/cryptocurrency/quotes/latest?id=${cmcId}&aux=platform&convert=${currency}`
         )
         .then(({ data }) => {
           if (
@@ -238,6 +237,42 @@ export default {
           .then((response) => {
             if (!response.data.account) reject("no account found");
             else resolve(response.data.account);
+          })
+          .catch(reject);
+      });
+    },
+  },
+  utxo: {
+    blockchairStats: (chainName: string) => {
+      return new Promise((resolve, reject) => {
+        const url = `${VULTISIG_API}/blockchair/${chainName.toLowerCase()}/stats`;
+        api
+          .get(url)
+          .then((res) => {
+            resolve(res.data.data);
+          })
+          .catch(reject);
+      });
+    },
+    blockchairDashboard: (address: string, coinName: string) => {
+      return new Promise((resolve, reject) => {
+        const url = `${VULTISIG_API}/blockchair/${coinName}/dashboards/address/${address}?state=latest`;
+        api
+          .get(url)
+          .then((res) => {
+            resolve(res.data.data);
+          })
+          .catch(reject);
+      });
+    },
+    blockchairGetTx: (chainName: string, txHash: string) => {
+      if (chainName === ChainKey.BITCOINCASH) chainName = "bitcoin-cash";
+      return new Promise((resolve, reject) => {
+        const url = `${VULTISIG_API}/blockchair/${chainName.toLowerCase()}/dashboards/transaction/${txHash}`;
+        api
+          .get(url)
+          .then((res) => {
+            resolve(res.data.data[txHash]);
           })
           .catch(reject);
       });

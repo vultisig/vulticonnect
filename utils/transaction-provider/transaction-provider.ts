@@ -9,6 +9,7 @@ import GaiaTransactionProvider from "./gaia/gaia-tx-provider";
 import OsmosisTransactionProvider from "./osmosis/osmosis-tx-provider";
 import KujiraTransactionProvider from "./kujira/kujira-tx-provider";
 import DydxTransactionProvider from "./dydx/dydx-tx-provider";
+import UTXOTransactionProvider from "./utxo/utxo-tx-provider";
 
 interface ChainRef {
   [chainKey: string]: CoinType;
@@ -64,6 +65,18 @@ export default class TransactionProvider {
       }
       case ChainKey.DYDX: {
         return new DydxTransactionProvider(
+          chainKey,
+          chainRef,
+          dataEncoder,
+          walletCore
+        );
+      }
+      case ChainKey.BITCOINCASH:
+      case ChainKey.DASH:
+      case ChainKey.DOGECOIN:
+      case ChainKey.LITECOIN:
+      case ChainKey.BITCOIN: {
+        return new UTXOTransactionProvider(
           chainKey,
           chainRef,
           dataEncoder,

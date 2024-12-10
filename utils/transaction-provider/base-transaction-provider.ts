@@ -50,20 +50,24 @@ export abstract class BaseTransactionProvider {
     preSignedInputData: Uint8Array
   ): Promise<string> => {
     return new Promise((resolve, reject) => {
-      const preHashes = this.walletCore.TransactionCompiler.preImageHashes(
-        this.chainRef[this.chainKey],
-        preSignedInputData
-      );
+      try {
+        const preHashes = this.walletCore.TransactionCompiler.preImageHashes(
+          this.chainRef[this.chainKey],
+          preSignedInputData
+        );
+        const preSigningOutput =
+          TW.TxCompiler.Proto.PreSigningOutput.decode(preHashes);
+        if (preSigningOutput.errorMessage !== "")
+          reject(preSigningOutput.errorMessage);
 
-      const preSigningOutput =
-        TW.TxCompiler.Proto.PreSigningOutput.decode(preHashes);
-      if (preSigningOutput.errorMessage !== "")
-        reject(preSigningOutput.errorMessage);
-
-      const imageHash = this.stripHexPrefix(
-        this.walletCore.HexCoding.encode(preSigningOutput.dataHash)
-      );
-      resolve(imageHash);
+        const imageHash = this.stripHexPrefix(
+          this.walletCore.HexCoding.encode(preSigningOutput.dataHash)
+        ); 
+        resolve(imageHash);
+      } catch (err) {
+        console.error(`error getting preSignedImageHash: ${err}`);
+        reject(err);
+      }
     });
   };
 

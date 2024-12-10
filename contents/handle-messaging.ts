@@ -72,3 +72,14 @@ relay(
     return openResult;
   }
 );
+
+relay(
+  {
+    name: "utxo-request" as const,
+  },
+  async (req) => {
+    const openResult = await sendToBackground(req);
+
+    return openResult;
+  }
+);

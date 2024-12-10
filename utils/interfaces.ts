@@ -30,6 +30,11 @@ export namespace Messaging {
     export type Request = any;
     export type Response = string | string[];
   }
+
+  export namespace UTXORequest {
+    export type Request = any;
+    export type Response = string | string[];
+  }
 }
 
 export interface AccountsProps {
@@ -140,7 +145,7 @@ export interface TransactionProps {
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
   txHash?: string;
-  isDeposit:boolean,
+  isDeposit: boolean;
   windowId?: number;
 }
 
@@ -190,6 +195,18 @@ export interface SpecificThorchain extends BaseSpecificTransactionInfo {
   accountNumber: number;
   sequence: number;
   isDeposit: boolean;
+}
+
+export interface SpecificUtxoInfo {
+  hash: string;
+  amount: bigint;
+  index: number;
+}
+
+export interface SpecificUtxo extends BaseSpecificTransactionInfo {
+  byteFee: number;
+  sendMaxAmount: boolean;
+  utxos: SpecificUtxoInfo[];
 }
 
 export interface SpecificCosmos extends BaseSpecificTransactionInfo {
