@@ -1,10 +1,7 @@
 import { create } from "@bufbuild/protobuf";
-
 import Long from "long";
 import {
-  THORChainSpecificSchema,
   UTXOSpecificSchema,
-  type THORChainSpecific,
   type UTXOSpecific,
 } from "~protos/blockchain_specific_pb";
 import { CoinSchema, type Coin } from "~protos/coin_pb";
@@ -15,7 +12,6 @@ import {
 import { ChainKey } from "~utils/constants";
 import type {
   SignatureProps,
-  SpecificThorchain,
   SpecificUtxo,
   SpecificUtxoInfo,
   TransactionProps,
@@ -30,7 +26,6 @@ import type {
   CoinType,
   WalletCore,
 } from "@trustwallet/wallet-core/dist/src/wallet-core";
-import { sha256 } from "ethers";
 import { TW } from "@trustwallet/wallet-core";
 
 interface ChainRef {
@@ -251,7 +246,7 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
   private calculateFee(_coin?: Coin): Promise<number> {
     return new Promise((resolve, reject) => {
       api.utxo
-        .blockchairStats(_coin.chain.toLowerCase())
+        .blockchairStats(_coin.chain)
         .then((result: any) => {
           resolve(result.suggestedTransactionFeePerByteSat);
         })
@@ -260,8 +255,7 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
   }
 
   private async getUtxos(coin: Coin): Promise<SpecificUtxoInfo[]> {
-    const coinName = coin.chain.toLowerCase();
-    const result = await api.utxo.blockchairDashboard(coin.address, coinName);
+    const result = await api.utxo.blockchairDashboard(coin.address, coin.chain);
     return result[coin.address].utxo.map((utxo: any) => {
       return {
         hash: utxo.transactionHash,

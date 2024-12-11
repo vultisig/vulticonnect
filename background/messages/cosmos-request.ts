@@ -18,7 +18,7 @@ import {
   setStoredVaults,
 } from "~utils/storage";
 import { isSupportedChain } from "~utils/functions";
-
+import { Tendermint34Client } from "@cosmjs/tendermint-rpc";
 const getAccounts = (
   chain: ChainKey,
   sender: string
@@ -305,6 +305,19 @@ const handleRequest = (
             reject(); // chainId is required
           }
           break;
+        }
+        case RequestMethod.GET_TRANSACTION_BY_HASH: {
+          const [hash] = params;
+          Tendermint34Client.connect(rpcUrl[activeChain.name])
+            .then((client) => {
+              client
+                .tx(hash)
+                .then((resp) => resolve(JSON.stringify(resp.result)))
+                .catch(reject);
+            })
+            .catch((err) => {
+              reject(`Could not initialize Tendermint Client: ${err}`);
+            });
         }
         default: {
           reject(`Unsupported method: ${method}`);
