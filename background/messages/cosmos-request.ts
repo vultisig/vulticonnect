@@ -318,6 +318,7 @@ const handleRequest = (
             .catch((err) => {
               reject(`Could not initialize Tendermint Client: ${err}`);
             });
+          break;
         }
         default: {
           reject(`Unsupported method: ${method}`);
