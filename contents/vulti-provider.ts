@@ -344,7 +344,7 @@ window.vultisig = providers;
 window.cosmos = cosmosProvider;
 window.bitcoin = bitcoinProvider;
 window.litecoin = litecoinProvider;
-window.bitcoincash = litecoinProvider;
+window.bitcoincash = bitcoincashProvider;
 window.dash = dashProvider;
 window.dogecoin = dogecoinProvider;
 
