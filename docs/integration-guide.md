@@ -1,3 +1,4 @@
+
 # VultiConnect Integration Guide
 
 ## Introduction
@@ -7,6 +8,24 @@ VultiConnect is a Chrome extension that enhances the experience of interacting w
 - **`window.vultisig.ethereum`** for Ethereum integrations (previously `window.vultisig`).
 - **`window.thorchain` and `window.vultisig.thorchain`** for Thorchain support.
 - A MetaMask-compatible interface (`window.ethereum`) to ensure seamless integration with existing DeFi applications.
+- Support for multiple other chains including MayaChain, GaiaChain, Osmosis, Kujira, DyDx, BitcoinCash, Dash, DogeCoin, LiteCoin, and Bitcoin.
+
+## Supported Chains
+
+VultiConnect currently supports the following chains:
+
+- Ethereum `(0x1)`
+- Thorchain `(Thorchain_1)`
+- MayaChain `(MayaChain-1)`
+- GaiaChain `(cosmoshub-4)`
+- Osmosis `(osmosis-1)`
+- Kujira `(kaiyo-1)`
+- DyDx `(dydx-1)`
+- BitcoinCash `(0x2710)`
+- Dash `(Dash_dash)`
+- DogeCoin `(0x7d0)`
+- LiteCoin `(Litecoin_litecoin)`
+- Bitcoin `(0x1f96)`
 
 ## How VultiConnect Works
 
@@ -15,39 +34,34 @@ VultiConnect is a Chrome extension that enhances the experience of interacting w
   - `window.ethereum` for MetaMask-compatible Ethereum integration.
   - `window.vultisig.ethereum` for VultiConnect-enhanced Ethereum features.
   - `window.thorchain` and `window.vultisig.thorchain` for Thorchain functionality.
-- **Prioritize VultiConnect**: A switch titled "Prioritize VultiConnect" allows users to override `window.ethereum` and use VultiConnect as the default provider. When disabled, `window.ethereum` remains unchanged, and `window.vultisig.ethereum` provides access to VultiConnect.
-- **MetaMask Interoperable Provider Descriptor (MIPD)**: VultiConnect introduces itself as a provider, allowing DeFi applications to extract provider information for smooth integration.
+  - Additional chain support for other chains using `window.chain` and `window.vultisig.chain`.
+
+---
 
 ## Steps to Integrate with VultiConnect
 
 ### 1. Detect VultiConnect Support
 
-To detect whether VultiConnect is available, check for `window.vultisig.ethereum` or `window.thorchain`.
-
 ```javascript
 if (window.vultisig?.ethereum) {
   console.log("VultiConnect Ethereum provider is available!");
-  // Your integration logic for Ethereum here
+  // Integration logic for Ethereum
 } else if (window.ethereum) {
   console.log("Ethereum provider available (MetaMask or VultiConnect)");
-  // Fallback to existing MetaMask-compatible logic
+  // Fallback to MetaMask-compatible logic
 }
 
-if (window.thorchain || window.vultisig?.thorchain) {
-  console.log("VultiConnect Thorchain provider is available!");
-  // Your integration logic for Thorchain here
+if (window.chain || window.vultisig?.chain) {
+  console.log("VultiConnect [Chain] provider is available!");
+  // Integration logic for the chain
 } else {
-  console.log("No compatible Thorchain provider found.");
+  console.log("No compatible [chain] provider found.");
 }
 ```
-
----
 
 ### 2. Connecting to VultiConnect
 
 #### Ethereum
-
-To connect to an Ethereum wallet, use the `eth_requestAccounts` method.
 
 ```javascript
 const connectEthereum = async () => {
@@ -67,165 +81,91 @@ const connectEthereum = async () => {
 };
 ```
 
-#### Thorchain
-
-To connect to a Thorchain wallet, use the `request_accounts` method.
+#### Other Supported Chains
 
 ```javascript
-const connectThorchain = async () => {
-  const provider = window.thorchain || window.vultisig?.thorchain;
+const connectChain = async (chain) => {
+  const provider = window[chain] || window.vultisig?.[chain];
   if (provider) {
     try {
       const accounts = await provider.request({ method: "request_accounts" });
-      console.log("Connected to Thorchain wallet:", accounts);
+      console.log(`Connected to ${chain} wallet:`, accounts);
     } catch (error) {
-      console.error("Thorchain connection failed", error);
+      console.error(`${chain} connection failed`, error);
     }
   } else {
-    alert("No Thorchain provider found. Please install VultiConnect.");
+    alert(`No ${chain} provider found. Please install VultiConnect.`);
   }
 };
 ```
 
----
+Replace `chain` with the desired chain identifier such as `thorchain`, `maya`, `cosmos`, etc.
 
-### 3. Handling Transactions with VultiConnect
+## Supported Methods
 
-#### Ethereum
-
-Send transactions using `eth_sendTransaction`.
-
-```javascript
-const sendEthereumTransaction = async (txDetails) => {
-  if (window.vultisig?.ethereum) {
-    try {
-      const transactionHash = await window.vultisig.ethereum.request({
-        method: "eth_sendTransaction",
-        params: [txDetails],
-      });
-      console.log("Ethereum Transaction Hash: ", transactionHash);
-    } catch (error) {
-      console.error("Ethereum transaction failed", error);
-    }
-  }
-};
-```
-
-#### Thorchain
-
-Send transactions using `send_transaction`.
-
-```javascript
-const sendThorchainTransaction = async (txDetails) => {
-  if (window.thorchain || window.vultisig?.thorchain) {
-    try {
-      const transactionHash = await (
-        window.thorchain || window.vultisig?.thorchain
-      ).request({
-        method: "send_transaction",
-        params: [txDetails],
-      });
-      console.log("Thorchain Transaction Hash: ", transactionHash);
-    } catch (error) {
-      console.error("Thorchain transaction failed", error);
-    }
-  }
-};
-```
-
----
-
-### 4. Querying Transactions
-
-#### Ethereum
-
-Retrieve Ethereum transaction details with `eth_getTransactionByHash`.
-
-```javascript
-const getEthereumTransaction = async (txHash) => {
-  if (window.vultisig?.ethereum) {
-    try {
-      const txDetails = await window.vultisig.ethereum.request({
-        method: "eth_getTransactionByHash",
-        params: [txHash],
-      });
-      console.log("Ethereum Transaction Details:", txDetails);
-    } catch (error) {
-      console.error("Failed to get Ethereum transaction details:", error);
-    }
-  }
-};
-```
-
-#### Thorchain
-
-Retrieve Thorchain transaction details using `get_transaction_by_hash`.
-
-```javascript
-const getThorchainTransaction = async (txHash) => {
-  if (window.thorchain || window.vultisig?.thorchain) {
-    try {
-      const txDetails = await (
-        window.thorchain || window.vultisig?.thorchain
-      ).request({
-        method: "get_transaction_by_hash",
-        params: [txHash],
-      });
-      console.log("Thorchain Transaction Details:", txDetails);
-    } catch (error) {
-      console.error("Failed to get Thorchain transaction details:", error);
-    }
-  }
-};
-```
-
----
-
-### 5. Event Handling
-
-VultiConnect supports the `CONNECT` and `DISCONNECT` events for both Ethereum and Thorchain.
-
-```javascript
-if (window.vultisig?.ethereum || window.thorchain) {
-  const provider = window.vultisig?.ethereum || window.thorchain;
-
-  provider.on("CONNECT", (info) => {
-    console.log("Connected:", info);
-  });
-
-  provider.on("DISCONNECT", (error) => {
-    console.log("Disconnected:", error);
-  });
-}
-```
-
----
-
-### 6. Supported Methods
-
-#### Ethereum (`window.vultisig.ethereum`)
+### Ethereum (`window.vultisig.ethereum`)
 
 - **Account Management**:  
-  `eth_accounts`, `eth_requestAccounts`
+  - `eth_accounts`  
+  - `eth_requestAccounts`
 - **Chain Management**:  
-  `eth_chainId`, `wallet_addEthereumChain`, `wallet_switchEthereumChain`
+  - `eth_chainId`  
+  - `wallet_addEthereumChain`  
+  - `wallet_switchEthereumChain`
 - **Transaction Management**:  
-  `eth_sendTransaction`, `eth_getTransactionByHash`, `eth_estimateGas`
+  - `eth_sendTransaction`  
+  - `eth_getTransactionByHash`  
+  - `eth_estimateGas`
+
+### Other Supported Chains
 
 #### Thorchain (`window.thorchain` and `window.vultisig.thorchain`)
 
 - **Account Management**:  
-  `request_accounts`
+  - `request_accounts`  
+  - `get_accounts`
 - **Transaction Management**:  
-  `send_transaction`, `get_transaction_by_hash`
+  - `send_transaction` 
+  - `deposit_transaction` 
+  - `get_transaction_by_hash`  
 
----
 
+#### Cosmos-Based Chains (GaiaChain, Osmosis, Kujira, DyDx)
+
+- **Account Management**:  
+  - `request_accounts`  
+  - `get_accounts`
+  - `chain_id`
+
+- **Chain Management**:  
+  - `wallet_add_chain`  
+  - `wallet_switch_chain`
+- **Transaction Management**:  
+  - `send_transaction`  
+  - `get_transaction_by_hash`
+- **Notes**: Accessing a specific Cosmos-based chain (such as Kujira or Osmosis) requires calling `chain_id` to retrieve the active chain's ID or using `wallet_add_chain` and `wallet_switch_chain` to add or switch to the desired chain.
+
+#### Other Chains (`window.chain` and `window.vultisig.chain`)
+
+- **Account Management**:  
+  - `request_accounts`
+  - `get_accounts`
+- **Transaction Management**:  
+  - `send_transaction`  
+  - `get_transaction_by_hash`
+
+##### Supported Chains
+
+The following chains are fully supported through their respective interfaces:
+
+- MayaChain
+- BitcoinCash
+- Dash
+- DogeCoin
+- LiteCoin
+- Bitcoin
+
+Each chain uses a unified interface accessible via `window.chain` and `window.vultisig.chain` for seamless interaction across different blockchain networks.
 ## Summary
 
-VultiConnect enables secure, multi-chain integration for DeFi applications. It provides:
-
-- MetaMask-compatible Ethereum support via `window.vultisig.ethereum`.
-- Native Thorchain support via `window.thorchain` and `window.vultisig.thorchain`.
-
-By adhering to [EIP-1193](https://eips.ethereum.org/EIPS/eip-1193), VultiConnect ensures seamless integration with minimal effort, allowing developers to deliver a secure and user-friendly experience.
+VultiConnect ensures secure and multi-chain integration with DeFi applications, providing seamless support across popular chains. Its adherence to [EIP-1193](https://eips.ethereum.org/EIPS/eip-1193) guarantees compatibility with existing applications while delivering a secure and user-friendly experience.
