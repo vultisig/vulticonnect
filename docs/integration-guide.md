@@ -1,6 +1,7 @@
 # VultiConnect Integration Guide
 
 ## Table of Contents
+
 1. [Introduction](#introduction)
 2. [Supported Chains](#supported-chains)
 3. [How VultiConnect Works](#how-vulticonnect-works)
@@ -20,6 +21,7 @@
 8. [Summary](#summary)
 
 ---
+
 ## Introduction
 
 VultiConnect is a Chrome extension that enhances the experience of interacting with decentralized finance (DeFi) applications. It offers a secure way for users to connect with decentralized applications without storing private keys in their browsers. VultiConnect introduces:
@@ -187,6 +189,8 @@ const connectChain = async (chain) => {
 Replace `chain` with the desired chain identifier such as `thorchain`, `maya`, `cosmos`, etc.
 
 Each chain uses a unified interface accessible via `window.chain` and `window.vultisig.chain` for seamless interaction across different blockchain networks.
+
+---
 
 ### 3. Connected Accounts
 
@@ -457,7 +461,7 @@ const getChainTransaction = async (chain) => {
 
 ---
 
-### 6. Event Handling
+### 7. Event Handling
 
 VultiConnect supports the CONNECT and DISCONNECT events for all supported chains.
 
