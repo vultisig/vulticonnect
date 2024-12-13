@@ -17,7 +17,7 @@
    - [4. Managing Active Chain](#4-managing-active-chain)
    - [5. Handling Transactions](#5-handling-transactions)
 6. [Querying Transactions](#6-querying-transactions)
-7. [Event Handling](#6-event-handling)
+7. [Event Handling](#7-event-handling)
 8. [Summary](#summary)
 
 ---
