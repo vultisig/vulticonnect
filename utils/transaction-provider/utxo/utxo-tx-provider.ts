@@ -50,7 +50,7 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
     return new Promise<SpecificUtxo>((resolve) => {
       this.calculateFee(coin).then(async (byteFeePrice) => {
         const specificTransactionInfo: SpecificUtxo = {
-          gasPrice: byteFeePrice / 10 ** coin.decimals,
+          gasPrice: byteFeePrice,
           fee: byteFeePrice,
           byteFee: byteFeePrice,
           sendMaxAmount: false,

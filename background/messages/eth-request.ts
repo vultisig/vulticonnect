@@ -1,6 +1,12 @@
 import type { MessagesMetadata, PlasmoMessaging } from "@plasmohq/messaging";
 import { JsonRpcProvider, type TransactionRequest } from "ethers";
-import { ChainKey, chains, EVMRequestMethod, rpcUrl } from "~utils/constants";
+import {
+  ChainKey,
+  chains,
+  EVMChain,
+  EVMRequestMethod,
+  rpcUrl,
+} from "~utils/constants";
 import type { Messaging, TransactionProps } from "~utils/interfaces";
 import { v4 as uuidv4 } from "uuid";
 import {
@@ -33,7 +39,7 @@ const getAccounts = (
   chain: ChainKey,
   sender: string
 ): Promise<{ accounts: string[] }> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     setStoredRequest({
       chain,
       sender,
@@ -75,18 +81,23 @@ const getAccounts = (
         if (closedWindowId === createdWindowId) {
           getStoredVaults()
             .then((vaults) => {
-              resolve({
-                accounts: vaults.flatMap(({ apps, chains }) =>
-                  chains
-                    .filter(
-                      ({ name }) => name === chain && apps.indexOf(sender) >= 0
-                    )
-                    .map(({ address }) => address)
-                ),
-              });
+              const accounts = vaults.flatMap(({ apps, chains }) =>
+                chains
+                  .filter(
+                    ({ name }) => name === chain && apps.indexOf(sender) >= 0
+                  )
+                  .map(({ address }) => address)
+              );
+              if (accounts && accounts.length) {
+                resolve({
+                  accounts: accounts,
+                });
+              } else {
+                reject({ accounts: [] });
+              }
             })
             .catch(() => {
-              resolve({ accounts: [] });
+              reject({ accounts: [] });
             });
         }
       });
@@ -194,7 +205,23 @@ const handleRequest = (
   return new Promise((resolve, reject) => {
     const { method, params } = req.body;
     getStoredChains().then((storedChains) => {
-      const activeChain = storedChains.find(({ active }) => active);
+      let activeChain = storedChains.find(
+        (chain) =>
+          (Object.values(EVMChain) as unknown as ChainKey[]).includes(
+            chain.name
+          ) && chain.active === true
+      );
+      if (!activeChain) {
+        activeChain = chains.find((chain) => chain.name == ChainKey.ETHEREUM);
+        handleRequest({
+          ...req,
+          body: {
+            method: EVMRequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN,
+            params: [{ chainId: "0x1" }],
+          },
+        });
+      }
+      // const activeChain = storedChains.find(({ active }) => active);
       initializeProvider(activeChain.name);
       switch (method) {
         case EVMRequestMethod.ETH_ACCOUNTS: {
@@ -221,11 +248,11 @@ const handleRequest = (
           break;
         }
         case EVMRequestMethod.ETH_REQUEST_ACCOUNTS: {
-          getAccounts(activeChain.name, req.sender.origin).then(
-            ({ accounts }) => {
+          getAccounts(activeChain.name, req.sender.origin)
+            .then(({ accounts }) => {
               resolve(accounts);
-            }
-          );
+            })
+            .catch(reject);
           break;
         }
         case EVMRequestMethod.ETH_SEND_TRANSACTION: {
