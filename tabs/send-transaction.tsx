@@ -175,7 +175,9 @@ const Component: FC = () => {
                 initCloseTimer(CLOSE_TIMEOUT);
               });
             })
-            .catch(() => {});
+            .catch(() => {
+              handleClose();
+            });
         })
         .catch(({ status }) => {
           if (status === 404) {
