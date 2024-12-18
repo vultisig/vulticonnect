@@ -270,7 +270,11 @@ const Component: FC = () => {
             .getKeysignPayload(transaction, vault)
             .then(() => {
               txProvider
-                .getTransactionKey(vault.publicKeyEcdsa, transaction.id,vault.hexChainCode)
+                .getTransactionKey(
+                  vault.publicKeyEcdsa,
+                  transaction.id,
+                  vault.hexChainCode
+                )
                 .then((sendKey) => {
                   api.fastVault
                     .checkVaultExist(vault.publicKeyEcdsa)
@@ -323,7 +327,6 @@ const Component: FC = () => {
                 address.toLowerCase() === transaction.from.toLowerCase()
             ) >= 0
         );
-
 
         const walletCore = new WalletCoreProvider();
         walletCore

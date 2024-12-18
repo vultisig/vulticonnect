@@ -130,3 +130,6 @@ dist
 .pnp.*
 /build
 /.plasmo
+
+# pnpm
+pnpm-lock.yaml

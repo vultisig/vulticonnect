@@ -151,6 +151,18 @@ function getTssKeysignType(chain: ChainKey): TssKeysignType {
   }
 }
 
+function bigintToByteArray(bigNumber: bigint): Uint8Array {
+  if (typeof bigNumber !== "bigint" || bigNumber < 0n) {
+    throw new Error("Input must be a non-negative BigInt.");
+  }
+  const bytes = [];
+  while (bigNumber > 0n) {
+    bytes.unshift(Number(bigNumber & 0xffn));
+    bigNumber = bigNumber >> 8n;
+  }
+  return new Uint8Array(bytes.length > 0 ? bytes : [0]);
+}
+
 export {
   hexToAscii,
   toCamelCase,
@@ -160,4 +172,5 @@ export {
   isSupportedChain,
   splitString,
   getTssKeysignType,
+  bigintToByteArray,
 };

@@ -1,13 +1,9 @@
 import {
   JsonRpcProvider,
   Transaction,
-  encodeBase64,
   formatUnits,
-  hexlify,
-  isHexString,
   keccak256,
   randomBytes,
-  toUtf8Bytes,
   toUtf8String,
 } from "ethers";
 import { create, toBinary } from "@bufbuild/protobuf";
@@ -32,7 +28,7 @@ import type {
   VaultProps,
 } from "~utils/interfaces";
 import api from "./api";
-import { checkERC20Function } from "./functions";
+import { bigintToByteArray, checkERC20Function } from "./functions";
 
 interface ChainRef {
   [chainKey: string]: CoinType;
@@ -228,43 +224,21 @@ export default class TransactionProvider {
       const chainId: bigint = BigInt(
         this.walletCore.CoinTypeExt.chainId(this.chainRef[this.chainKey])
       );
+      const nonceHex = bigintToByteArray(BigInt(nonce));
 
-      const chainIdHex = Buffer.from(
-        this.stripHexPrefix(chainId.toString(16).padStart(2, "0")),
-        "hex"
-      );
-
+      const chainIdHex = bigintToByteArray(BigInt(chainId));
       // Nonce: converted to hexadecimal, stripped of '0x', and padded
-      const nonceHex = Buffer.from(
-        this.stripHexPrefix(
-          hexlify(toUtf8Bytes(nonce.toString())).padStart(2, "0")
-        ),
-        "hex"
-      );
 
       // Gas limit: converted to hexadecimal, stripped of '0x'
-      const gasLimitHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(gasLimit))),
-        "hex"
-      );
+      const gasLimitHex = bigintToByteArray(BigInt(gasLimit));
 
       // Max fee per gas: converted to hexadecimal, stripped of '0x'
-      const maxFeePerGasHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(maxFeePerGasWei))),
-        "hex"
-      );
+      const maxFeePerGasHex = bigintToByteArray(BigInt(maxFeePerGasWei));
 
       // Max inclusion fee per gas (priority fee): converted to hexadecimal, stripped of '0x'
-      const maxInclusionFeePerGasHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(priorityFee))),
-        "hex"
-      );
-
+      const maxInclusionFeePerGasHex = bigintToByteArray(BigInt(priorityFee));
       // Amount: converted to hexadecimal, stripped of '0x'
-      const amountHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(this.keysignPayload.toAmount))),
-        "hex"
-      );
+      const amountHex = bigintToByteArray(BigInt(this.keysignPayload.toAmount));
 
       // Send native tokens
       let toAddress = this.keysignPayload.toAddress;
