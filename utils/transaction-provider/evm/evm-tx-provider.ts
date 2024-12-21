@@ -28,7 +28,7 @@ import type {
   VaultProps,
 } from "~utils/interfaces";
 import api from "../../api";
-import { checkERC20Function } from "../../functions";
+import { bigintToByteArray, checkERC20Function } from "../../functions";
 import { BaseTransactionProvider } from "../base-transaction-provider";
 
 interface ChainRef {
@@ -111,9 +111,12 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
         ticker: transaction.chain.ticker,
         address: transaction.from,
         decimals: transaction.chain.decimals,
-        hexPublicKey: vault.hexChainCode,
+        hexPublicKey: vault.chains.find(
+          ({ name }) => name === transaction.chain.name
+        ).derivationKey,
         isNativeToken: true,
-        logo: transaction.chain.ticker.toLowerCase(),
+        logo: transaction.chain.name.toLowerCase(),
+        priceProviderId: "ethereum",
       });
 
       this.provider
@@ -136,10 +139,9 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
           checkERC20Function(transaction.data).then((isMemoFunction) => {
             let modifiedMemo: string;
             try {
-              modifiedMemo =
-                isMemoFunction || transaction.data === "0x"
-                  ? transaction.data ?? ""
-                  : toUtf8String(transaction.data);
+              modifiedMemo = isMemoFunction
+                ? transaction.data ?? ""
+                : toUtf8String(transaction.data);
             } catch {
               modifiedMemo = transaction.data;
             }
@@ -189,42 +191,17 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
         this.walletCore.CoinTypeExt.chainId(this.chainRef[this.chainKey])
       );
 
-      const chainIdHex = Buffer.from(
-        this.stripHexPrefix(chainId.toString(16).padStart(2, "0")),
-        "hex"
-      );
+      const chainIdHex = bigintToByteArray(BigInt(chainId));
 
-      // Nonce: converted to hexadecimal, stripped of '0x', and padded
-      const nonceHex = Buffer.from(
-        this.stripHexPrefix(
-          hexlify(toUtf8Bytes(nonce.toString())).padStart(2, "0")
-        ),
-        "hex"
-      );
+      const nonceHex = bigintToByteArray(BigInt(nonce));
 
-      // Gas limit: converted to hexadecimal, stripped of '0x'
-      const gasLimitHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(gasLimit))),
-        "hex"
-      );
+      const gasLimitHex = bigintToByteArray(BigInt(gasLimit));
 
-      // Max fee per gas: converted to hexadecimal, stripped of '0x'
-      const maxFeePerGasHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(maxFeePerGasWei))),
-        "hex"
-      );
+      const maxFeePerGasHex = bigintToByteArray(BigInt(maxFeePerGasWei));
 
-      // Max inclusion fee per gas (priority fee): converted to hexadecimal, stripped of '0x'
-      const maxInclusionFeePerGasHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(priorityFee))),
-        "hex"
-      );
+      const maxInclusionFeePerGasHex = bigintToByteArray(BigInt(priorityFee));
 
-      // Amount: converted to hexadecimal, stripped of '0x'
-      const amountHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(this.keysignPayload.toAmount))),
-        "hex"
-      );
+      const amountHex = bigintToByteArray(BigInt(this.keysignPayload.toAmount));
 
       // Send native tokens
       let toAddress = this.keysignPayload.toAddress;
@@ -293,5 +270,4 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
       resolve(txHash);
     });
   };
-
 }

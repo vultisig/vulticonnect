@@ -5,6 +5,7 @@ import { ChainKey, type Currency } from "~utils/constants";
 import type {
   CosmosAccountData,
   CosmosAccountDataResponse,
+  FastSignInput,
   MayaAccountDataResponse,
   SignatureProps,
   ThorchainAccountDataResponse,
@@ -163,6 +164,26 @@ export default {
           reject("Error getting FunctionSelector Text");
         });
     });
+  },
+  fastVault: {
+    checkVaultExist: (ecdsa: string): Promise<boolean> => {
+      return new Promise((resolve) => {
+        api
+          .get(`https://api.vultisig.com/vault/exist/${ecdsa}`)
+          .then(() => {
+            resolve(true);
+          })
+          .catch(() => {
+            resolve(false);
+          });
+      });
+    },
+    signWithServer: async (input: FastSignInput) => {
+      return new Promise((resolve, reject) => {
+        const url = `https://api.vultisig.com/vault/sign`;
+        api.post(url, input).then(resolve).catch(reject);
+      });
+    },
   },
   thorchain: {
     fetchAccountNumber: async (address: string) => {

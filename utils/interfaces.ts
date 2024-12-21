@@ -228,3 +228,13 @@ export interface CosmosAccountData {
 export interface CosmosAccountDataResponse {
   account: CosmosAccountData;
 }
+
+export interface FastSignInput {
+  public_key: string;
+  messages: string[];
+  session: string;
+  hex_encryption_key: string;
+  derive_path: string;
+  is_ecdsa: boolean;
+  vault_password: string;
+}

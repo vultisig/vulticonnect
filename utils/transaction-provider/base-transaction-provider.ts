@@ -111,4 +111,13 @@ export abstract class BaseTransactionProvider {
   protected encodeData(data: Uint8Array): Promise<string> {
     return this.dataEncoder(data);
   }
+  
+  public getDerivePath = (chain: string) => {
+    const coin = this.chainRef[chain];
+    return this.walletCore.CoinTypeExt.derivationPath(coin);
+  };
+
+  public getHexPubKey = () => {
+    return this.keysignPayload.coin.hexPublicKey;
+  };
 }
