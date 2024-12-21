@@ -246,10 +246,10 @@ export const rpcUrl: ChainRpcRef = {
   [ChainKey.POLYGON]: "https://polygon-bor-rpc.publicnode.com",
   [ChainKey.ZKSYNC]: "https://mainnet.era.zksync.io",
   [ChainKey.THORCHAIN]: "https://rpc.ninerealms.com/",
-  [ChainKey.GAIACHAIN]: "https://cosmos-rpc.publicnode.com:443",
-  [ChainKey.DYDX]: "https://dydx-rpc.publicnode.com:443",
-  [ChainKey.KUJIRA]: "https://kujira-rpc.publicnode.com:443",
-  [ChainKey.OSMOSIS]: "https://osmosis-rpc.publicnode.com:443",
+  [ChainKey.GAIACHAIN]: "https://cosmos-rpc.publicnode.com",
+  [ChainKey.DYDX]: "https://dydx-rpc.publicnode.com",
+  [ChainKey.KUJIRA]: "https://kujira-rpc.publicnode.com",
+  [ChainKey.OSMOSIS]: "https://osmosis-rpc.publicnode.com",
 };
 
 export const chains: ChainProps[] = [
