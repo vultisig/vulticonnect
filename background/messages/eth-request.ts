@@ -437,6 +437,32 @@ const handleRequest = (
             .catch(reject);
           break;
         }
+        case EVMRequestMethod.PERSONAL_SIGN: {
+          const [address, message] = params;
+          sendTransaction(
+            {
+              customMessage: {
+                address: String(address),
+                message: String(message),
+              },
+              isCustomMessage: true,
+              chain: activeChain,
+              data: "",
+              from: activeChain.address,
+              id: "",
+              status: "default",
+              to: "",
+              isDeposit: false,
+            },
+            activeChain.id
+          )
+            .then(({ transactionHash }) => {
+              resolve(transactionHash);
+            })
+            .catch(reject);
+
+          break;
+        }
         case "net_version": {
           resolve("1");
         }

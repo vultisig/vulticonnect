@@ -1,6 +1,6 @@
 import { TW, type WalletCore } from "@trustwallet/wallet-core";
 import type { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
-import type { ChainKey } from "~utils/constants";
+import { ChainKey } from "~utils/constants";
 import type {
   SignatureProps,
   TransactionProps,
@@ -12,6 +12,7 @@ import {
   KeysignMessageSchema,
   type KeysignPayload,
 } from "~protos/keysign_message_pb";
+import type { CustomMessagePayload } from "~protos/custom_message_payload_pb";
 
 interface ChainRef {
   [chainKey: string]: CoinType;
@@ -62,7 +63,7 @@ export abstract class BaseTransactionProvider {
 
         const imageHash = this.stripHexPrefix(
           this.walletCore.HexCoding.encode(preSigningOutput.dataHash)
-        ); 
+        );
         resolve(imageHash);
       } catch (err) {
         console.error(`error getting preSignedImageHash: ${err}`);
@@ -73,16 +74,35 @@ export abstract class BaseTransactionProvider {
 
   public getTransactionKey = (
     publicKeyEcdsa: string,
-    transactionId: string
+    transaction: TransactionProps
   ): Promise<string> => {
     return new Promise((resolve) => {
-      const keysignMessage = create(KeysignMessageSchema, {
-        sessionId: transactionId,
+      let messsage: {
+        sessionId: string;
+        serviceName: string;
+        encryptionKeyHex: string;
+        useVultisigRelay: boolean;
+        keysignPayload?: KeysignPayload;
+        customMessagePayload?: CustomMessagePayload;
+      } = {
+        sessionId: transaction.id,
         serviceName: "VultiConnect",
         encryptionKeyHex: this.encryptionKeyHex(),
         useVultisigRelay: true,
-        keysignPayload: this.keysignPayload,
-      });
+      };
+      if (transaction.isCustomMessage) {
+        //TODO
+        if (transaction.chain.name === ChainKey.ARBITRUM) {
+          messsage.customMessagePayload = {
+            $typeName: "vultisig.keysign.v1.CustomMessagePayload",
+            method: "eth_signTypedData_v4",
+            message: transaction.customMessage?.message,
+          };
+        }
+      } else {
+        messsage.keysignPayload = this.keysignPayload;
+      }
+      const keysignMessage = create(KeysignMessageSchema, messsage);
 
       const binary = toBinary(KeysignMessageSchema, keysignMessage);
 

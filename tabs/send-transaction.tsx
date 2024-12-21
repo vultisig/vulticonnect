@@ -257,31 +257,54 @@ const Component: FC = () => {
           setState((prevState) => ({ ...prevState, step }));
         } else {
           setState((prevState) => ({ ...prevState, loading: true }));
-          txProvider
-            .getKeysignPayload(transaction, vault)
-            .then(() => {
-              txProvider
-                .getTransactionKey(vault.publicKeyEcdsa, transaction.id)
-                .then((sendKey) => {
-                  api.checkVaultExist(vault.publicKeyEcdsa).then((fastSign) => {
-                    setState((prevState) => ({
-                      ...prevState,
-                      fastSign,
-                      loading: false,
-                      sendKey,
-                      step,
-                    }));
+          if (transaction.isCustomMessage) {
+            txProvider
+              .getTransactionKey(vault.publicKeyEcdsa, transaction)
+              .then((sendKey) => {
+                api.checkVaultExist(vault.publicKeyEcdsa).then((fastSign) => {
+                  setState((prevState) => ({
+                    ...prevState,
+                    fastSign,
+                    loading: false,
+                    sendKey,
+                    step,
+                  }));
 
-                    handleStart();
-                  });
-                })
-                .catch(() => {
-                  setState((prevState) => ({ ...prevState, loading: false }));
+                  handleStart();
                 });
-            })
-            .catch(() => {
-              setState((prevState) => ({ ...prevState, loading: false }));
-            });
+              })
+              .catch(() => {
+                setState((prevState) => ({ ...prevState, loading: false }));
+              });
+          } else {
+            txProvider
+              .getKeysignPayload(transaction, vault)
+              .then(() => {
+                txProvider
+                  .getTransactionKey(vault.publicKeyEcdsa, transaction)
+                  .then((sendKey) => {
+                    api
+                      .checkVaultExist(vault.publicKeyEcdsa)
+                      .then((fastSign) => {
+                        setState((prevState) => ({
+                          ...prevState,
+                          fastSign,
+                          loading: false,
+                          sendKey,
+                          step,
+                        }));
+
+                        handleStart();
+                      });
+                  })
+                  .catch(() => {
+                    setState((prevState) => ({ ...prevState, loading: false }));
+                  });
+              })
+              .catch(() => {
+                setState((prevState) => ({ ...prevState, loading: false }));
+              });
+          }
         }
 
         break;

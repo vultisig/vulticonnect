@@ -149,6 +149,7 @@ const Component: FC = () => {
                   apps: [],
                   chains: [],
                   transactions: [],
+                  customTransactions: [],
                 },
                 status: "success",
               }));

@@ -148,9 +148,16 @@ export interface TransactionProps {
   gasPrice?: string;
   maxFeePerGas?: string;
   maxPriorityFeePerGas?: string;
+  isCustomMessage?: boolean;
+  customMessage?: CustomMessage;
   txHash?: string;
   isDeposit: boolean;
   windowId?: number;
+}
+
+export interface CustomMessage {
+  address: string;
+  message: string;
 }
 
 export interface VaultProps {
