@@ -181,7 +181,13 @@ const sendTransaction = (
                         transactions: [transaction, ...vault.transactions],
                       }))
                     ).then(() => {
-                      resolve({ transactionHash: transaction.txHash });
+                      if (transaction.isCustomMessage) {
+                        resolve({
+                          transactionHash: transaction.customSignature,
+                        });
+                      } else {
+                        resolve({ transactionHash: transaction.txHash });
+                      }
                     });
                   });
                 } else {
@@ -438,7 +444,7 @@ const handleRequest = (
           break;
         }
         case EVMRequestMethod.PERSONAL_SIGN: {
-          const [address, message] = params;
+          const [message, address] = params;
           sendTransaction(
             {
               customMessage: {
@@ -448,7 +454,7 @@ const handleRequest = (
               isCustomMessage: true,
               chain: activeChain,
               data: "",
-              from: activeChain.address,
+              from: String(address),
               id: "",
               status: "default",
               to: "",
@@ -461,6 +467,16 @@ const handleRequest = (
             })
             .catch(reject);
 
+          break;
+        }
+        case EVMRequestMethod.ETH_GET_CODE: {
+          const [address, tag] = params;
+          rpcProvider
+            .getCode(String(address), String(tag))
+            .then((res) => {
+              resolve(res);
+            })
+            .catch(reject);
           break;
         }
         case "net_version": {

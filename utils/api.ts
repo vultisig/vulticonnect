@@ -85,6 +85,33 @@ export default {
           });
       });
     },
+    getCustomMessageComplete: async (uuid: string) => {
+      return new Promise((resolve, reject) => {
+        api
+          .get<SignatureProps>(
+            `${VULTISIG_API}/router/complete/${uuid}/keysign`,
+            {
+              headers: { message_id: "" },
+            }
+          )
+          .then((res) => {
+            if (res.status === 200) {
+              const transformed = Object.entries(res.data).reduce(
+                (acc, [key, value]) => {
+                  const newKey = key.charAt(0).toUpperCase() + key.slice(1);
+                  acc[newKey] = value;
+                  return acc;
+                },
+                {} as { [key: string]: any }
+              );
+              resolve(transformed);
+            }
+          })
+          .catch((err) => {
+            reject(err);
+          });
+      });
+    },
     getDevices: async (uuid: string) => {
       return await api.get<string[]>(`${VULTISIG_API}/router/${uuid}`);
     },

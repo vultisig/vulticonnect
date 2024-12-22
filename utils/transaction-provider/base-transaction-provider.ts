@@ -91,14 +91,11 @@ export abstract class BaseTransactionProvider {
         useVultisigRelay: true,
       };
       if (transaction.isCustomMessage) {
-        //TODO
-        if (transaction.chain.name === ChainKey.ARBITRUM) {
-          messsage.customMessagePayload = {
-            $typeName: "vultisig.keysign.v1.CustomMessagePayload",
-            method: "eth_signTypedData_v4",
-            message: transaction.customMessage?.message,
-          };
-        }
+        messsage.customMessagePayload = {
+          $typeName: "vultisig.keysign.v1.CustomMessagePayload",
+          method: "personal_sign",
+          message: transaction.customMessage?.message,
+        };
       } else {
         messsage.keysignPayload = this.keysignPayload;
       }
@@ -115,7 +112,6 @@ export abstract class BaseTransactionProvider {
   };
 
   abstract getPreSignedInputData(): Promise<Uint8Array>;
-
   abstract getSignedTransaction(
     transaction: TransactionProps,
     signature: SignatureProps,
@@ -130,5 +126,22 @@ export abstract class BaseTransactionProvider {
 
   protected encodeData(data: Uint8Array): Promise<string> {
     return this.dataEncoder(data);
+  }
+
+  public getCustomMessageSignature(signature: SignatureProps): Uint8Array {
+    const rData = this.walletCore.HexCoding.decode(signature.R).reverse();
+    const sData = this.walletCore.HexCoding.decode(signature.S).reverse();
+    const combinedData = new Uint8Array(rData.length + sData.length);
+    combinedData.set(rData);
+    combinedData.set(sData, rData.length);
+    return combinedData;
+  }
+
+  public getEncodedSignature(signature: SignatureProps): string {
+    return this.stripHexPrefix(
+      this.walletCore.HexCoding.encode(
+        this.getCustomMessageSignature(signature)
+      )
+    );
   }
 }

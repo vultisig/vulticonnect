@@ -151,6 +151,7 @@ export interface TransactionProps {
   isCustomMessage?: boolean;
   customMessage?: CustomMessage;
   txHash?: string;
+  customSignature?: string;
   isDeposit: boolean;
   windowId?: number;
 }
