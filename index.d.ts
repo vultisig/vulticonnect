@@ -5,11 +5,6 @@ interface Window {
   cosmos: any;
   vultisig: any;
   thorchain: any;
-  bitcoin: any;
-  litecoin: any;
-  bitcoincash: any;
-  dash: any;
-  dogecoin: any;
   lodash: unknown;
   providers: EthereumProvider[];
   vultiConnectRouter: {
@@ -20,4 +15,5 @@ interface Window {
     setDefaultProvider: (vultiAsDefault: boolean) => void;
     addProvider: (provider: EthereumProvider) => void;
   };
+  xfi: any;
 }
