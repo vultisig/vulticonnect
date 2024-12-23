@@ -91,6 +91,10 @@ export interface ChainRpcRef {
   [ChainKey.POLYGON]: string;
   [ChainKey.ZKSYNC]: string;
   [ChainKey.THORCHAIN]: string;
+  [ChainKey.GAIACHAIN]: string;
+  [ChainKey.DYDX]: string;
+  [ChainKey.KUJIRA]: string;
+  [ChainKey.OSMOSIS]: string;
 }
 
 export interface CurrencyRef {

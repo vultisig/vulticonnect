@@ -80,31 +80,33 @@ export default class ThorchainTransactionProvider extends BaseTransactionProvide
         isNativeToken: true,
         logo: transaction.chain.ticker.toLowerCase(),
       });
-      this.getSpecificTransactionInfo(coin).then((specificData) => {
-        const thorchainSpecific = create(THORChainSpecificSchema, {
-          accountNumber: BigInt(specificData.accountNumber),
-          fee: BigInt(specificData.fee),
-          isDeposit: specificData.isDeposit,
-          sequence: BigInt(specificData.sequence),
-        });
+      this.getSpecificTransactionInfo(coin, transaction.isDeposit).then(
+        (specificData) => {
+          const thorchainSpecific = create(THORChainSpecificSchema, {
+            accountNumber: BigInt(specificData.accountNumber),
+            fee: BigInt(specificData.fee),
+            isDeposit: specificData.isDeposit,
+            sequence: BigInt(specificData.sequence),
+          });
 
-        const keysignPayload = create(KeysignPayloadSchema, {
-          toAddress: transaction.to,
-          toAmount: transaction.value
-            ? BigInt(parseInt(transaction.value)).toString()
-            : "0",
-          memo: transaction.data,
-          vaultPublicKeyEcdsa: vault.publicKeyEcdsa,
-          vaultLocalPartyId: "VultiConnect",
-          coin,
-          blockchainSpecific: {
-            case: "thorchainSpecific",
-            value: thorchainSpecific,
-          },
-        });
-        this.keysignPayload = keysignPayload;
-        resolve(keysignPayload);
-      });
+          const keysignPayload = create(KeysignPayloadSchema, {
+            toAddress: transaction.to,
+            toAmount: transaction.value
+              ? BigInt(parseInt(transaction.value)).toString()
+              : "0",
+            memo: transaction.data,
+            vaultPublicKeyEcdsa: vault.publicKeyEcdsa,
+            vaultLocalPartyId: "VultiConnect",
+            coin,
+            blockchainSpecific: {
+              case: "thorchainSpecific",
+              value: thorchainSpecific,
+            },
+          });
+          this.keysignPayload = keysignPayload;
+          resolve(keysignPayload);
+        }
+      );
     });
   };
 

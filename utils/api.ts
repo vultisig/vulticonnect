@@ -244,6 +244,7 @@ export default {
   },
   utxo: {
     blockchairStats: (chainName: string) => {
+      if (chainName === ChainKey.BITCOINCASH) chainName = "bitcoin-cash";
       return new Promise((resolve, reject) => {
         const url = `${VULTISIG_API}/blockchair/${chainName.toLowerCase()}/stats`;
         api
@@ -255,8 +256,9 @@ export default {
       });
     },
     blockchairDashboard: (address: string, coinName: string) => {
+      if (coinName === ChainKey.BITCOINCASH) coinName = "bitcoin-cash";
       return new Promise((resolve, reject) => {
-        const url = `${VULTISIG_API}/blockchair/${coinName}/dashboards/address/${address}?state=latest`;
+        const url = `${VULTISIG_API}/blockchair/${coinName.toLowerCase()}/dashboards/address/${address}?state=latest`;
         api
           .get(url)
           .then((res) => {

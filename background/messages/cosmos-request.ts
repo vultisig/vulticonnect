@@ -18,12 +18,12 @@ import {
   setStoredVaults,
 } from "~utils/storage";
 import { isSupportedChain } from "~utils/functions";
-
+import { Tendermint34Client } from "@cosmjs/tendermint-rpc";
 const getAccounts = (
   chain: ChainKey,
   sender: string
 ): Promise<{ accounts: string[] }> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     setStoredRequest({
       chain,
       sender,
@@ -65,18 +65,23 @@ const getAccounts = (
         if (closedWindowId === createdWindowId) {
           getStoredVaults()
             .then((vaults) => {
-              resolve({
-                accounts: vaults.flatMap(({ apps, chains }) =>
-                  chains
-                    .filter(
-                      ({ name }) => name === chain && apps.indexOf(sender) >= 0
-                    )
-                    .map(({ address }) => address)
-                ),
-              });
+              const accounts = vaults.flatMap(({ apps, chains }) =>
+                chains
+                  .filter(
+                    ({ name }) => name === chain && apps.indexOf(sender) >= 0
+                  )
+                  .map(({ address }) => address)
+              );
+              if (accounts && accounts.length) {
+                resolve({
+                  accounts: accounts,
+                });
+              } else {
+                reject({ accounts: [] });
+              }
             })
             .catch(() => {
-              resolve({ accounts: [] });
+              reject({ accounts: [] });
             });
         }
       });
@@ -219,11 +224,11 @@ const handleRequest = (
           break;
         }
         case RequestMethod.REQUEST_ACCOUNTS: {
-          getAccounts(activeChain.name, req.sender.origin).then(
-            ({ accounts }) => {
+          getAccounts(activeChain.name, req.sender.origin)
+            .then(({ accounts }) => {
               resolve(accounts[0]);
-            }
-          );
+            })
+            .catch(reject);
           break;
         }
         case RequestMethod.SEND_TRANSACTION: {
@@ -304,6 +309,20 @@ const handleRequest = (
           } else {
             reject(); // chainId is required
           }
+          break;
+        }
+        case RequestMethod.GET_TRANSACTION_BY_HASH: {
+          const [hash] = params;
+          Tendermint34Client.connect(rpcUrl[activeChain.name])
+            .then((client) => {
+              client
+                .tx(hash)
+                .then((resp) => resolve(JSON.stringify(resp.result)))
+                .catch(reject);
+            })
+            .catch((err) => {
+              reject(`Could not initialize Tendermint Client: ${err}`);
+            });
           break;
         }
         default: {

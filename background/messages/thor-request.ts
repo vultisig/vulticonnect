@@ -23,7 +23,7 @@ const getAccounts = (
   chain: ChainKey,
   sender: string
 ): Promise<{ accounts: string[] }> => {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     setStoredRequest({
       chain,
       sender,
@@ -65,18 +65,23 @@ const getAccounts = (
         if (closedWindowId === createdWindowId) {
           getStoredVaults()
             .then((vaults) => {
-              resolve({
-                accounts: vaults.flatMap(({ apps, chains }) =>
-                  chains
-                    .filter(
-                      ({ name }) => name === chain && apps.indexOf(sender) >= 0
-                    )
-                    .map(({ address }) => address)
-                ),
-              });
+              const accounts = vaults.flatMap(({ apps, chains }) =>
+                chains
+                  .filter(
+                    ({ name }) => name === chain && apps.indexOf(sender) >= 0
+                  )
+                  .map(({ address }) => address)
+              );
+              if (accounts && accounts.length) {
+                resolve({
+                  accounts: accounts,
+                });
+              } else {
+                reject({ accounts: [] });
+              }
             })
             .catch(() => {
-              resolve({ accounts: [] });
+              reject({ accounts: [] });
             });
         }
       });
@@ -204,11 +209,11 @@ const handleRequest = (
         break;
       }
       case RequestMethod.REQUEST_ACCOUNTS: {
-        getAccounts(ChainKey.THORCHAIN, req.sender.origin).then(
-          ({ accounts }) => {
+        getAccounts(ChainKey.THORCHAIN, req.sender.origin)
+          .then(({ accounts }) => {
             resolve(accounts[0]);
-          }
-        );
+          })
+          .catch(reject);
         break;
       }
       case RequestMethod.SEND_TRANSACTION: {

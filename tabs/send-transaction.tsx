@@ -40,7 +40,7 @@ import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
 import { create } from "@bufbuild/protobuf";
 import { CoinSchema } from "~protos/coin_pb";
-import { parseMemo, splitString } from "~utils/functions";
+import { formatDisplayNumber, parseMemo, splitString } from "~utils/functions";
 import html2canvas from "html2canvas";
 import type { BaseTransactionProvider } from "~utils/transaction-provider/base-transaction-provider";
 import TransactionProvider from "~utils/transaction-provider/transaction-provider";
@@ -175,7 +175,9 @@ const Component: FC = () => {
                 initCloseTimer(CLOSE_TIMEOUT);
               });
             })
-            .catch(() => {});
+            .catch(() => {
+              handleClose();
+            });
         })
         .catch(({ status }) => {
           if (status === 404) {
@@ -373,9 +375,10 @@ const Component: FC = () => {
               )
                 .getSpecificTransactionInfo(coin)
                 .then((blockchainSpecific) => {
-                  transaction.gasPrice = blockchainSpecific.gasPrice
-                    .toFixed(coin.decimals)
-                    .toLocaleString();
+                  transaction.gasPrice = formatUnits(
+                    blockchainSpecific.gasPrice,
+                    coin.decimals
+                  );
                   try {
                     transaction.memo = toUtf8String(transaction.data);
                   } catch (err) {
@@ -478,7 +481,12 @@ const Component: FC = () => {
                   )}
                   <div className="list-item">
                     <span className="label">{t(messageKeys.NETWORK_FEE)}</span>
-                    <span className="extra">{transaction.gasPrice}</span>
+                    <span className="extra">
+                      {formatDisplayNumber(
+                        transaction.gasPrice,
+                        transaction.chain.ticker
+                      )}
+                    </span>
                   </div>
                   {parsedMemo && (
                     <>
