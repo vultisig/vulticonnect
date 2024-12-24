@@ -35,14 +35,6 @@ export abstract class BaseTransactionProvider {
     this.walletCore = walletCore;
   }
 
-  protected encryptionKeyHex = (): string => {
-    const keyBytes = randomBytes(32);
-
-    return Array.from(keyBytes)
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("");
-  };
-
   protected stripHexPrefix = (hex: string): string => {
     return hex.startsWith("0x") ? hex.slice(2) : hex;
   };
@@ -74,7 +66,8 @@ export abstract class BaseTransactionProvider {
 
   public getTransactionKey = (
     publicKeyEcdsa: string,
-    transaction: TransactionProps
+    transaction: TransactionProps,
+    hexChainCode: string
   ): Promise<string> => {
     return new Promise((resolve) => {
       let messsage: {
@@ -87,7 +80,7 @@ export abstract class BaseTransactionProvider {
       } = {
         sessionId: transaction.id,
         serviceName: "VultiConnect",
-        encryptionKeyHex: this.encryptionKeyHex(),
+        encryptionKeyHex: hexChainCode,
         useVultisigRelay: true,
       };
       if (transaction.isCustomMessage) {
@@ -127,6 +120,11 @@ export abstract class BaseTransactionProvider {
   protected encodeData(data: Uint8Array): Promise<string> {
     return this.dataEncoder(data);
   }
+
+  public getDerivePath = (chain: string) => {
+    const coin = this.chainRef[chain];
+    return this.walletCore.CoinTypeExt.derivationPath(coin);
+  };
 
   public getCustomMessageSignature(signature: SignatureProps): Uint8Array {
     const rData = this.walletCore.HexCoding.decode(signature.R).reverse();

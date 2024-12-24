@@ -1,9 +1,15 @@
 import { useEffect, useState, type FC } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, QRCode, message } from "antd";
+import { Button, QRCode, Form, message, Input } from "antd";
 import { formatUnits, toUtf8String } from "ethers";
 
-import { ChainKey, errorKey, EVMChain, explorerUrl } from "~utils/constants";
+import {
+  ChainKey,
+  errorKey,
+  EVMChain,
+  explorerUrl,
+  TssKeysignType,
+} from "~utils/constants";
 import {
   getStoredCurrency,
   getStoredLanguage,
@@ -40,7 +46,12 @@ import "~utils/prototypes";
 import VultiError from "~components/vulti-error";
 import { create } from "@bufbuild/protobuf";
 import { CoinSchema } from "~protos/coin_pb";
-import { formatDisplayNumber, parseMemo, splitString } from "~utils/functions";
+import {
+  formatDisplayNumber,
+  getTssKeysignType,
+  parseMemo,
+  splitString,
+} from "~utils/functions";
 import html2canvas from "html2canvas";
 import type { BaseTransactionProvider } from "~utils/transaction-provider/base-transaction-provider";
 import TransactionProvider from "~utils/transaction-provider/transaction-provider";
@@ -65,10 +76,16 @@ interface InitialState {
   errorDescription?: string;
 }
 
+interface FormProps {
+  password: string;
+}
+
 const Component: FC = () => {
   const { t } = useTranslation();
-  const RETRY_TIMEOUT = 120000; //2min
-  const CLOSE_TIMEOUT = 60000; //1min
+  const RETRY_TIMEOUT_MS = 120000;
+  const CLOSE_TIMEOUT_MS = 180000;
+  const [form] = Form.useForm();
+  const [connectedDevices, setConnectedDevices] = useState(0);
   const initialState: InitialState = { step: 1, hasError: false };
   const [state, setState] = useState(initialState);
   const {
@@ -147,37 +164,39 @@ const Component: FC = () => {
           errorDescription: t(messageKeys.SIGNING_TIMEOUT_DESCRIPTION),
         });
       });
-    }, RETRY_TIMEOUT);
+    }, RETRY_TIMEOUT_MS);
 
     const attemptTransaction = (): void => {
       api.transaction
         .getComplete(transaction.id, preSignedImageHash)
         .then((data) => {
-          clearTimeout(retryTimeout);
-          txProvider
-            .getSignedTransaction(
-              transaction,
-              data as SignatureProps,
-              preSignedInputData,
-              vault
-            )
-            .then((txHash) => {
-              setStoredTransaction({
-                ...transaction,
-                status: "success",
-                txHash,
-              }).then(() => {
-                setState((prevState) => ({
-                  ...prevState,
-                  step: 4,
-                  transaction: { ...transaction, txHash },
-                }));
-                initCloseTimer(CLOSE_TIMEOUT);
+          if (data) {
+            clearTimeout(retryTimeout);
+            txProvider
+              .getSignedTransaction(
+                transaction,
+                data as SignatureProps,
+                preSignedInputData,
+                vault
+              )
+              .then((txHash) => {
+                setStoredTransaction({
+                  ...transaction,
+                  status: "success",
+                  txHash,
+                }).then(() => {
+                  setState((prevState) => ({
+                    ...prevState,
+                    step: 5,
+                    transaction: { ...transaction, txHash },
+                  }));
+                  initCloseTimer(CLOSE_TIMEOUT_MS);
+                });
+              })
+              .catch((err) => {
+                console.error(err);
               });
-            })
-            .catch(() => {
-              handleClose();
-            });
+          }
         })
         .catch(({ status }) => {
           if (status === 404) {
@@ -210,7 +229,7 @@ const Component: FC = () => {
           errorDescription: t(messageKeys.SIGNING_TIMEOUT_DESCRIPTION),
         });
       });
-    }, RETRY_TIMEOUT);
+    }, RETRY_TIMEOUT_MS);
 
     const attemptTransaction = (): void => {
       api.transaction
@@ -235,7 +254,7 @@ const Component: FC = () => {
                 ),
               },
             }));
-            initCloseTimer(CLOSE_TIMEOUT);
+            initCloseTimer(CLOSE_TIMEOUT_MS);
           });
         })
         .catch(({ status }) => {
@@ -263,6 +282,7 @@ const Component: FC = () => {
     api.transaction
       .getDevices(transaction.id)
       .then(({ data }) => {
+        setConnectedDevices(data?.length);
         if (data?.length > 1) {
           api.transaction
             .setStart(transaction.id, data)
@@ -332,7 +352,11 @@ const Component: FC = () => {
           setState((prevState) => ({ ...prevState, loading: true }));
           if (transaction.isCustomMessage) {
             txProvider
-              .getTransactionKey(vault.publicKeyEcdsa, transaction)
+              .getTransactionKey(
+                vault.publicKeyEcdsa,
+                transaction,
+                vault.hexChainCode
+              )
               .then((sendKey) => {
                 api.checkVaultExist(vault.publicKeyEcdsa).then((fastSign) => {
                   setState((prevState) => ({
@@ -354,7 +378,11 @@ const Component: FC = () => {
               .getKeysignPayload(transaction, vault)
               .then(() => {
                 txProvider
-                  .getTransactionKey(vault.publicKeyEcdsa, transaction)
+                  .getTransactionKey(
+                    vault.publicKeyEcdsa,
+                    transaction,
+                    vault.hexChainCode
+                  )
                   .then((sendKey) => {
                     api
                       .checkVaultExist(vault.publicKeyEcdsa)
@@ -390,7 +418,57 @@ const Component: FC = () => {
     }
   };
 
-  const componentDidMount = (): void => {
+  const handleFastSign = (): void => {
+    if (connectedDevices >= 1) handleStep(3);
+    else
+      messageApi.open({
+        type: "warning",
+        content: t(messageKeys.SCAN_FIRST),
+      });
+  };
+
+  const handleSubmitFastSignPassword = (): void => {
+    txProvider.getPreSignedInputData().then((preSignedInputData) => {
+      txProvider
+        .getPreSignedImageHash(preSignedInputData)
+        .then((preSignedImageHash) => {
+          const tssType = getTssKeysignType(transaction.chain.name);
+          form
+            .validateFields()
+            .then(({ password }: FormProps) => {
+              api.fastVault
+                .signWithServer({
+                  vault_password: password,
+                  hex_encryption_key: vault.hexChainCode,
+                  is_ecdsa:
+                    getTssKeysignType(transaction.chain.name) ===
+                    TssKeysignType.ECDSA,
+                  derive_path: txProvider.getDerivePath(transaction.chain.name),
+                  messages: [preSignedImageHash],
+                  public_key:
+                    tssType === TssKeysignType.ECDSA
+                      ? vault.publicKeyEcdsa
+                      : vault.publicKeyEddsa,
+                  session: transaction.id,
+                })
+                .then(() => {
+                  setState((prevState) => ({ ...prevState, step: 4 }));
+                  handlePending(preSignedImageHash, preSignedInputData);
+                })
+                .catch((err) => {
+                  console.error(err);
+                  messageApi.open({
+                    type: "error",
+                    content: t(messageKeys.SIGNING_ERROR),
+                  });
+                });
+            })
+            .catch(() => {});
+        });
+    });
+  };
+
+  useEffect(() => {
     Promise.all([
       getStoredCurrency(),
       getStoredLanguage(),
@@ -502,9 +580,7 @@ const Component: FC = () => {
         console.error(errorKey.FAIL_TO_GET_TRANSACTION);
       }
     });
-  };
-
-  useEffect(componentDidMount, []);
+  }, []);
 
   return (
     <ConfigProvider>
@@ -515,7 +591,7 @@ const Component: FC = () => {
               {t(
                 step === 1
                   ? messageKeys.VERIFY_SEND
-                  : step === 4
+                  : step === 5
                   ? messageKeys.TRANSACTION_SUCCESSFUL
                   : messageKeys.SIGN_TRANSACTION
               )}
@@ -654,7 +730,13 @@ const Component: FC = () => {
                 </div>
               </div>
               <div className="footer">
-                <Button type="primary" shape="round" disabled block>
+                <Button
+                  onClick={handleFastSign}
+                  type="primary"
+                  shape="round"
+                  disabled={!fastSign}
+                  block
+                >
                   {t(messageKeys.FAST_SIGN)}
                 </Button>
                 <Button onClick={handleApp} type="default" shape="round" block>
@@ -663,6 +745,29 @@ const Component: FC = () => {
               </div>
             </>
           ) : step === 3 ? (
+            <>
+              <div className="content">
+                <div className="content">
+                  <Form form={form}>
+                    <Form.Item name="password" rules={[{ required: true }]}>
+                      <Input placeholder="FastSign Password" type="password" />
+                    </Form.Item>
+                    <Button htmlType="submit" />
+                  </Form>
+                </div>
+                <div className="footer">
+                  <Button
+                    onClick={handleSubmitFastSignPassword}
+                    type="primary"
+                    shape="round"
+                    block
+                  >
+                    Submit
+                  </Button>
+                </div>
+              </div>
+            </>
+          ) : step === 4 ? (
             <>
               <div className="content">
                 <VultiLoading />

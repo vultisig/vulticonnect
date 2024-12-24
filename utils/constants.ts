@@ -33,6 +33,7 @@ export enum ChainKey {
   SUI = "Sui",
   THORCHAIN = "THORChain",
   ZKSYNC = "Zksync",
+  TON = "Ton",
 }
 
 export enum EVMChain {
@@ -44,6 +45,11 @@ export enum EVMChain {
   ETHEREUM = ChainKey.ETHEREUM,
   OPTIMISM = ChainKey.OPTIMISM,
   POLYGON = ChainKey.POLYGON,
+}
+
+export enum TssKeysignType {
+  ECDSA = "ECDSA",
+  EdDSA = "EdDSA",
 }
 
 export enum CosmosChain {
