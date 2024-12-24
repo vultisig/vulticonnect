@@ -34,14 +34,6 @@ export abstract class BaseTransactionProvider {
     this.walletCore = walletCore;
   }
 
-  protected encryptionKeyHex = (): string => {
-    const keyBytes = randomBytes(32);
-
-    return Array.from(keyBytes)
-      .map((byte) => byte.toString(16).padStart(2, "0"))
-      .join("");
-  };
-
   protected stripHexPrefix = (hex: string): string => {
     return hex.startsWith("0x") ? hex.slice(2) : hex;
   };
@@ -62,7 +54,7 @@ export abstract class BaseTransactionProvider {
 
         const imageHash = this.stripHexPrefix(
           this.walletCore.HexCoding.encode(preSigningOutput.dataHash)
-        ); 
+        );
         resolve(imageHash);
       } catch (err) {
         console.error(`error getting preSignedImageHash: ${err}`);
@@ -73,13 +65,14 @@ export abstract class BaseTransactionProvider {
 
   public getTransactionKey = (
     publicKeyEcdsa: string,
-    transactionId: string
+    transactionId: string,
+    hexChainCode: string
   ): Promise<string> => {
     return new Promise((resolve) => {
       const keysignMessage = create(KeysignMessageSchema, {
         sessionId: transactionId,
         serviceName: "VultiConnect",
-        encryptionKeyHex: this.encryptionKeyHex(),
+        encryptionKeyHex: hexChainCode,
         useVultisigRelay: true,
         keysignPayload: this.keysignPayload,
       });
@@ -111,7 +104,7 @@ export abstract class BaseTransactionProvider {
   protected encodeData(data: Uint8Array): Promise<string> {
     return this.dataEncoder(data);
   }
-  
+
   public getDerivePath = (chain: string) => {
     const coin = this.chainRef[chain];
     return this.walletCore.CoinTypeExt.derivationPath(coin);

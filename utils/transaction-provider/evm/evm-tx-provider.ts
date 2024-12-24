@@ -111,9 +111,7 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
         ticker: transaction.chain.ticker,
         address: transaction.from,
         decimals: transaction.chain.decimals,
-        hexPublicKey: vault.chains.find(
-          ({ name }) => name === transaction.chain.name
-        ).derivationKey,
+        hexPublicKey: vault.hexChainCode,
         isNativeToken: true,
         logo: transaction.chain.name.toLowerCase(),
         priceProviderId: "ethereum",
@@ -202,14 +200,15 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
       const maxInclusionFeePerGasHex = bigintToByteArray(BigInt(priorityFee));
 
       const amountHex = bigintToByteArray(BigInt(this.keysignPayload.toAmount));
-
       // Send native tokens
       let toAddress = this.keysignPayload.toAddress;
       let evmTransaction = TW.Ethereum.Proto.Transaction.create({
         transfer: TW.Ethereum.Proto.Transaction.Transfer.create({
           amount: amountHex,
           data: Buffer.from(
-            this.stripHexPrefix(this.keysignPayload.memo) ?? "",
+            this.keysignPayload.memo
+              ? this.stripHexPrefix(this.keysignPayload.memo)
+              : "",
             "utf8"
           ),
         }),

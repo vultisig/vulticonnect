@@ -437,6 +437,16 @@ const handleRequest = (
             .catch(reject);
           break;
         }
+        case EVMRequestMethod.ETH_GET_CODE: {
+          const [address, tag] = params;
+          rpcProvider
+            .getCode(String(address), String(tag))
+            .then((code) => {
+              resolve(code);
+            })
+            .catch(reject);
+          break;
+        }
         case "net_version": {
           resolve("1");
         }

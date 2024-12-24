@@ -83,7 +83,7 @@ interface FormProps {
 const Component: FC = () => {
   const { t } = useTranslation();
   const RETRY_TIMEOUT = 120000; //2min
-  const CLOSE_TIMEOUT = 60000; //1min
+  const CLOSE_TIMEOUT = 180000; //1min
   const [form] = Form.useForm();
   const [connectedDevices, setConnectedDevices] = useState(0);
   const initialState: InitialState = { step: 1, hasError: false };
@@ -170,31 +170,34 @@ const Component: FC = () => {
       api.transaction
         .getComplete(transaction.id, preSignedImageHash)
         .then((data) => {
-          clearTimeout(retryTimeout);
-          txProvider
-            .getSignedTransaction(
-              transaction,
-              data as SignatureProps,
-              preSignedInputData,
-              vault
-            )
-            .then((txHash) => {
-              setStoredTransaction({
-                ...transaction,
-                status: "success",
-                txHash,
-              }).then(() => {
-                setState((prevState) => ({
-                  ...prevState,
-                  step: 5,
-                  transaction: { ...transaction, txHash },
-                }));
-                initCloseTimer(CLOSE_TIMEOUT);
+          if (data) {
+            clearTimeout(retryTimeout);
+            txProvider
+              .getSignedTransaction(
+                transaction,
+                data as SignatureProps,
+                preSignedInputData,
+                vault
+              )
+              .then((txHash) => {
+                setStoredTransaction({
+                  ...transaction,
+                  status: "success",
+                  txHash,
+                }).then(() => {
+                  setState((prevState) => ({
+                    ...prevState,
+                    step: 5,
+                    transaction: { ...transaction, txHash },
+                  }));
+                  initCloseTimer(CLOSE_TIMEOUT);
+                });
+              })
+              .catch((err) => {
+                console.error(err);
+                // handleClose();
               });
-            })
-            .catch(() => {
-              handleClose();
-            });
+          }
         })
         .catch(({ status }) => {
           if (status === 404) {
@@ -279,7 +282,11 @@ const Component: FC = () => {
             .getKeysignPayload(transaction, vault)
             .then(() => {
               txProvider
-                .getTransactionKey(vault.publicKeyEcdsa, transaction.id)
+                .getTransactionKey(
+                  vault.publicKeyEcdsa,
+                  transaction.id,
+                  vault.hexChainCode
+                )
                 .then((sendKey) => {
                   api.checkVaultExist(vault.publicKeyEcdsa).then((fastSign) => {
                     setState((prevState) => ({
