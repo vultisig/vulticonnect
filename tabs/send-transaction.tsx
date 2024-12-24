@@ -83,7 +83,7 @@ interface FormProps {
 const Component: FC = () => {
   const { t } = useTranslation();
   const RETRY_TIMEOUT = 120000; //2min
-  const CLOSE_TIMEOUT = 180000; //1min
+  const CLOSE_TIMEOUT = 180000; //3min
   const [form] = Form.useForm();
   const [connectedDevices, setConnectedDevices] = useState(0);
   const initialState: InitialState = { step: 1, hasError: false };

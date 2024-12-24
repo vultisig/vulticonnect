@@ -169,7 +169,7 @@ export default {
     checkVaultExist: (ecdsa: string): Promise<boolean> => {
       return new Promise((resolve) => {
         api
-          .get(`https://api.vultisig.com/vault/exist/${ecdsa}`)
+          .get(`${VULTISIG_API}/vault/exist/${ecdsa}`)
           .then(() => {
             resolve(true);
           })
@@ -180,7 +180,7 @@ export default {
     },
     signWithServer: async (input: FastSignInput) => {
       return new Promise((resolve, reject) => {
-        const url = `https://api.vultisig.com/vault/sign`;
+        const url = `${VULTISIG_API}/vault/sign`;
         api.post(url, input).then(resolve).catch(reject);
       });
     },
