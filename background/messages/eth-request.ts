@@ -181,7 +181,13 @@ const sendTransaction = (
                         transactions: [transaction, ...vault.transactions],
                       }))
                     ).then(() => {
-                      resolve({ transactionHash: transaction.txHash });
+                      if (transaction.isCustomMessage) {
+                        resolve({
+                          transactionHash: transaction.customSignature,
+                        });
+                      } else {
+                        resolve({ transactionHash: transaction.txHash });
+                      }
                     });
                   });
                 } else {
@@ -433,6 +439,42 @@ const handleRequest = (
             .getTransactionReceipt(String(param))
             .then((receipt) => {
               resolve(receipt.toJSON());
+            })
+            .catch(reject);
+          break;
+        }
+        case EVMRequestMethod.PERSONAL_SIGN: {
+          const [message, address] = params;
+          sendTransaction(
+            {
+              customMessage: {
+                address: String(address),
+                message: String(message),
+              },
+              isCustomMessage: true,
+              chain: activeChain,
+              data: "",
+              from: String(address),
+              id: "",
+              status: "default",
+              to: "",
+              isDeposit: false,
+            },
+            activeChain.id
+          )
+            .then(({ transactionHash }) => {
+              resolve(transactionHash);
+            })
+            .catch(reject);
+
+          break;
+        }
+        case EVMRequestMethod.ETH_GET_CODE: {
+          const [address, tag] = params;
+          rpcProvider
+            .getCode(String(address), String(tag))
+            .then((res) => {
+              resolve(res);
             })
             .catch(reject);
           break;

@@ -16,9 +16,10 @@
    - [3. Connected Accounts](#3-connected-accounts)
    - [4. Managing Active Chain](#4-managing-active-chain)
    - [5. Handling Transactions](#5-handling-transactions)
-6. [Querying Transactions](#6-querying-transactions)
-7. [Event Handling](#7-event-handling)
-8. [Summary](#summary)
+6. [Custom Message Signing](#6-custom-message-signing)
+7. [Querying Transactions](#7-querying-transactions)
+8. [Event Handling](#8-event-handling)
+9. [Summary](#summary)
 
 ---
 
@@ -414,7 +415,31 @@ const THORChainDepositTransaction = async (txDetails) => {
 
 ---
 
-### 6. Querying Transactions
+### 6. Custom Message Signing
+
+#### Ethereum
+
+Vulticonnect currently supports the `personal_sign` method.
+
+```javascript
+const signCustomMessage = async (hexMessage, walletAddress) => {
+  if (window.vultisig?.ethereum) {
+    try {
+      const signature = await window.vultisig.ethereum.request({
+        method: "perosnal_sign",
+        params: [hexMessage, walletAddress],
+      });
+      console.log("Signature:", signature);
+    } catch (error) {
+      console.error("Failed to sign the messsage", error);
+    }
+  }
+};
+```
+
+---
+
+### 7. Querying Transactions
 
 #### Transaction Details Structure
 
@@ -461,7 +486,7 @@ const getChainTransaction = async (chain) => {
 
 ---
 
-### 7. Event Handling
+### 8. Event Handling
 
 VultiConnect supports the CONNECT and DISCONNECT events for all supported chains.
 

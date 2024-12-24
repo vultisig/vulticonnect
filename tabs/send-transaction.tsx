@@ -200,6 +200,65 @@ const Component: FC = () => {
     attemptTransaction();
   };
 
+  const handleCustomMessagePending = (): void => {
+    const retryTimeout = setTimeout(() => {
+      setStoredTransaction({ ...transaction, status: "error" }).then(() => {
+        setState({
+          ...state,
+          hasError: true,
+          errorTitle: t(messageKeys.TIMEOUT_ERROR),
+          errorDescription: t(messageKeys.SIGNING_TIMEOUT_DESCRIPTION),
+        });
+      });
+    }, RETRY_TIMEOUT);
+
+    const attemptTransaction = (): void => {
+      api.transaction
+        .getCustomMessageComplete(transaction.id)
+        .then((data) => {
+          clearTimeout(retryTimeout);
+
+          setStoredTransaction({
+            ...transaction,
+            status: "success",
+            customSignature: txProvider.getEncodedSignature(
+              data as SignatureProps
+            ),
+          }).then(() => {
+            setState((prevState) => ({
+              ...prevState,
+              step: 4,
+              transaction: {
+                ...transaction,
+                customSignature: txProvider.getEncodedSignature(
+                  data as SignatureProps
+                ),
+              },
+            }));
+            initCloseTimer(CLOSE_TIMEOUT);
+          });
+        })
+        .catch(({ status }) => {
+          if (status === 404) {
+            setTimeout(() => {
+              attemptTransaction();
+            }, 1000);
+          } else {
+            clearTimeout(retryTimeout);
+            setStoredTransaction({ ...transaction, status: "error" }).then(
+              () => {
+                messageApi.open({
+                  type: "error",
+                  content: t(messageKeys.RETRY_ERROR),
+                });
+              }
+            );
+          }
+        });
+    };
+    attemptTransaction();
+  };
+
   const handleStart = (): void => {
     api.transaction
       .getDevices(transaction.id)
@@ -210,22 +269,36 @@ const Component: FC = () => {
             .then(() => {
               setStoredTransaction({ ...transaction, status: "pending" })
                 .then(() => {
-                  txProvider
-                    .getPreSignedInputData()
-                    .then((preSignedInputData) => {
-                      txProvider
-                        .getPreSignedImageHash(preSignedInputData)
-                        .then((preSignedImageHash) => {
-                          setState((prevState) => ({ ...prevState, step: 3 }));
-                          handlePending(preSignedImageHash, preSignedInputData);
-                        })
-                        .catch((err) => {
-                          console.error(err);
-                        });
-                    })
-                    .catch((err) => {
-                      console.error(err);
-                    });
+                  if (transaction.isCustomMessage) {
+                    setState((prevState) => ({
+                      ...prevState,
+                      step: 3,
+                    }));
+                    handleCustomMessagePending();
+                  } else {
+                    txProvider
+                      .getPreSignedInputData()
+                      .then((preSignedInputData) => {
+                        txProvider
+                          .getPreSignedImageHash(preSignedInputData)
+                          .then((preSignedImageHash) => {
+                            setState((prevState) => ({
+                              ...prevState,
+                              step: 3,
+                            }));
+                            handlePending(
+                              preSignedImageHash,
+                              preSignedInputData
+                            );
+                          })
+                          .catch((err) => {
+                            console.error(err);
+                          });
+                      })
+                      .catch((err) => {
+                        console.error(err);
+                      });
+                  }
                 })
                 .catch((err) => {
                   console.log(err);
@@ -257,31 +330,54 @@ const Component: FC = () => {
           setState((prevState) => ({ ...prevState, step }));
         } else {
           setState((prevState) => ({ ...prevState, loading: true }));
-          txProvider
-            .getKeysignPayload(transaction, vault)
-            .then(() => {
-              txProvider
-                .getTransactionKey(vault.publicKeyEcdsa, transaction.id)
-                .then((sendKey) => {
-                  api.checkVaultExist(vault.publicKeyEcdsa).then((fastSign) => {
-                    setState((prevState) => ({
-                      ...prevState,
-                      fastSign,
-                      loading: false,
-                      sendKey,
-                      step,
-                    }));
+          if (transaction.isCustomMessage) {
+            txProvider
+              .getTransactionKey(vault.publicKeyEcdsa, transaction)
+              .then((sendKey) => {
+                api.checkVaultExist(vault.publicKeyEcdsa).then((fastSign) => {
+                  setState((prevState) => ({
+                    ...prevState,
+                    fastSign,
+                    loading: false,
+                    sendKey,
+                    step,
+                  }));
 
-                    handleStart();
-                  });
-                })
-                .catch(() => {
-                  setState((prevState) => ({ ...prevState, loading: false }));
+                  handleStart();
                 });
-            })
-            .catch(() => {
-              setState((prevState) => ({ ...prevState, loading: false }));
-            });
+              })
+              .catch(() => {
+                setState((prevState) => ({ ...prevState, loading: false }));
+              });
+          } else {
+            txProvider
+              .getKeysignPayload(transaction, vault)
+              .then(() => {
+                txProvider
+                  .getTransactionKey(vault.publicKeyEcdsa, transaction)
+                  .then((sendKey) => {
+                    api
+                      .checkVaultExist(vault.publicKeyEcdsa)
+                      .then((fastSign) => {
+                        setState((prevState) => ({
+                          ...prevState,
+                          fastSign,
+                          loading: false,
+                          sendKey,
+                          step,
+                        }));
+
+                        handleStart();
+                      });
+                  })
+                  .catch(() => {
+                    setState((prevState) => ({ ...prevState, loading: false }));
+                  });
+              })
+              .catch(() => {
+                setState((prevState) => ({ ...prevState, loading: false }));
+              });
+          }
         }
 
         break;
@@ -447,72 +543,90 @@ const Component: FC = () => {
                 <span className="divider">
                   {t(messageKeys.TRANSACTION_DETAILS)}
                 </span>
-                <div className="list">
-                  <div className="list-item">
-                    <span className="label">{t(messageKeys.FROM)}</span>
-                    <MiddleTruncate text={transaction.from} />
-                  </div>
-                  <div className="list-item">
-                    <span className="label">{t(messageKeys.TO)}</span>
-                    <MiddleTruncate text={transaction.to} />
-                  </div>
-                  {transaction.value && (
+                {!transaction.isCustomMessage && (
+                  <div className="list">
                     <div className="list-item">
-                      <span className="label">{t(messageKeys.AMOUNT)}</span>
-                      <span className="extra">{`${formatUnits(
-                        transaction.value,
-                        transaction.chain.decimals
-                      )} ${transaction.chain.ticker}`}</span>
+                      <span className="label">{t(messageKeys.FROM)}</span>
+                      <MiddleTruncate text={transaction.from} />
                     </div>
-                  )}
-                  {transaction.memo && !parsedMemo && (
-                    <div className="memo-item">
-                      <span className="label">{t(messageKeys.MEMO)}</span>
+                    <div className="list-item">
+                      <span className="label">{t(messageKeys.TO)}</span>
+                      <MiddleTruncate text={transaction.to} />
+                    </div>
+                    {transaction.value && (
+                      <div className="list-item">
+                        <span className="label">{t(messageKeys.AMOUNT)}</span>
+                        <span className="extra">{`${formatUnits(
+                          transaction.value,
+                          transaction.chain.decimals
+                        )} ${transaction.chain.ticker}`}</span>
+                      </div>
+                    )}
+                    {transaction.memo && !parsedMemo && (
+                      <div className="memo-item">
+                        <span className="label">{t(messageKeys.MEMO)}</span>
+                        <span className="extra">
+                          <div>
+                            {splitString(transaction.memo, 32).map(
+                              (str, index) => (
+                                <div key={index}>{str}</div>
+                              )
+                            )}
+                          </div>
+                        </span>
+                      </div>
+                    )}
+                    <div className="list-item">
+                      <span className="label">
+                        {t(messageKeys.NETWORK_FEE)}
+                      </span>
                       <span className="extra">
-                        <div>
-                          {splitString(transaction.memo, 32).map(
-                            (str, index) => (
-                              <div key={index}>{str}</div>
-                            )
-                          )}
-                        </div>
+                        {formatDisplayNumber(
+                          transaction.gasPrice,
+                          transaction.chain.ticker
+                        )}
                       </span>
                     </div>
-                  )}
-                  <div className="list-item">
-                    <span className="label">{t(messageKeys.NETWORK_FEE)}</span>
-                    <span className="extra">
-                      {formatDisplayNumber(
-                        transaction.gasPrice,
-                        transaction.chain.ticker
-                      )}
-                    </span>
-                  </div>
-                  {parsedMemo && (
-                    <>
-                      <div className="list-item">
-                        <span className="label">
-                          {t(messageKeys.FUNCTION_SIGNATURE)}
-                        </span>
-                        <div className="scrollable-x">
-                          {parsedMemo.signature}
+                    {parsedMemo && (
+                      <>
+                        <div className="list-item">
+                          <span className="label">
+                            {t(messageKeys.FUNCTION_SIGNATURE)}
+                          </span>
+                          <div className="scrollable-x">
+                            {parsedMemo.signature}
+                          </div>
                         </div>
-                      </div>
-                      <div className="list-item">
-                        <span className="label">
-                          {t(messageKeys.FUNCTION_INPUTS)}
-                        </span>
-                        <div className="scrollable-x monospace-text ">
-                          <div style={{ width: "max-content" }}>
-                            <div className="function-inputs">
-                              {parsedMemo.inputs}
+                        <div className="list-item">
+                          <span className="label">
+                            {t(messageKeys.FUNCTION_INPUTS)}
+                          </span>
+                          <div className="scrollable-x monospace-text ">
+                            <div style={{ width: "max-content" }}>
+                              <div className="function-inputs">
+                                {parsedMemo.inputs}
+                              </div>
                             </div>
                           </div>
                         </div>
-                      </div>
-                    </>
-                  )}
-                </div>
+                      </>
+                    )}
+                  </div>
+                )}
+                {transaction.isCustomMessage && (
+                  <div className="list">
+                    <div className="list-item">
+                      <span className="label">{t(messageKeys.ADDRESS)}</span>
+                      <MiddleTruncate text={transaction.from} />
+                    </div>
+                    <div className="list-item">
+                      <span className="label">{t(messageKeys.MESSAGE)}</span>
+                      <MiddleTruncate
+                        text={transaction.customMessage.message}
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="footer">
                 <Button
@@ -558,61 +672,75 @@ const Component: FC = () => {
           ) : (
             <>
               <div className="content">
-                <div className="list">
-                  <div className="list-item">
-                    <span className="label">{t(messageKeys.TRANSACTION)}</span>
-                    <MiddleTruncate text={transaction.txHash} />
-                    <div className="actions">
-                      <a
-                        href={`${explorerUrl[transaction.chain.name]}/tx/${
-                          transaction.txHash
-                        }`}
-                        rel="noopener noreferrer"
-                        target="_blank"
-                        className="btn"
-                      >
-                        <SquareArrow />
-                        {t(messageKeys.VIEW_TX)}
-                      </a>
-                      <span className="btn" onClick={() => handleCopy()}>
-                        <SquareBehindSquare />
-                        {t(messageKeys.COPY_TX)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="list-item">
-                    <span className="label">{t(messageKeys.TO)}</span>
-                    <MiddleTruncate text={transaction.to} />
-                  </div>
-                  {transaction.value && (
+                {!transaction.isCustomMessage && (
+                  <div className="list">
                     <div className="list-item">
-                      <span className="label">{t(messageKeys.AMOUNT)}</span>
-                      <span className="extra">{`${formatUnits(
-                        transaction.value,
-                        transaction.chain.decimals
-                      )} ${transaction.chain.ticker}`}</span>
-                    </div>
-                  )}
-
-                  {transaction.memo && !parsedMemo && (
-                    <div className="memo-item">
-                      <span className="label">{t(messageKeys.MEMO)}</span>
-                      <span className="extra">
-                        <div>
-                          {splitString(transaction.memo, 32).map(
-                            (str, index) => (
-                              <div key={index}>{str}</div>
-                            )
-                          )}
-                        </div>
+                      <span className="label">
+                        {t(messageKeys.TRANSACTION)}
                       </span>
+                      <MiddleTruncate text={transaction.txHash} />
+                      <div className="actions">
+                        <a
+                          href={`${explorerUrl[transaction.chain.name]}/tx/${
+                            transaction.txHash
+                          }`}
+                          rel="noopener noreferrer"
+                          target="_blank"
+                          className="btn"
+                        >
+                          <SquareArrow />
+                          {t(messageKeys.VIEW_TX)}
+                        </a>
+                        <span className="btn" onClick={() => handleCopy()}>
+                          <SquareBehindSquare />
+                          {t(messageKeys.COPY_TX)}
+                        </span>
+                      </div>
                     </div>
-                  )}
-                  <div className="list-item">
-                    <span className="label">{t(messageKeys.NETWORK_FEE)}</span>
-                    <span className="extra">{transaction.gasPrice}</span>
+                    <div className="list-item">
+                      <span className="label">{t(messageKeys.TO)}</span>
+                      <MiddleTruncate text={transaction.to} />
+                    </div>
+                    {transaction.value && (
+                      <div className="list-item">
+                        <span className="label">{t(messageKeys.AMOUNT)}</span>
+                        <span className="extra">{`${formatUnits(
+                          transaction.value,
+                          transaction.chain.decimals
+                        )} ${transaction.chain.ticker}`}</span>
+                      </div>
+                    )}
+
+                    {transaction.memo && !parsedMemo && (
+                      <div className="memo-item">
+                        <span className="label">{t(messageKeys.MEMO)}</span>
+                        <span className="extra">
+                          <div>
+                            {splitString(transaction.memo, 32).map(
+                              (str, index) => (
+                                <div key={index}>{str}</div>
+                              )
+                            )}
+                          </div>
+                        </span>
+                      </div>
+                    )}
+                    <div className="list-item">
+                      <span className="label">
+                        {t(messageKeys.NETWORK_FEE)}
+                      </span>
+                      <span className="extra">{transaction.gasPrice}</span>
+                    </div>
                   </div>
-                </div>
+                )}
+                {transaction.isCustomMessage && (
+                  <div className="list">
+                    <div className="list-item">
+                      <span className="label">{t(messageKeys.SIGNATURE)}</span>
+                      <MiddleTruncate text={transaction.customSignature} />
+                    </div>
+                  </div>
+                )}
               </div>
               <div className="footer">
                 <Button
