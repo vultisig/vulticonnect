@@ -5,6 +5,7 @@ export default keyMirror({
   ACTIVE: true,
   ADD_NEW_VAULT: true,
   ADD_VAULT_QRCODE: true,
+  ADDRESS: true,
   AMOUNT: true,
   // B
   // C
@@ -46,6 +47,7 @@ export default keyMirror({
   LANGUAGE: true,
   // M
   MEMO: true,
+  MESSAGE: true,
   // N
   NAME: true,
   NETWORK_FEE: true,
@@ -60,7 +62,7 @@ export default keyMirror({
   REALOAD_MESSAGE: true,
   REMOVING_VAULT_WARNING: true,
   RENAME_VAULT: true,
-  RETRY_ERROR:true,
+  RETRY_ERROR: true,
   // S
   SAVE: true,
   SCAN_QR_WITH_DEVICE: true,
@@ -68,6 +70,7 @@ export default keyMirror({
   SELECT_A_VAULT: true,
   SETTINGS: true,
   SIGN: true,
+  SIGNATURE: true,
   SIGNING: true,
   SIGNING_ERROR: true,
   SIGNING_TIMEOUT_DESCRIPTION: true,

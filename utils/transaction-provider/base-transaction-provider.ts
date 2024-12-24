@@ -1,6 +1,6 @@
 import { TW, type WalletCore } from "@trustwallet/wallet-core";
 import type { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
-import type { ChainKey } from "~utils/constants";
+import { ChainKey } from "~utils/constants";
 import type {
   SignatureProps,
   TransactionProps,
@@ -12,6 +12,7 @@ import {
   KeysignMessageSchema,
   type KeysignPayload,
 } from "~protos/keysign_message_pb";
+import type { CustomMessagePayload } from "~protos/custom_message_payload_pb";
 
 interface ChainRef {
   [chainKey: string]: CoinType;
@@ -65,17 +66,33 @@ export abstract class BaseTransactionProvider {
 
   public getTransactionKey = (
     publicKeyEcdsa: string,
-    transactionId: string,
+    transaction: TransactionProps,
     hexChainCode: string
   ): Promise<string> => {
     return new Promise((resolve) => {
-      const keysignMessage = create(KeysignMessageSchema, {
-        sessionId: transactionId,
+      let messsage: {
+        sessionId: string;
+        serviceName: string;
+        encryptionKeyHex: string;
+        useVultisigRelay: boolean;
+        keysignPayload?: KeysignPayload;
+        customMessagePayload?: CustomMessagePayload;
+      } = {
+        sessionId: transaction.id,
         serviceName: "VultiConnect",
         encryptionKeyHex: hexChainCode,
         useVultisigRelay: true,
-        keysignPayload: this.keysignPayload,
-      });
+      };
+      if (transaction.isCustomMessage) {
+        messsage.customMessagePayload = {
+          $typeName: "vultisig.keysign.v1.CustomMessagePayload",
+          method: "personal_sign",
+          message: transaction.customMessage?.message,
+        };
+      } else {
+        messsage.keysignPayload = this.keysignPayload;
+      }
+      const keysignMessage = create(KeysignMessageSchema, messsage);
 
       const binary = toBinary(KeysignMessageSchema, keysignMessage);
 
@@ -88,7 +105,6 @@ export abstract class BaseTransactionProvider {
   };
 
   abstract getPreSignedInputData(): Promise<Uint8Array>;
-
   abstract getSignedTransaction(
     transaction: TransactionProps,
     signature: SignatureProps,
@@ -110,7 +126,20 @@ export abstract class BaseTransactionProvider {
     return this.walletCore.CoinTypeExt.derivationPath(coin);
   };
 
-  public getHexPubKey = () => {
-    return this.keysignPayload.coin.hexPublicKey;
-  };
+  public getCustomMessageSignature(signature: SignatureProps): Uint8Array {
+    const rData = this.walletCore.HexCoding.decode(signature.R).reverse();
+    const sData = this.walletCore.HexCoding.decode(signature.S).reverse();
+    const combinedData = new Uint8Array(rData.length + sData.length);
+    combinedData.set(rData);
+    combinedData.set(sData, rData.length);
+    return combinedData;
+  }
+
+  public getEncodedSignature(signature: SignatureProps): string {
+    return this.stripHexPrefix(
+      this.walletCore.HexCoding.encode(
+        this.getCustomMessageSignature(signature)
+      )
+    );
+  }
 }
