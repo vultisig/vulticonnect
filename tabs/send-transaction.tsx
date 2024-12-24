@@ -82,8 +82,8 @@ interface FormProps {
 
 const Component: FC = () => {
   const { t } = useTranslation();
-  const RETRY_TIMEOUT = 120000; //2min
-  const CLOSE_TIMEOUT = 180000; //3min
+  const RETRY_TIMEOUT_MS = 120000;
+  const CLOSE_TIMEOUT_MS = 180000;
   const [form] = Form.useForm();
   const [connectedDevices, setConnectedDevices] = useState(0);
   const initialState: InitialState = { step: 1, hasError: false };
@@ -164,7 +164,7 @@ const Component: FC = () => {
           errorDescription: t(messageKeys.SIGNING_TIMEOUT_DESCRIPTION),
         });
       });
-    }, RETRY_TIMEOUT);
+    }, RETRY_TIMEOUT_MS);
 
     const attemptTransaction = (): void => {
       api.transaction
@@ -190,12 +190,11 @@ const Component: FC = () => {
                     step: 5,
                     transaction: { ...transaction, txHash },
                   }));
-                  initCloseTimer(CLOSE_TIMEOUT);
+                  initCloseTimer(CLOSE_TIMEOUT_MS);
                 });
               })
               .catch((err) => {
                 console.error(err);
-                // handleClose();
               });
           }
         })
@@ -230,7 +229,7 @@ const Component: FC = () => {
           errorDescription: t(messageKeys.SIGNING_TIMEOUT_DESCRIPTION),
         });
       });
-    }, RETRY_TIMEOUT);
+    }, RETRY_TIMEOUT_MS);
 
     const attemptTransaction = (): void => {
       api.transaction
@@ -255,7 +254,7 @@ const Component: FC = () => {
                 ),
               },
             }));
-            initCloseTimer(CLOSE_TIMEOUT);
+            initCloseTimer(CLOSE_TIMEOUT_MS);
           });
         })
         .catch(({ status }) => {
@@ -469,7 +468,7 @@ const Component: FC = () => {
     });
   };
 
-  const componentDidMount = (): void => {
+  useEffect(() => {
     Promise.all([
       getStoredCurrency(),
       getStoredLanguage(),
@@ -581,9 +580,7 @@ const Component: FC = () => {
         console.error(errorKey.FAIL_TO_GET_TRANSACTION);
       }
     });
-  };
-
-  useEffect(componentDidMount, []);
+  }, []);
 
   return (
     <ConfigProvider>
