@@ -59,6 +59,10 @@ const ethereumProvider: EthereumProvider = {
         body,
       })
         .then((result) => {
+          console.log(body);
+          
+          console.log("result:", result);
+
           const { method, params } = body;
           switch (method) {
             case EVMRequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
@@ -344,7 +348,7 @@ window.vultisig = providers;
 window.cosmos = cosmosProvider;
 window.bitcoin = bitcoinProvider;
 window.litecoin = litecoinProvider;
-window.bitcoincash = litecoinProvider;
+window.bitcoincash = bitcoincashProvider;
 window.dash = dashProvider;
 window.dogecoin = dogecoinProvider;
 
