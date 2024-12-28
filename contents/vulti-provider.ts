@@ -59,11 +59,7 @@ const ethereumProvider: EthereumProvider = {
         body,
       })
         .then((result) => {
-          console.log(body);
-          
-          console.log("result:", result);
-
-          const { method, params } = body;
+          const { method } = body;
           switch (method) {
             case EVMRequestMethod.WALLET_SWITCH_ETHEREUM_CHAIN: {
               ethereumProvider._emit(EventMethod.CHAIN_CHANGED, result);
