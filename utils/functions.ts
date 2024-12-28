@@ -158,7 +158,7 @@ function calculateWindowPosition(currentWindow: chrome.windows.Window) {
 }
 
 const formatDisplayNumber = (number: number | string, ticker: string) => {
-  if (ticker === "ETH" || ticker === "AVAX" || ticker === "BNB") {
+  if (["ETH", "AVAX", "BNB"].includes(ticker)) {
     return number;
   }
   const n = Number(number);
