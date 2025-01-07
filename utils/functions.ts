@@ -1,6 +1,6 @@
 import { Interface } from "ethers";
 import api from "./api";
-import { allSupportedChains, EVMChain } from "./constants";
+import { allSupportedChains } from "./constants";
 import type { ParsedMemo } from "./interfaces";
 
 const hexToAscii = (value: string): string => {
