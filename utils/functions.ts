@@ -1,6 +1,6 @@
 import { Interface } from "ethers";
 import api from "./api";
-import { allSupportedChains } from "./constants";
+import { allSupportedChains, EVMChain } from "./constants";
 import type { ParsedMemo } from "./interfaces";
 
 const hexToAscii = (value: string): string => {
@@ -158,7 +158,9 @@ function calculateWindowPosition(currentWindow: chrome.windows.Window) {
 }
 
 const formatDisplayNumber = (number: number | string, ticker: string) => {
-  if (["ETH", "AVAX", "BNB"].includes(ticker)) {
+  const evmChainTickers = ["ETH", "AVAX", "BNB"];
+  if (evmChainTickers.includes(ticker)) {
+    // gasPrice is in usd and already formatted
     return number;
   }
   const n = Number(number);
