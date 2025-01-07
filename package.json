@@ -1,75 +1,85 @@
 {
-  "name": "vulticonnect",
-  "displayName": "Vulticonnect",
-  "version": "0.0.3",
+  "name": "Vulticonnect",
+  "private": true,
+  "version": "0.1.0",
   "description": "VultiConnect is a Chrome extension that integrates Vultisig into web applications, enabling users to securely sign transactions.",
-  "author": "https://vultisig.com",
+  "author": {
+    "name": "Vultisig",
+    "email": "info@vultisig.com",
+    "url": "https://vultisig.com"
+  },
+  "type": "module",
   "scripts": {
-    "dev": "plasmo dev",
-    "build": "plasmo build",
-    "package": "plasmo package"
+    "build:app": "tsc -b && cross-env CHUNK=app vite build",
+    "build:content": "tsc -b && cross-env CHUNK=content vite build",
+    "build:relay": "tsc -b && cross-env CHUNK=relay vite build",
+    "build:manifest": "node manifest.config.js",
+    "build": "npm-run-all --serial build:app build:content build:relay build:manifest",
+    "dev": "nodemon --watch src --ext ts,tsx,scss --exec \"npm run build\"",
+    "lint": "eslint .",
+    "preview": "vite preview"
   },
   "dependencies": {
     "7z-wasm": "^1.1.0",
-    "@cosmjs/tendermint-rpc": "^0.32.4",
-    "@plasmohq/messaging": "^0.6.2",
-    "@trustwallet/wallet-core": "^4.1.21",
-    "antd": "^5.21.2",
+    "antd": "^5.22.2",
     "axios": "^1.7.7",
-    "crypto": "^1.0.1",
-    "ethers": "^6.13.3",
+    "bs58": "^6.0.0",
+    "ethers": "^6.13.4",
     "html2canvas": "^1.4.1",
-    "i18next": "^23.15.1",
+    "i18next": "^24.0.2",
     "keymirror": "^0.1.1",
-    "long": "^5.2.3",
     "mipd": "^0.0.7",
-    "plasmo": "0.89.2",
-    "react": "18.3.1",
-    "react-dom": "18.3.1",
-    "react-i18next": "^15.0.2",
-    "react-router-dom": "^6.26.2",
-    "ua-parser-js": "^1.0.39",
-    "uuid": "^10.0.0",
-    "zxing-wasm": "^1.2.12"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-i18next": "^15.1.1",
+    "react-router-dom": "^7.0.1",
+    "ua-parser-js": "^2.0.0",
+    "uuid": "^11.0.3",
+    "zxing-wasm": "^1.3.4"
   },
   "devDependencies": {
-    "@bufbuild/buf": "^1.43.0",
-    "@bufbuild/protobuf": "^2.1.0",
-    "@bufbuild/protoc-gen-es": "^2.1.0",
-    "@types/chrome": "0.0.273",
+    "@bufbuild/buf": "^1.47.2",
+    "@bufbuild/protobuf": "^2.2.2",
+    "@bufbuild/protoc-gen-es": "^2.2.2",
+    "@cosmjs/tendermint-rpc": "^0.32.4",
+    "@eslint/js": "^9.9.0",
+    "@fontsource/montserrat": "^5.1.0",
+    "@fontsource/roboto-mono": "^5.1.0",
+    "@solana/web3.js": "^1.98.0",
+    "@trustwallet/wallet-core": "^4.1.21",
+    "@types/chrome": "^0.0.287",
     "@types/keymirror": "^0.1.4",
-    "@types/node": "22.7.4",
-    "@types/react": "18.3.10",
-    "@types/react-dom": "18.3.0",
+    "@types/node": "^22.7.4",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@types/react-router-dom": "^5.3.3",
     "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^4.3.1",
     "autoprefixer": "^10.4.20",
+    "cross-env": "^7.0.3",
+    "eslint": "^9.9.0",
+    "eslint-plugin-react-hooks": "^5.0.0",
+    "eslint-plugin-react-refresh": "^0.4.9",
+    "globals": "^15.9.0",
+    "nodemon": "^3.1.7",
+    "npm-run-all": "^4.1.5",
     "postcss": "^8.4.47",
     "sass": "^1.79.4",
-    "typescript": "5.6.2"
+    "ts-node": "^10.9.2",
+    "typescript": "^5.6.3",
+    "typescript-eslint": "^8.0.1",
+    "vite": "^5.1.8",
+    "vite-plugin-node-polyfills": "^0.22.0",
+    "vite-tsconfig-paths": "^5.1.3"
   },
   "manifest": {
-    "content_security_policy": {
-      "extension_pages": "script-src 'self' 'wasm-unsafe-eval' http://localhost;object-src 'self';"
-    },
-    "host_permissions": [
-      "https://*/*"
-    ],
-    "permissions": [
-      "activeTab",
-      "storage"
-    ],
-    "web_accessible_resources": [
-      {
-        "resources": [
-          "static/*/**",
-          "wallet-core.wasm",
-          "tabs/wallet-core.wasm"
-        ],
-        "matches": [
-          "<all_urls>"
-        ]
-      }
-    ]
-  },
-  "packageManager": "pnpm@9.6.0+sha512.38dc6fba8dba35b39340b9700112c2fe1e12f10b17134715a4aa98ccf7bb035e76fd981cf0bb384dfa98f8d6af5481c2bef2f4266a24bfa20c34eb7147ce0b5e"
+    "accounts": "accounts.html",
+    "background": "src/background/index.ts",
+    "content": "src/content/index.ts",
+    "import": "import.html",
+    "popup": "popup.html",
+    "relay": "src/relay/index.ts",
+    "transaction": "transaction.html",
+    "vaults": "vaults.html"
+  }
 }

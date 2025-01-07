@@ -133,3 +133,7 @@ dist
 
 #pnpm
 pnpm-lock.yaml
+.DS_Store
+package-lock.json
+pnpm-lock.yaml
+pnpm-lock.yaml
