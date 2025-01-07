@@ -157,13 +157,12 @@ function calculateWindowPosition(currentWindow: chrome.windows.Window) {
   return { height, left, top, width };
 }
 
-const formatDisplayNumber = (number: number | string, ticker: string) => {
-  const evmChainTickers = ["ETH", "AVAX", "BNB"];
-  if (evmChainTickers.includes(ticker)) {
+const formatDisplayNumber = (_number: number | string, ticker: string) => {
+  if (String(_number).includes("$")) {
     // gasPrice is in usd and already formatted
-    return number;
+    return _number;
   }
-  const n = Number(number);
+  const n = Number(_number);
   if (n === 0) {
     return "0";
   } else if (n < 0.0000001) {
