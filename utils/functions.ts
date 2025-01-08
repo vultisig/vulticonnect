@@ -1,6 +1,6 @@
 import { Interface } from "ethers";
 import api from "./api";
-import { allSupportedChains } from "./constants";
+import { allSupportedChains, ChainKey, TssKeysignType } from "./constants";
 import type { ParsedMemo } from "./interfaces";
 
 const hexToAscii = (value: string): string => {
@@ -190,6 +190,30 @@ const formatDisplayNumber = (_number: number | string, ticker: string) => {
   }
 };
 
+function getTssKeysignType(chain: ChainKey): TssKeysignType {
+  switch (chain) {
+    case ChainKey.SOLANA:
+    case ChainKey.POLKADOT:
+    case ChainKey.SUI:
+    case ChainKey.TON:
+      TssKeysignType.EdDSA;
+    default:
+      return TssKeysignType.ECDSA;
+  }
+}
+
+function bigintToByteArray(bigNumber: bigint): Uint8Array {
+  if (typeof bigNumber !== "bigint" || bigNumber < 0n) {
+    throw new Error("Input must be a non-negative BigInt.");
+  }
+  const bytes = [];
+  while (bigNumber > 0n) {
+    bytes.unshift(Number(bigNumber & 0xffn));
+    bigNumber = bigNumber >> 8n;
+  }
+  return new Uint8Array(bytes.length > 0 ? bytes : [0]);
+}
+
 export {
   hexToAscii,
   toCamelCase,
@@ -200,4 +224,6 @@ export {
   splitString,
   calculateWindowPosition,
   formatDisplayNumber,
+  bigintToByteArray,
+  getTssKeysignType
 };
