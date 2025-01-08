@@ -232,7 +232,9 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
         transfer: TW.Ethereum.Proto.Transaction.Transfer.create({
           amount: amountHex,
           data: Buffer.from(
-            this.stripHexPrefix(this.keysignPayload.memo) ?? "",
+            this.keysignPayload.memo
+              ? this.stripHexPrefix(this.keysignPayload.memo)
+              : "",
             "utf8"
           ),
         }),
@@ -293,5 +295,4 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
       resolve(txHash);
     });
   };
-
 }

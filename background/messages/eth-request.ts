@@ -227,7 +227,7 @@ const handleRequest = (
           },
         });
       }
-      // const activeChain = storedChains.find(({ active }) => active);
+
       initializeProvider(activeChain.name);
       switch (method) {
         case EVMRequestMethod.ETH_ACCOUNTS: {
@@ -435,10 +435,12 @@ const handleRequest = (
         }
         case EVMRequestMethod.ETH_GET_TRANSACTION_RECEIPT: {
           const [param] = params;
+
           rpcProvider
             .getTransactionReceipt(String(param))
             .then((receipt) => {
-              resolve(receipt.toJSON());
+              if (receipt) resolve(receipt.toJSON());
+              else reject();
             })
             .catch(reject);
           break;
