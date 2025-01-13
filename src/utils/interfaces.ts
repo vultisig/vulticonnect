@@ -33,6 +33,30 @@ export interface ChainProps {
   ticker: string;
 }
 
+export interface ChainObjRef {
+  [ChainKey.ARBITRUM]: ChainProps;
+  [ChainKey.AVALANCHE]: ChainProps;
+  [ChainKey.BASE]: ChainProps;
+  [ChainKey.BITCOIN]: ChainProps;
+  [ChainKey.BITCOINCASH]: ChainProps;
+  [ChainKey.BLAST]: ChainProps;
+  [ChainKey.BSCCHAIN]: ChainProps;
+  [ChainKey.CRONOSCHAIN]: ChainProps;
+  [ChainKey.DASH]: ChainProps;
+  [ChainKey.DOGECOIN]: ChainProps;
+  [ChainKey.DYDX]: ChainProps;
+  [ChainKey.ETHEREUM]: ChainProps;
+  [ChainKey.GAIACHAIN]: ChainProps;
+  [ChainKey.KUJIRA]: ChainProps;
+  [ChainKey.LITECOIN]: ChainProps;
+  [ChainKey.MAYACHAIN]: ChainProps;
+  [ChainKey.OPTIMISM]: ChainProps;
+  [ChainKey.OSMOSIS]: ChainProps;
+  [ChainKey.POLYGON]: ChainProps;
+  [ChainKey.SOLANA]: ChainProps;
+  [ChainKey.THORCHAIN]: ChainProps;
+}
+
 export interface ChainStrRef {
   [ChainKey.ARBITRUM]: string;
   [ChainKey.AVALANCHE]: string;
@@ -57,6 +81,10 @@ export interface ChainStrRef {
   [ChainKey.SOLANA]: string;
   [ChainKey.SUI]: string;
   [ChainKey.THORCHAIN]: string;
+  [ChainKey.TERRA]: string;
+  [ChainKey.TERRACLASSIC]: string;
+  [ChainKey.TON]: string;
+  [ChainKey.XRP]: string;
   [ChainKey.ZKSYNC]: string;
 }
 
@@ -71,6 +99,11 @@ export interface CurrencyRef {
   [Currency.SEK]: string;
   [Currency.SGD]: string;
   [Currency.USD]: string;
+}
+
+export interface CustomMessage {
+  address: string;
+  message: string;
 }
 
 export interface SignatureProps {
@@ -97,25 +130,6 @@ export interface ScreenProps {
   width: number;
 }
 
-export interface TransactionProps {
-  chain: ChainProps;
-  contract?: string;
-  data: string;
-  from: string;
-  id: string;
-  status: "default" | "error" | "pending" | "success";
-  memo?: string;
-  to: string;
-  value?: string;
-  gas?: string;
-  gasLimit?: string;
-  gasPrice?: string;
-  maxFeePerGas?: string;
-  maxPriorityFeePerGas?: string;
-  txHash?: string;
-  windowId?: number;
-}
-
 export namespace ITransaction {
   export interface CTRL {
     amount: {
@@ -136,6 +150,8 @@ export namespace ITransaction {
   export interface METAMASK {
     chain: ChainProps;
     contract?: string;
+    customMessage?: CustomMessage;
+    customSignature?: string;
     data: string;
     from: string;
     id: string;
@@ -146,10 +162,13 @@ export namespace ITransaction {
     gas?: string;
     gasLimit?: string;
     gasPrice?: string;
+    isDeposit?: boolean;
+    isCustomMessage?: boolean;
     maxFeePerGas?: string;
     maxPriorityFeePerGas?: string;
     txHash?: string;
     windowId?: number;
+    raw?: any;
   }
 }
 
@@ -162,7 +181,7 @@ export interface VaultProps {
   publicKeyEcdsa: string;
   publicKeyEddsa: string;
   selected?: boolean;
-  transactions: TransactionProps[];
+  transactions: ITransaction.METAMASK[];
   uid: string;
 }
 
@@ -229,6 +248,35 @@ export interface CosmosAccountDataResponse {
 export interface SignedTransaction {
   inputData?: Uint8Array;
   signature: SignatureProps;
-  transaction?: TransactionProps;
+  transaction?: ITransaction.METAMASK;
   vault?: VaultProps;
+}
+
+export interface SpecificUtxoInfo {
+  hash: string;
+  amount: bigint;
+  index: number;
+}
+
+export interface SpecificUtxo extends BaseSpecificTransactionInfo {
+  byteFee: number;
+  sendMaxAmount: boolean;
+  utxos: SpecificUtxoInfo[];
+}
+
+export interface SpecificSolana extends BaseSpecificTransactionInfo {
+  recentBlockHash: string;
+  priorityFee: number;
+  fromAddressPubKey: string | undefined;
+  toAddressPubKey: string | undefined;
+}
+
+export interface FastSignInput {
+  public_key: string;
+  messages: string[];
+  session: string;
+  hex_encryption_key: string;
+  derive_path: string;
+  is_ecdsa: boolean;
+  vault_password: string;
 }

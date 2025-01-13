@@ -1,12 +1,19 @@
+// import { Window as KeplrWindow } from '@keplr-wallet/types';
 interface Window {
-  ethereum: any;
-  vultiConnect: { getVaults: () => Promise<VaultProps[]> };
-  maya: any;
+  bitcoin: any;
+  bitcoincash: any;
   cosmos: any;
-  vultisig: any;
-  thorchain: any;
+  dash: any;
+  dogecoin: any;
+  ethereum: any;
+  litecoin: any;
   lodash: unknown;
+  maya: any;
+  thorchain: any;
   providers: EthereumProvider[];
+  vultisig: any;
+  keplr: any;
+  vultiConnect: { getVaults: () => Promise<VaultProps[]> };
   vultiConnectRouter: {
     vultisigProvider: EthereumProvider;
     lastInjectedProvider?: EthereumProvider;
@@ -16,4 +23,7 @@ interface Window {
     addProvider: (provider: EthereumProvider) => void;
   };
   xfi: any;
+  ctrlKeplrProviders: any;
+  windowKeplr: any;
+  keplrRequestAccountsCallback: any;
 }

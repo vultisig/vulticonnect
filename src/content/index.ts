@@ -1,7 +1,13 @@
 import { EIP1193Provider, announceProvider } from "mipd";
 import { v4 as uuidv4 } from "uuid";
+import {
+  PublicKey,
+  Transaction,
+  SystemInstruction,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import EventEmitter from "events";
-
+import base58 from "bs58";
 import {
   EventMethod,
   MessageKey,
@@ -10,40 +16,40 @@ import {
 } from "utils/constants";
 import { Messaging, VaultProps } from "utils/interfaces";
 import VULTI_ICON_RAW_SVG from "content/icon";
-
-enum NetworkType {
+import { CosmJSOfflineSigner, Keplr } from "@keplr-wallet/provider";
+import {
+  KeplrMode,
+  KeplrSignOptions,
+  OfflineAminoSigner,
+  OfflineDirectSigner,
+} from "@keplr-wallet/types";
+enum NetworkKey {
   MAINNET = "mainnet",
   TESTNET = "testnet",
 }
-
-type CallbackRequest = (
-  body: Messaging.Chain.Request,
-  callback: (error: Error | null, result?: string | string[]) => void
-) => void;
-
-type PromiseRequest = (
-  body: Messaging.Chain.Request
-) => Promise<string | string[]>;
+window.ctrlKeplrProviders = {};
+type Callback = (error: Error | null, result?: string | string[]) => void;
 
 const sendToBackgroundViaRelay = <Request, Response>(
   type: MessageKey,
   message: Request
 ): Promise<Response> => {
-  return new Promise((resolve) => {
-    const identifier = uuidv4();
+  return new Promise((resolve, reject) => {
+    const id = uuidv4();
 
     const callback = ({
       data,
       source,
     }: MessageEvent<{
+      error: string;
+      id: string;
       message: Response;
-      identifier: string;
       sender: SenderKey;
       type: MessageKey;
     }>) => {
       if (
         source !== window ||
-        data.identifier !== identifier ||
+        data.id !== id ||
         data.sender !== SenderKey.RELAY ||
         data.type !== type
       )
@@ -51,17 +57,91 @@ const sendToBackgroundViaRelay = <Request, Response>(
 
       window.removeEventListener("message", callback);
 
-      resolve(data.message);
+      data.error ? reject(data.error) : resolve(data.message);
     };
 
-    window.postMessage(
-      { identifier, message, sender: SenderKey.PAGE, type },
-      "*"
-    );
+    window.postMessage({ id, message, sender: SenderKey.PAGE, type }, "*");
 
     window.addEventListener("message", callback);
   });
 };
+
+class XDEFIKeplrProvider extends Keplr {
+  static instance: XDEFIKeplrProvider | null = null;
+  isXDEFI: boolean;
+  isVulticonnect: boolean;
+  static getInstance(): XDEFIKeplrProvider {
+    if (!this.instance) {
+      this.instance = new XDEFIKeplrProvider(
+        "0.0.1",
+        "extension",
+        {}
+      );
+    }
+
+    window.ctrlKeplrProviders["Ctrl Wallet"] = this.instance;
+    return this.instance;
+  }
+
+  emitAccountsChanged(): void {
+    window.dispatchEvent(new Event("keplr_keystorechange"));
+  }
+
+  constructor(version: string, mode: KeplrMode, requester: any) {
+    super(version, mode, requester);
+    this.isXDEFI = true;
+    this.isVulticonnect = true;
+    window.ctrlKeplrProviders["Ctrl Wallet"] = this;
+  }
+  
+  enable(_chainIds: string | string[]): Promise<void> {
+    return new Promise<void>((resolve, reject) => {
+      cosmosProvider
+        .request({
+          method: RequestMethod.VULTISIG.REQUEST_ACCOUNTS,
+          params: [],
+        })
+        .then(resolve)
+        .catch(reject);
+    });
+  }
+  getOfflineSigner(
+    chainId: string,
+    _signOptions?: KeplrSignOptions
+  ): OfflineAminoSigner & OfflineDirectSigner {
+    const cosmSigner = new CosmJSOfflineSigner(
+      chainId,
+      window.keplr,
+      _signOptions
+    );
+    cosmSigner.getAccounts = async () => {
+      return cosmosProvider
+        .request({ method: RequestMethod.VULTISIG.CHAIN_ID, params: [] })
+        .then(async (currentChainID) => {
+          if (currentChainID !== chainId) {
+            return await cosmosProvider
+              .request({
+                method: RequestMethod.VULTISIG.WALLET_SWITCH_CHAIN,
+                params: [{ chainId }],
+              })
+              .then(async () => {
+                return await cosmosProvider.request({
+                  method: RequestMethod.VULTISIG.REQUEST_ACCOUNTS,
+                  params: [],
+                });
+              });
+          } else {
+            return await cosmosProvider.request({
+              method: RequestMethod.VULTISIG.REQUEST_ACCOUNTS,
+              params: [],
+            });
+          }
+        });
+    };
+
+    return cosmSigner as OfflineAminoSigner & OfflineDirectSigner;
+  }
+}
 
 namespace Provider {
   export class Bitcoin extends EventEmitter {
@@ -71,99 +151,100 @@ namespace Provider {
 
     constructor() {
       super();
-      this.requestAccounts = this.getAccounts;
       this.chainId = "Bitcoin_bitcoin-mainnet";
-      this.network = NetworkType.MAINNET;
+      this.network = NetworkKey.MAINNET;
+
+      this.requestAccounts = this.getAccounts;
+      this.request = this.request;
     }
 
-    // TO DO
-    signPsbt = () => {
-      return new Promise((resolve, reject) => {
-        this.request(
-          {
-            method: RequestMethod.CTRL.SIGN_PSBT,
-            params: [],
-          },
-          (error, result) => {
-            if (error) reject(error);
-            else resolve(result);
-          }
-        );
+    async getAccounts() {
+      return await this.request({
+        method: RequestMethod.VULTISIG.ACCOUNTS,
+        params: [],
       });
-    };
-
-    getAccounts = (): Promise<string[]> => {
-      return new Promise((resolve, reject) => {
-        this.request(
-          {
-            method: RequestMethod.VULTISIG.GET_ACCOUNTS,
-            params: [],
-          },
-          (error, result) => {
-            if (error) {
-              reject(error);
-            } else if (result && Array.isArray(result)) {
-              resolve(result);
-            } else {
-              reject("Invalid result");
-            }
-          }
-        );
+    }
+    async signPsbt() {
+      return await this.request({
+        method: RequestMethod.CTRL.SIGN_PSBT,
+        params: [],
       });
-    };
+    }
 
-    changeNetwork = (network: string): void => {
-      if (network !== NetworkType.MAINNET && network !== NetworkType.TESTNET)
+    changeNetwork(network: NetworkKey) {
+      if (network !== NetworkKey.MAINNET && network !== NetworkKey.TESTNET)
         throw Error(`Invalid network ${network}`);
+      else if (network === NetworkKey.TESTNET)
+        throw Error(`We only support the ${NetworkKey.MAINNET} network.`);
 
       this.chainId = `Bitcoin_bitcoin-${network}`;
       this.network = network;
       this.emit(EventMethod.CHAIN_CHANGED, { chainId: this.chainId, network });
-    };
+    }
 
-    emitAccountsChanged = (): void => {
+    emitAccountsChanged() {
       this.emit(EventMethod.ACCOUNTS_CHANGED, {});
-    };
+    }
 
-    request: CallbackRequest = (body, callback): void => {
-      sendToBackgroundViaRelay<
+    async request(data: Messaging.Chain.Request, callback?: Callback) {
+      return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
         Messaging.Chain.Response
-      >(MessageKey.BITCOIN_REQUEST, body)
-        .then((result) => callback(null, result))
-        .catch((error) => callback(error));
-    };
+      >(MessageKey.BITCOIN_REQUEST, data)
+        .then((result) => {
+          if (callback) callback(null, result);
+
+          return result;
+        })
+        .catch((error) => {
+          if (callback) callback(error);
+
+          return error;
+        });
+    }
   }
 
   export class BitcoinCash extends EventEmitter {
     public chainId: string;
     public network: string;
-    public providerType: string;
 
-    constructor(providerType: string) {
+    constructor() {
       super();
       this.chainId = "Bitcoincash_bitcoincash";
-      this.network = NetworkType.MAINNET;
-      this.providerType = providerType;
+      this.network = NetworkKey.MAINNET;
+      this.request = this.request;
     }
 
-    changeNetwork = (network: string): void => {
+    changeNetwork(network: NetworkKey) {
+      if (network !== NetworkKey.MAINNET && network !== NetworkKey.TESTNET)
+        throw Error(`Invalid network ${network}`);
+      else if (network === NetworkKey.TESTNET)
+        throw Error(`We only support the ${NetworkKey.MAINNET} network.`);
+
       this.network = network;
       this.emit(EventMethod.CHAIN_CHANGED, { chainId: this.chainId, network });
-    };
+    }
 
-    emitAccountsChanged = (): void => {
+    emitAccountsChanged() {
       this.emit(EventMethod.ACCOUNTS_CHANGED, {});
-    };
+    }
 
-    request: CallbackRequest = (body, callback): void => {
-      sendToBackgroundViaRelay<
+    async request(data: Messaging.Chain.Request, callback?: Callback) {
+      return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
         Messaging.Chain.Response
-      >(MessageKey.BITCOIN_CASH_REQUEST, body)
-        .then((result) => callback(null, result))
-        .catch((error) => callback(error));
-    };
+      >(MessageKey.BITCOIN_CASH_REQUEST, data)
+        .then((result) => {
+          if (callback) callback(null, result);
+
+          return result;
+        })
+        .catch((error) => {
+          if (callback) callback(error);
+
+          return error;
+        });
+    }
   }
 
   export class Cosmos extends EventEmitter {
@@ -172,47 +253,101 @@ namespace Provider {
     constructor() {
       super();
       this.isVultiConnect = true;
+      this.request = this.request;
     }
 
-    request: CallbackRequest = (body, callback) => {
-      sendToBackgroundViaRelay<
+    async request(data: Messaging.Chain.Request, callback?: Callback) {
+      return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
         Messaging.Chain.Response
-      >(MessageKey.COSMOS_REQUEST, body)
-        .then((result) => callback(null, result))
-        .catch((error) => callback(error));
-    };
+      >(MessageKey.COSMOS_REQUEST, data)
+        .then((result) => {
+          if (callback) callback(null, result);
+
+          return result;
+        })
+        .catch((error) => {
+          if (callback) callback(error);
+
+          return error;
+        });
+    }
+  }
+
+  export class Dash extends EventEmitter {
+    public chainId: string;
+    public network: string;
+
+    constructor() {
+      super();
+      this.chainId = "Dash_dash";
+      this.network = NetworkKey.MAINNET;
+      this.request = this.request;
+    }
+
+    emitAccountsChanged() {
+      this.emit(EventMethod.ACCOUNTS_CHANGED, {});
+    }
+
+    async request(data: Messaging.Chain.Request, callback?: Callback) {
+      return await sendToBackgroundViaRelay<
+        Messaging.Chain.Request,
+        Messaging.Chain.Response
+      >(MessageKey.DASH_REQUEST, data)
+        .then((result) => {
+          if (callback) callback(null, result);
+
+          return result;
+        })
+        .catch((error) => {
+          if (callback) callback(error);
+
+          return error;
+        });
+    }
   }
 
   export class Dogecoin extends EventEmitter {
     public chainId: string;
     public network: string;
-    public providerType: string;
 
-    constructor(providerType: string) {
+    constructor() {
       super();
       this.chainId = "Dogecoin_dogecoin";
-      this.network = NetworkType.MAINNET;
-      this.providerType = providerType;
+      this.network = NetworkKey.MAINNET;
+      this.request = this.request;
     }
 
-    changeNetwork = (network: string): void => {
+    changeNetwork(network: NetworkKey) {
+      if (network !== NetworkKey.MAINNET && network !== NetworkKey.TESTNET)
+        throw Error(`Invalid network ${network}`);
+      else if (network === NetworkKey.TESTNET)
+        throw Error(`We only support the ${NetworkKey.MAINNET} network.`);
+
       this.network = network;
       this.emit(EventMethod.CHAIN_CHANGED, { chainId: this.chainId, network });
-    };
+    }
 
-    emitAccountsChanged = (): void => {
+    emitAccountsChanged() {
       this.emit(EventMethod.ACCOUNTS_CHANGED, {});
-    };
+    }
 
-    request: CallbackRequest = (body, callback): void => {
-      sendToBackgroundViaRelay<
+    async request(data: Messaging.Chain.Request, callback?: Callback) {
+      return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
         Messaging.Chain.Response
-      >(MessageKey.DOGECOIN_REQUEST, body)
-        .then((result) => callback(null, result))
-        .catch((error) => callback(error));
-    };
+      >(MessageKey.DOGECOIN_REQUEST, data)
+        .then((result) => {
+          if (callback) callback(null, result);
+
+          return result;
+        })
+        .catch((error) => {
+          if (callback) callback(error);
+
+          return error;
+        });
+    }
   }
 
   export class Ethereum extends EventEmitter {
@@ -224,6 +359,7 @@ namespace Provider {
     public isXDEFI: boolean;
     public networkVersion: string;
     public selectedAddress: string;
+    public sendAsync;
 
     constructor() {
       super();
@@ -235,26 +371,19 @@ namespace Provider {
       this.isXDEFI = true;
       this.networkVersion = "1";
       this.selectedAddress = "";
+
+      this.sendAsync = this.request;
+      this.request = this.request;
     }
 
-    enable = (): Promise<string[]> => {
-      return new Promise((resolve, reject) => {
-        this.request({
-          method: RequestMethod.METAMASK.ETH_REQUEST_ACCOUNTS,
-          params: [],
-        })
-          .then((accounts: any) =>
-            Array.isArray(accounts) ? resolve(accounts) : reject()
-          )
-          .catch(reject);
+    async enable() {
+      return await this.request({
+        method: RequestMethod.METAMASK.ETH_REQUEST_ACCOUNTS,
+        params: [],
       });
-    };
+    }
 
-    isConnected = (): boolean => {
-      return this.connected;
-    };
-
-    emitAccountsChanged = (addresses: string[]): void => {
+    emitAccountsChanged(addresses: string[]) {
       if (addresses.length) {
         const [address] = addresses;
 
@@ -264,23 +393,25 @@ namespace Provider {
         this.selectedAddress = "";
         this.emit(EventMethod.ACCOUNTS_CHANGED, []);
       }
-    };
+    }
 
-    emitUpdateNetwork = ({ chainId }: { chainId: string }): void => {
+    emitUpdateNetwork({ chainId }: { chainId: string }) {
       if (Number(chainId) && this.chainId !== chainId) this.chainId = chainId;
 
       this.emit(EventMethod.NETWORK_CHANGED, Number(this.chainId));
       this.emit(EventMethod.CHAIN_CHANGED, this.chainId);
-    };
+    }
+
+    isConnected() {
+      return this.connected;
+    }
 
     on = (event: string, callback: (data: any) => void): this => {
       if (event === EventMethod.CONNECT && this.isConnected()) {
         this.request({
           method: RequestMethod.METAMASK.ETH_CHAIN_ID,
           params: [],
-        }).then((chainId) => {
-          callback({ chainId });
-        });
+        }).then((chainId) => callback({ chainId }));
       } else {
         super.on(event, callback);
       }
@@ -288,57 +419,49 @@ namespace Provider {
       return this;
     };
 
-    request: PromiseRequest = (body) => {
-      return new Promise((resolve, reject) => {
-        sendToBackgroundViaRelay<
-          Messaging.Chain.Request,
-          Messaging.Chain.Response
-        >(MessageKey.ETHEREUM_REQUEST, body)
-          .then((result) => {
-            const { method } = body;
-
-            switch (method) {
-              case RequestMethod.METAMASK.WALLET_ADD_ETHEREUM_CHAIN:
-              case RequestMethod.METAMASK.WALLET_SWITCH_ETHEREUM_CHAIN: {
-                this.emitUpdateNetwork({ chainId: result as string });
-
-                break;
-              }
-              case RequestMethod.METAMASK.WALLET_REVOKE_PERMISSIONS: {
-                this.emit(EventMethod.DISCONNECT, result);
-
-                break;
-              }
-            }
-
-            resolve(result);
-          })
-          .catch(reject);
-      });
-    };
-
-    sendAsync: CallbackRequest = (body, callback) => {
-      this.request(body)
-        .then((result) => callback(null, result))
-        .catch((error) => callback(error));
-    };
-
-    send = (e: any, t: any): Promise<string | string[]> | void => {
-      if (typeof e === "string") {
-        return this.request({
-          method: e,
-          params: t ?? [],
+    async send(x: any, y: any) {
+      if (typeof x === "string") {
+        return await this.request({
+          method: x,
+          params: y ?? [],
         });
+      } else if (typeof y === "function") {
+        this.request(x, y);
+      } else {
+        return await this.request(x);
       }
+    }
 
-      if (typeof t === "function") {
-        this.sendAsync(e, t);
+    async request(data: Messaging.Chain.Request, callback?: Callback) {
+      return await sendToBackgroundViaRelay<
+        Messaging.Chain.Request,
+        Messaging.Chain.Response
+      >(MessageKey.ETHEREUM_REQUEST, data)
+        .then((result) => {
+          switch (data.method) {
+            case RequestMethod.METAMASK.WALLET_ADD_ETHEREUM_CHAIN:
+            case RequestMethod.METAMASK.WALLET_SWITCH_ETHEREUM_CHAIN: {
+              this.emitUpdateNetwork({ chainId: result as string });
 
-        return;
-      }
+              break;
+            }
+            case RequestMethod.METAMASK.WALLET_REVOKE_PERMISSIONS: {
+              this.emit(EventMethod.DISCONNECT, result);
 
-      return this.request(e);
-    };
+              break;
+            }
+          }
+
+          if (callback) callback(null, result);
+
+          return result;
+        })
+        .catch((error) => {
+          if (callback) callback(error);
+
+          return error;
+        });
+    }
 
     _connect = (): void => {
       this.emit(EventMethod.CONNECT, "");
@@ -355,65 +478,120 @@ namespace Provider {
   export class Litecoin extends EventEmitter {
     public chainId: string;
     public network: string;
-    public providerType: string;
 
-    constructor(providerType: string) {
+    constructor() {
       super();
       this.chainId = "Litecoin_litecoin";
-      this.network = NetworkType.MAINNET;
-      this.providerType = providerType;
+      this.network = NetworkKey.MAINNET;
+      this.request = this.request;
     }
 
-    changeNetwork = (network: string): void => {
+    changeNetwork(network: NetworkKey) {
+      if (network !== NetworkKey.MAINNET && network !== NetworkKey.TESTNET)
+        throw Error(`Invalid network ${network}`);
+      else if (network === NetworkKey.TESTNET)
+        throw Error(`We only support the ${NetworkKey.MAINNET} network.`);
+
       this.network = network;
       this.emit(EventMethod.CHAIN_CHANGED, { chainId: this.chainId, network });
-    };
+    }
 
-    emitAccountsChanged = (): void => {
+    emitAccountsChanged() {
       this.emit(EventMethod.ACCOUNTS_CHANGED, {});
-    };
+    }
 
-    request: CallbackRequest = (body, callback): void => {
-      sendToBackgroundViaRelay<
+    async request(data: Messaging.Chain.Request, callback?: Callback) {
+      return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
         Messaging.Chain.Response
-      >(MessageKey.LITECOIN_REQUEST, body)
-        .then((result) => callback(null, result))
-        .catch((error) => callback(error));
-    };
+      >(MessageKey.LITECOIN_REQUEST, data)
+        .then((result) => {
+          if (callback) callback(null, result);
+
+          return result;
+        })
+        .catch((error) => {
+          if (callback) callback(error);
+
+          return error;
+        });
+    }
   }
 
   export class Solana extends EventEmitter {
     public chainId: string;
+    public isConnected: boolean;
     public isPhantom: boolean;
     public isXDEFI: boolean;
     public network: string;
+    public publicKey?: PublicKey;
 
     constructor() {
       super();
       this.chainId = "Solana_mainnet-beta";
+      this.isConnected = false;
       this.isPhantom = false;
       this.isXDEFI = false;
-      this.network = NetworkType.MAINNET;
+      this.network = NetworkKey.MAINNET;
+      this.request = this.request;
     }
 
-    changeNetwork = (network: string): void => {
-      this.network = network;
-      this.emit(EventMethod.CHAIN_CHANGED, { chainId: this.chainId, network });
-    };
+    async signTransaction(transaction: Transaction) {
+      const decodedTransfer = SystemInstruction.decodeTransfer(
+        transaction.instructions[0]
+      );
 
-    emitAccountsChanged = (): void => {
-      this.emit(EventMethod.ACCOUNTS_CHANGED, {});
-    };
+      const modifiedTransfer = {
+        lamports: decodedTransfer.lamports.toString(),
+        fromPubkey: decodedTransfer.fromPubkey.toString(),
+        toPubkey: decodedTransfer.toPubkey.toString(),
+      };
+      return await this.request({
+        method: RequestMethod.VULTISIG.SEND_TRANSACTION,
+        params: [modifiedTransfer],
+      }).then((result) => {
+        const rawData = base58.decode(result[1]);
+        return VersionedTransaction.deserialize(rawData);
+      });
+    }
 
-    request: CallbackRequest = (body, callback): void => {
-      sendToBackgroundViaRelay<
+    async connect() {
+      return await this.request({
+        method: RequestMethod.VULTISIG.REQUEST_ACCOUNTS,
+        params: [],
+      }).then((account) => {
+        this.isConnected = true;
+        this.publicKey = new PublicKey(account);
+        this.emit(EventMethod.CONNECT, this.publicKey);
+
+        return { publicKey: this.publicKey };
+      });
+    }
+
+    async disconnect() {
+      this.isConnected = false;
+      this.publicKey = undefined;
+      this.emit(EventMethod.DISCONNECT);
+
+      await Promise.resolve();
+    }
+
+    async request(data: Messaging.Chain.Request, callback?: Callback) {
+      return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
         Messaging.Chain.Response
-      >(MessageKey.SOLANA_REQUEST, body)
-        .then((result) => callback(null, result))
-        .catch((error) => callback(error));
-    };
+      >(MessageKey.SOLANA_REQUEST, data)
+        .then((result) => {
+          if (callback) callback(null, result);
+
+          return result;
+        })
+        .catch((error) => {
+          if (callback) callback(error);
+
+          return error;
+        });
+    }
   }
 
   export class MAYAChain extends EventEmitter {
@@ -423,70 +601,97 @@ namespace Provider {
     constructor() {
       super();
       this.chainId = "Thorchain_mayachain";
-      this.network = NetworkType.MAINNET;
+      this.network = NetworkKey.MAINNET;
+      this.request = this.request;
     }
 
-    changeNetwork = (network: string): void => {
+    changeNetwork(network: NetworkKey) {
+      if (network !== NetworkKey.MAINNET && network !== NetworkKey.TESTNET)
+        throw Error(`Invalid network ${network}`);
+      else if (network === NetworkKey.TESTNET)
+        throw Error(`We only support the ${NetworkKey.MAINNET} network.`);
+
       this.network = network;
       this.emit(EventMethod.CHAIN_CHANGED, { chainId: this.chainId, network });
-    };
+    }
 
-    emitAccountsChanged = (): void => {
+    emitAccountsChanged() {
       this.emit(EventMethod.ACCOUNTS_CHANGED, {});
-    };
+    }
 
-    request: CallbackRequest = (body, callback): void => {
-      sendToBackgroundViaRelay<
+    async request(data: Messaging.Chain.Request, callback?: Callback) {
+      return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
         Messaging.Chain.Response
-      >(MessageKey.MAYA_REQUEST, body)
-        .then((result) => callback(null, result))
-        .catch((error) => callback(error));
-    };
+      >(MessageKey.MAYA_REQUEST, data)
+        .then((result) => {
+          if (callback) callback(null, result);
+
+          return result;
+        })
+        .catch((error) => {
+          if (callback) callback(error);
+
+          return error;
+        });
+    }
   }
 
   export class THORChain extends EventEmitter {
     public chainId: string;
-    public network: NetworkType;
+    public network: NetworkKey;
 
     constructor() {
       super();
       this.chainId = "Thorchain_thorchain";
-      this.network = NetworkType.MAINNET;
+      this.network = NetworkKey.MAINNET;
+      this.request = this.request;
     }
 
-    changeNetwork = (network: NetworkType): void => {
-      if (network !== NetworkType.MAINNET && network !== NetworkType.TESTNET)
+    changeNetwork(network: NetworkKey) {
+      if (network !== NetworkKey.MAINNET && network !== NetworkKey.TESTNET)
         throw Error(`Invalid network ${network}`);
+      else if (network === NetworkKey.TESTNET)
+        throw Error(`We only support the ${NetworkKey.MAINNET} network.`);
 
       this.network = network;
       this.emit(EventMethod.CHAIN_CHANGED, { chainId: this.chainId, network });
-    };
+    }
 
-    emitAccountsChanged = (): void => {
+    emitAccountsChanged() {
       this.emit(EventMethod.ACCOUNTS_CHANGED, {});
-    };
+    }
 
-    request: CallbackRequest = (body, callback): void => {
-      sendToBackgroundViaRelay<
+    async request(data: Messaging.Chain.Request, callback?: Callback) {
+      return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
         Messaging.Chain.Response
-      >(MessageKey.THOR_REQUEST, body)
-        .then((result) => callback(null, result))
-        .catch((error) => callback(error));
-    };
+      >(MessageKey.THOR_REQUEST, data)
+        .then((result) => {
+          if (callback) callback(null, result);
+
+          return result;
+        })
+        .catch((error) => {
+          if (callback) callback(error);
+
+          return error;
+        });
+    }
   }
 }
 
 const bitcoinProvider = new Provider.Bitcoin();
-const bitcoinCashProvider = new Provider.BitcoinCash("bitcoincash");
+const bitcoinCashProvider = new Provider.BitcoinCash();
 const cosmosProvider = new Provider.Cosmos();
-const dogecoinProvider = new Provider.BitcoinCash("dogecoin");
+const dashProvider = new Provider.Dash();
+const dogecoinProvider = new Provider.Dogecoin();
 const ethereumProvider = new Provider.Ethereum();
-const litecoinProvider = new Provider.BitcoinCash("litecoin");
+const litecoinProvider = new Provider.Litecoin();
 const mayachainProvider = new Provider.MAYAChain();
 const solanaProvider = new Provider.Solana();
 const thorchainProvider = new Provider.THORChain();
+const keplrProvider = XDEFIKeplrProvider.getInstance();
 
 const xfiProvider = {
   bitcoin: bitcoinProvider,
@@ -498,11 +703,12 @@ const xfiProvider = {
   mayachain: mayachainProvider,
   solana: solanaProvider,
   thorchain: thorchainProvider,
+  keplr: keplrProvider,
   info: {
     installed: true,
     isCtrl: false,
     isVultiConnect: true,
-    network: NetworkType.MAINNET,
+    network: NetworkKey.MAINNET,
     version: "0.0.1",
   },
   installed: true,
@@ -512,6 +718,7 @@ const vultisigProvider = {
   bitcoin: bitcoinProvider,
   bitcoincash: bitcoinCashProvider,
   cosmos: cosmosProvider,
+  dash: dashProvider,
   dogecoin: dogecoinProvider,
   ethereum: ethereumProvider,
   litecoin: litecoinProvider,
@@ -528,10 +735,18 @@ const vultisigProvider = {
   },
 };
 
+window.bitcoin = bitcoinProvider;
+window.bitcoincash = litecoinProvider;
+window.cosmos = cosmosProvider;
+window.dash = dashProvider;
+window.dogecoin = dogecoinProvider;
+window.litecoin = litecoinProvider;
+window.maya = mayachainProvider;
 window.thorchain = thorchainProvider;
 window.vultisig = vultisigProvider;
-window.vultisig = vultisigProvider;
 window.xfi = xfiProvider;
+window.keplr = keplrProvider;
+window.xfi.kepler = keplrProvider;
 
 if (!window.ethereum) window.ethereum = ethereumProvider;
 
@@ -548,16 +763,13 @@ announceProvider({
 let prioritize: boolean = true;
 
 const intervalRef = setInterval(() => {
-  if (
-    (window.ethereum && window.ethereum.isVultiConnect) ||
-    prioritize == false
-  )
+  if ((window.ethereum && window.vultisig) || prioritize == false)
     clearInterval(intervalRef);
 
   sendToBackgroundViaRelay<
     Messaging.SetPriority.Request,
     Messaging.SetPriority.Response
-  >(MessageKey.SET_PRIORITY, {})
+  >(MessageKey.PRIORITY, {})
     .then((res) => {
       if (res) {
         const providerCopy = Object.create(
@@ -624,8 +836,33 @@ const intervalRef = setInterval(() => {
             configurable: false,
             writable: false,
           },
-          thorchain: {
-            value: { ...thorchainProvider },
+          bitcoin: {
+            value: { ...bitcoinProvider },
+            configurable: false,
+            writable: false,
+          },
+          bitcoincash: {
+            value: { ...bitcoinCashProvider },
+            configurable: false,
+            writable: false,
+          },
+          cosmos: {
+            value: { ...cosmosProvider },
+            configurable: false,
+            writable: false,
+          },
+          dash: {
+            value: { ...dashProvider },
+            configurable: false,
+            writable: false,
+          },
+          dogecoin: {
+            value: { ...dogecoinProvider },
+            configurable: false,
+            writable: false,
+          },
+          litecoin: {
+            value: { ...litecoinProvider },
             configurable: false,
             writable: false,
           },
@@ -634,8 +871,8 @@ const intervalRef = setInterval(() => {
             configurable: false,
             writable: false,
           },
-          cosmos: {
-            value: { ...cosmosProvider },
+          thorchain: {
+            value: { ...thorchainProvider },
             configurable: false,
             writable: false,
           },

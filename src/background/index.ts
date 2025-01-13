@@ -1,20 +1,26 @@
 import { v4 as uuidv4 } from "uuid";
 import { JsonRpcProvider, TransactionRequest } from "ethers";
+import { Tendermint34Client } from "@cosmjs/tendermint-rpc";
 
 import {
   ChainKey,
-  CosmosChain,
+  Instance,
   MessageKey,
   RequestMethod,
   chains,
+  cosmosChains,
+  evmChains,
   rpcUrl,
 } from "utils/constants";
-import { isSupportedChain } from "utils/functions";
+import { calculateWindowPosition, findChainByProp } from "utils/functions";
 import { ChainProps, ITransaction, Messaging } from "utils/interfaces";
+
 import {
+  getIsPriority,
   getStoredChains,
   getStoredTransactions,
   getStoredVaults,
+  setIsPriority,
   setStoredChains,
   setStoredRequest,
   setStoredTransactions,
@@ -24,33 +30,17 @@ import api from "utils/api";
 
 let rpcProvider: JsonRpcProvider;
 
-const handleProvider = (chain: ChainKey, update?: boolean) => {
-  const rpc = rpcUrl[chain];
-
-  if (update) {
-    if (rpcProvider) rpcProvider = new JsonRpcProvider(rpc);
-  } else {
-    rpcProvider = new JsonRpcProvider(rpc);
-  }
+const instance = {
+  [Instance.ACCOUNTS]: false,
+  [Instance.TRANSACTION]: false,
+  [Instance.VAULTS]: false,
 };
 
 const handleOpenPanel = (name: string): Promise<number> => {
   return new Promise((resolve) => {
     chrome.windows.getCurrent({ populate: true }, (currentWindow) => {
-      const height = 639;
-      const width = 376;
-      let left = 0;
-      let top = 0;
-
-      if (
-        currentWindow &&
-        currentWindow.left !== undefined &&
-        currentWindow.top !== undefined &&
-        currentWindow.width !== undefined
-      ) {
-        left = currentWindow.left + currentWindow.width - width;
-        top = currentWindow.top;
-      }
+      const { height, left, top, width } =
+        calculateWindowPosition(currentWindow);
 
       chrome.windows.create(
         {
@@ -69,40 +59,78 @@ const handleOpenPanel = (name: string): Promise<number> => {
   });
 };
 
+const handleProvider = (chain: ChainKey, update?: boolean) => {
+  const rpc = rpcUrl[chain];
+
+  if (update) {
+    if (rpcProvider) rpcProvider = new JsonRpcProvider(rpc);
+  } else {
+    rpcProvider = new JsonRpcProvider(rpc);
+  }
+};
+
+const handleFindAccounts = (
+  chain: ChainKey,
+  sender: string
+): Promise<string[]> => {
+  return new Promise((resolve) => {
+    getStoredVaults()
+      .then((vaults) => {
+        resolve(
+          vaults.flatMap(({ active, apps, chains }) =>
+            active && apps
+              ? chains
+                  .filter(
+                    ({ name }) => name === chain && apps.indexOf(sender) >= 0
+                  )
+                  .map(({ address }) => address ?? "")
+              : []
+          )
+        );
+      })
+      .catch(() => resolve([]));
+  });
+};
+
 const handleGetAccounts = (
   chain: ChainKey,
   sender: string
 ): Promise<string[]> => {
   return new Promise((resolve) => {
-    setStoredRequest({
-      chain,
-      sender,
-    }).then(() => {
-      handleOpenPanel("accounts").then((createdWindowId) => {
-        chrome.windows.onRemoved.addListener((closedWindowId) => {
-          if (closedWindowId === createdWindowId) {
-            getStoredVaults()
-              .then((vaults) => {
-                resolve(
-                  vaults.flatMap(({ apps, chains }) =>
-                    apps
-                      ? chains
-                          .filter(
-                            ({ name }) =>
-                              name === chain && apps.indexOf(sender) >= 0
-                          )
-                          .map(({ address }) => address ?? "")
-                      : []
-                  )
-                );
-              })
-              .catch(() => {
-                resolve([]);
+    if (instance[Instance.ACCOUNTS]) {
+      let interval = setInterval(() => {
+        if (!instance[Instance.ACCOUNTS]) {
+          clearInterval(interval);
+
+          handleFindAccounts(chain, sender).then(resolve);
+        }
+      }, 250);
+    } else {
+      instance[Instance.ACCOUNTS] = true;
+
+      handleFindAccounts(chain, sender).then((accounts) => {
+        if (accounts.length) {
+          instance[Instance.ACCOUNTS] = false;
+
+          resolve(accounts);
+        } else {
+          setStoredRequest({
+            chain,
+            sender,
+          }).then(() => {
+            handleOpenPanel(Instance.ACCOUNTS).then((createdWindowId) => {
+              chrome.windows.onRemoved.addListener((closedWindowId) => {
+                if (closedWindowId === createdWindowId) {
+                  instance[Instance.ACCOUNTS] = false;
+
+                  handleFindAccounts(chain, sender).then(resolve);
+                }
               });
-          }
-        });
+            });
+          });
+        }
       });
-    });
+    }
   });
 };
 
@@ -148,8 +176,9 @@ const handleGetVaults = (): Promise<Messaging.GetVaults.Response> => {
 
 const handleSendTransaction = (
   transaction: ITransaction.METAMASK,
-  chain: ChainProps
-): Promise<string> => {
+  chain: ChainProps,
+  isDeposit?: boolean
+): Promise<{ txHash: string; raw: any }> => {
   return new Promise((resolve, reject) => {
     getStoredTransactions().then((transactions) => {
       const uuid = uuidv4();
@@ -157,6 +186,7 @@ const handleSendTransaction = (
       setStoredTransactions([
         {
           ...transaction,
+          isDeposit,
           chain,
           id: uuid,
           status: "default",
@@ -200,7 +230,10 @@ const handleSendTransaction = (
                           transactions: [transaction, ...vault.transactions],
                         }))
                       ).then(() => {
-                        resolve(transaction.txHash ?? "");
+                        resolve({
+                          txHash: transaction.txHash!,
+                          raw: transaction.raw,
+                        });
                       });
                     });
                   }
@@ -216,360 +249,199 @@ const handleSendTransaction = (
   });
 };
 
-const handleBitcoinRequest = (
+const handleRequest = (
   body: Messaging.Chain.Request,
-  sender: chrome.runtime.MessageSender
+  chain: ChainProps,
+  sender: string
 ): Promise<Messaging.Chain.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = body;
-    const chain = chains.find((chain) => chain.name == ChainKey.BITCOIN);
 
-    if (chain && sender.origin) {
-      switch (method) {
-        case RequestMethod.VULTISIG.REQUEST_ACCOUNTS: {
-          handleGetAccounts(ChainKey.BITCOIN, sender.origin).then((accounts) =>
-            resolve(accounts)
-          );
+    switch (method) {
+      case RequestMethod.VULTISIG.ACCOUNTS:
+      case RequestMethod.METAMASK.ETH_ACCOUNTS: {
+        handleFindAccounts(chain.name, sender)
+          .then(([account]) => {
+            switch (chain.name) {
+              case ChainKey.DYDX:
+              case ChainKey.GAIACHAIN:
+              case ChainKey.KUJIRA:
+              case ChainKey.MAYACHAIN:
+              case ChainKey.OSMOSIS: {
+                resolve(account);
 
-          break;
-        }
-        case RequestMethod.VULTISIG.SEND_TRANSACTION: {
+                break;
+              }
+              default: {
+                resolve([account]);
+
+                break;
+              }
+            }
+          })
+          .catch(reject);
+
+        break;
+      }
+      case RequestMethod.VULTISIG.REQUEST_ACCOUNTS:
+      case RequestMethod.METAMASK.ETH_REQUEST_ACCOUNTS: {
+        handleGetAccounts(chain.name, sender)
+          .then(([account]) => {
+            switch (chain.name) {
+              case ChainKey.DYDX:
+              case ChainKey.GAIACHAIN:
+              case ChainKey.KUJIRA:
+              case ChainKey.MAYACHAIN:
+              case ChainKey.OSMOSIS:
+              case ChainKey.SOLANA: {
+                resolve(account);
+
+                break;
+              }
+              default: {
+                resolve([account]);
+
+                break;
+              }
+            }
+          })
+          .catch(reject);
+
+        break;
+      }
+      case RequestMethod.VULTISIG.CHAIN_ID:
+      case RequestMethod.METAMASK.ETH_CHAIN_ID: {
+        handleProvider(chain.name, true);
+
+        resolve(chain.id);
+
+        break;
+      }
+      case RequestMethod.VULTISIG.SEND_TRANSACTION:
+      case RequestMethod.METAMASK.ETH_SEND_TRANSACTION: {
+        if (Array.isArray(params)) {
           const [transaction] = params as ITransaction.METAMASK[];
 
           if (transaction) {
             handleSendTransaction(transaction, chain)
-              .then(resolve)
+              .then((result) => resolve(result.txHash))
               .catch(reject);
           } else {
             reject();
           }
-
-          break;
+        } else {
+          reject();
         }
-        default: {
-          reject(`Unsupported method: ${method}`);
 
-          break;
-        }
+        break;
       }
-    }
-  });
-};
-
-const handleBitcoinCashRequest = (
-  body: Messaging.Chain.Request,
-  sender: chrome.runtime.MessageSender
-): Promise<Messaging.Chain.Response> => {
-  return new Promise((resolve, reject) => {
-    const { method, params } = body;
-    const chain = chains.find((chain) => chain.name == ChainKey.BITCOINCASH);
-
-    if (chain && sender.origin) {
-      switch (method) {
-        case RequestMethod.VULTISIG.REQUEST_ACCOUNTS: {
-          handleGetAccounts(ChainKey.BITCOINCASH, sender.origin).then(
-            (accounts) => resolve(accounts)
-          );
-
-          break;
-        }
-        case RequestMethod.VULTISIG.SEND_TRANSACTION: {
+      case RequestMethod.VULTISIG.DEPOSIT_TRANSACTION: {
+        if (Array.isArray(params)) {
           const [transaction] = params as ITransaction.METAMASK[];
 
           if (transaction) {
-            handleSendTransaction(transaction, chain)
-              .then(resolve)
+            handleSendTransaction(transaction, chain, true)
+              .then((result) =>
+                chain.name === ChainKey.SOLANA
+                  ? resolve([result.txHash, result.raw])
+                  : resolve(result.txHash)
+              )
               .catch(reject);
           } else {
             reject();
           }
-
-          break;
+        } else {
+          reject();
         }
-        default: {
-          reject(`Unsupported method: ${method}`);
 
-          break;
-        }
+        break;
       }
-    }
-  });
-};
+      case RequestMethod.VULTISIG.GET_TRANSACTION_BY_HASH: {
+        if (Array.isArray(params)) {
+          const [hash] = params;
 
-const handleCosmosRequest = (
-  body: Messaging.Chain.Request,
-  sender: chrome.runtime.MessageSender
-): Promise<Messaging.Chain.Response> => {
-  return new Promise((resolve, reject) => {
-    const { method, params } = body;
-
-    getStoredChains().then((storedChains) => {
-      let activeChain = storedChains.find(
-        (chain) =>
-          (Object.values(CosmosChain) as unknown as ChainKey[]).includes(
-            chain.name
-          ) && chain.active === true
-      );
-
-      if (!activeChain) {
-        activeChain = chains.find((chain) => chain.name == ChainKey.GAIACHAIN);
-
-        handleCosmosRequest(
-          {
-            method: "wallet_add_chain",
-            params: [{ chainId: "cosmoshub-4" }],
-          },
-          sender
-        );
-      }
-
-      if (activeChain) {
-        switch (method) {
-          case RequestMethod.VULTISIG.GET_ACCOUNTS: {
-            getStoredVaults().then((vaults) => {
-              resolve(
-                vaults.flatMap(({ apps, chains }) =>
-                  apps && sender.origin
-                    ? chains
-                        .filter(
-                          ({ name }) =>
-                            name === activeChain.name &&
-                            apps?.indexOf(sender.origin ?? "") >= 0
-                        )
-                        .map(({ address }) => address ?? "")
-                    : []
-                )
-              );
-            });
-
-            break;
-          }
-          case RequestMethod.VULTISIG.REQUEST_ACCOUNTS: {
-            if (sender.origin) {
-              handleGetAccounts(activeChain.name, sender.origin).then(
-                ([account]) => resolve(account)
-              );
-            }
-
-            break;
-          }
-          case RequestMethod.VULTISIG.SEND_TRANSACTION: {
-            const [transaction] = params as ITransaction.METAMASK[];
-
-            if (transaction) {
-              handleSendTransaction(transaction, activeChain)
-                .then(resolve)
-                .catch(reject);
-            } else {
-              reject();
-            }
-
-            break;
-          }
-          case RequestMethod.VULTISIG.CHAIN_ID: {
-            resolve(activeChain.id);
-
-            break;
-          }
-          case RequestMethod.VULTISIG.WALLET_ADD_CHAIN: {
-            const [param] = params;
-
-            if (param?.chainId) {
-              const supportedChain = chains.find(
-                ({ id }) => id === param.chainId
-              );
-
-              if (supportedChain) {
-                setStoredChains([
-                  { ...supportedChain, active: true },
-                  ...storedChains
-                    .filter(({ name }) => name !== supportedChain.name)
-                    .map((chain) => ({
-                      ...chain,
-                      active: false,
-                    })),
-                ])
-                  .then(() => resolve(""))
+          if (hash) {
+            switch (chain.name) {
+              // Thor
+              case ChainKey.THORCHAIN: {
+                api.thorchain
+                  .getTransactionByHash(String(hash))
+                  .then(resolve)
                   .catch(reject);
-              } else {
-                reject(); // unsuported chain
+
+                break;
               }
-            } else {
-              reject(); // chainId is required
-            }
+              // Cosmos
+              case ChainKey.DYDX:
+              case ChainKey.GAIACHAIN:
+              case ChainKey.KUJIRA:
+              case ChainKey.MAYACHAIN:
+              case ChainKey.OSMOSIS: {
+                Tendermint34Client.connect(rpcUrl[chain.name])
+                  .then((client) => {
+                    client
+                      .tx({ hash: Buffer.from(String(hash)) })
+                      .then(({ result }) => resolve(JSON.stringify(result)))
+                      .catch(reject);
+                  })
+                  .catch((error) =>
+                    reject(`Could not initialize Tendermint Client: ${error}`)
+                  );
 
-            break;
-          }
-          case RequestMethod.VULTISIG.WALLET_SWITCH_CHAIN: {
-            const [param] = params;
-            if (param?.chainId) {
-              if (isSupportedChain(param?.chainId)) {
-                const existed =
-                  storedChains.findIndex(({ id }) => id === param.chainId) >= 0;
-
-                if (existed) {
-                  setStoredChains(
-                    storedChains.map((chain) => ({
-                      ...chain,
-                      active: chain.id === param.chainId,
-                    }))
-                  )
-                    .then(() => resolve(param.chainId))
-                    .catch(reject);
-                } else {
-                  handleCosmosRequest(
-                    {
-                      method: RequestMethod.VULTISIG.WALLET_ADD_CHAIN,
-                      params,
-                    },
-                    sender
-                  )
-                    .then(() => resolve(param.chainId))
-                    .catch(reject);
-                }
-              } else {
-                reject("Chain not Supported");
+                break;
               }
-            } else {
-              reject(); // chainId is required
+              // EVM
+              case ChainKey.AVALANCHE:
+              case ChainKey.ARBITRUM:
+              case ChainKey.BASE:
+              case ChainKey.BSCCHAIN:
+              case ChainKey.CRONOSCHAIN:
+              case ChainKey.ETHEREUM:
+              case ChainKey.OPTIMISM:
+              case ChainKey.POLYGON: {
+                api.ethereum
+                  .getTransactionByHash(rpcUrl[chain.name], String(hash))
+                  .then(resolve)
+                  .catch(reject);
+
+                break;
+              }
+              default: {
+                api.utxo
+                  .blockchairGetTx(chain.name, String(hash))
+                  .then((res) => resolve(JSON.stringify(res)))
+                  .catch(reject);
+
+                break;
+              }
             }
-            break;
-          }
-          default: {
-            reject(`Unsupported method: ${method}`);
-
-            break;
-          }
-        }
-      }
-    });
-  });
-};
-
-const handleDogecoinCashRequest = (
-  body: Messaging.Chain.Request,
-  sender: chrome.runtime.MessageSender
-): Promise<Messaging.Chain.Response> => {
-  return new Promise((resolve, reject) => {
-    const { method, params } = body;
-    const chain = chains.find((chain) => chain.name == ChainKey.DOGECOIN);
-
-    if (chain && sender.origin) {
-      switch (method) {
-        case RequestMethod.VULTISIG.REQUEST_ACCOUNTS: {
-          handleGetAccounts(ChainKey.DOGECOIN, sender.origin).then((accounts) =>
-            resolve(accounts)
-          );
-
-          break;
-        }
-        case RequestMethod.VULTISIG.SEND_TRANSACTION: {
-          const [transaction] = params as ITransaction.METAMASK[];
-
-          if (transaction) {
-            handleSendTransaction(transaction, chain)
-              .then(resolve)
-              .catch(reject);
           } else {
             reject();
           }
-
-          break;
+        } else {
+          reject();
         }
-        default: {
-          reject(`Unsupported method: ${method}`);
 
-          break;
-        }
+        break;
       }
-    }
-  });
-};
+      case RequestMethod.METAMASK.ETH_BLOCK_NUMBER: {
+        rpcProvider
+          .getBlock("latest")
+          .then((block) => resolve(String(block?.number)))
+          .catch(reject);
 
-const handleEthereumRequest = (
-  body: Messaging.Chain.Request,
-  sender: chrome.runtime.MessageSender
-): Promise<Messaging.Chain.Response> => {
-  return new Promise((resolve, reject) => {
-    const { method, params } = body;
+        break;
+      }
+      case RequestMethod.VULTISIG.WALLET_ADD_CHAIN:
+      case RequestMethod.METAMASK.WALLET_ADD_ETHEREUM_CHAIN: {
+        if (Array.isArray(params)) {
+          const [param] = params;
 
-    getStoredChains().then((storedChains) => {
-      const chain = storedChains.find(({ active }) => active);
+          if (param?.chainId) {
+            const supportedChain = findChainByProp(chains, "id", param.chainId);
 
-      if (chain && sender.origin) {
-        handleProvider(chain.name);
-
-        switch (method) {
-          case RequestMethod.METAMASK.ETH_ACCOUNTS: {
-            getStoredVaults().then((vaults) => {
-              resolve(
-                vaults.flatMap(({ apps, chains }) =>
-                  apps
-                    ? chains
-                        .filter(
-                          ({ name }) =>
-                            name === chain.name &&
-                            apps.indexOf(sender.origin ?? "") >= 0
-                        )
-                        .map(({ address }) => address ?? "")
-                    : []
-                )
-              );
-            });
-
-            break;
-          }
-          case RequestMethod.METAMASK.ETH_CHAIN_ID: {
-            handleProvider(chain.name, true);
-
-            resolve(chain.id);
-
-            break;
-          }
-          case RequestMethod.METAMASK.ETH_REQUEST_ACCOUNTS: {
-            handleGetAccounts(chain.name, sender.origin).then((accounts) =>
-              resolve(accounts)
-            );
-            break;
-          }
-          case RequestMethod.METAMASK.ETH_SEND_TRANSACTION: {
-            const [transaction] = params as ITransaction.METAMASK[];
-
-            if (transaction) {
-              handleSendTransaction(transaction, chain)
-                .then(resolve)
-                .catch(reject);
-            } else {
-              reject();
-            }
-
-            break;
-          }
-          case RequestMethod.METAMASK.ETH_GET_TRANSACTION_BY_HASH: {
-            const [hash] = params ?? [];
-            const path = rpcUrl[chain.name];
-
-            if (path && typeof hash === "string")
-              api.getTransactionByHash(path, hash).then(resolve);
-
-            break;
-          }
-          case RequestMethod.METAMASK.ETH_BLOCK_NUMBER: {
-            rpcProvider
-              .getBlock("latest")
-              .then((block) => resolve(String(block?.number)));
-
-            break;
-          }
-          case RequestMethod.METAMASK.WALLET_ADD_ETHEREUM_CHAIN: {
-            const [param] = params ?? [];
-
-            if (param?.chainId) {
-              const supportedChain = chains.find(
-                ({ id }) => id === param.chainId
-              );
-
-              if (supportedChain) {
+            if (supportedChain) {
+              getStoredChains().then((storedChains) => {
                 setStoredChains([
                   { ...supportedChain, active: true },
                   ...storedChains
@@ -578,53 +450,69 @@ const handleEthereumRequest = (
                 ])
                   .then(() => resolve(supportedChain.id))
                   .catch(reject);
-              } else {
-                reject(); // unsuported chain
-              }
+              });
             } else {
-              reject(); // chainId is required
+              reject();
             }
-
-            break;
+          } else {
+            reject();
           }
-          case RequestMethod.METAMASK.WALLET_GET_PERMISSIONS: {
-            resolve([]);
+        } else {
+          reject();
+        }
 
-            break;
+        break;
+      }
+      case RequestMethod.METAMASK.WALLET_GET_PERMISSIONS: {
+        resolve([]);
+
+        break;
+      }
+      case RequestMethod.METAMASK.WALLET_REQUEST_PERMISSIONS: {
+        resolve([]);
+
+        break;
+      }
+      case RequestMethod.METAMASK.WALLET_REVOKE_PERMISSIONS: {
+        getStoredVaults().then((vaults) => {
+          setStoredVaults(
+            vaults.map((vault) => ({
+              ...vault,
+              apps: vault.apps?.filter((app) => app !== sender),
+            }))
+          ).then(() => resolve(""));
+        });
+
+        break;
+      }
+      case RequestMethod.METAMASK.ETH_ESTIMATE_GAS: {
+        if (Array.isArray(params)) {
+          const [transaction] = params as TransactionRequest[];
+
+          if (transaction) {
+            rpcProvider
+              .estimateGas(transaction)
+              .then((gas) => resolve(gas.toString()))
+              .catch(reject);
+          } else {
+            reject();
           }
-          case RequestMethod.METAMASK.WALLET_REQUEST_PERMISSIONS: {
-            resolve([]);
+        } else {
+          reject();
+        }
 
-            break;
-          }
-          case RequestMethod.METAMASK.WALLET_REVOKE_PERMISSIONS: {
-            getStoredVaults().then((vaults) => {
-              setStoredVaults(
-                vaults.map((vault) => ({
-                  ...vault,
-                  apps: vault.apps?.filter((app) => app !== sender.origin),
-                }))
-              ).then(() => resolve(""));
-            });
-            break;
-          }
-          case RequestMethod.METAMASK.ETH_ESTIMATE_GAS: {
-            const [transaction] = params as TransactionRequest[];
+        break;
+      }
+      case RequestMethod.VULTISIG.WALLET_SWITCH_CHAIN:
+      case RequestMethod.METAMASK.WALLET_SWITCH_ETHEREUM_CHAIN: {
+        if (Array.isArray(params)) {
+          const [param] = params;
 
-            if (transaction) {
-              rpcProvider
-                .estimateGas(transaction)
-                .then((gas) => resolve(gas.toString()))
-                .catch(reject);
-            }
+          if (param?.chainId) {
+            const supportedChain = findChainByProp(chains, "id", param.chainId);
 
-            break;
-          }
-          case RequestMethod.METAMASK.WALLET_SWITCH_ETHEREUM_CHAIN: {
-            const [param] = params ?? [];
-
-            if (param?.chainId) {
-              if (isSupportedChain(param?.chainId)) {
+            if (supportedChain) {
+              getStoredChains().then((storedChains) => {
                 const existed =
                   storedChains.findIndex(({ id }) => id === param.chainId) >= 0;
 
@@ -638,263 +526,186 @@ const handleEthereumRequest = (
                     .then(() => resolve(param.chainId))
                     .catch(reject);
                 } else {
-                  handleEthereumRequest(
-                    {
-                      method: RequestMethod.METAMASK.WALLET_ADD_ETHEREUM_CHAIN,
-                      params,
-                    },
+                  handleRequest(
+                    { method: RequestMethod.VULTISIG.WALLET_ADD_CHAIN, params },
+                    chain,
                     sender
                   )
-                    .then(() => resolve(param.chainId))
+                    .then(resolve)
                     .catch(reject);
                 }
-              } else {
-                reject("Chain not Supported");
-              }
+              });
             } else {
-              reject(); // chainId is required
+              reject("Chain not Supported");
             }
-
-            break;
+          } else {
+            reject();
           }
-          case RequestMethod.METAMASK.ETH_GET_BALANCE: {
-            const [address, tag] = params ?? [];
+        } else {
+          reject();
+        }
 
-            if (address && tag) {
-              rpcProvider
-                .getBalance(String(address), String(tag))
-                .then((value) => resolve(value.toString()))
-                .catch(reject);
-            }
+        break;
+      }
+      case RequestMethod.METAMASK.ETH_GET_BALANCE: {
+        if (Array.isArray(params)) {
+          const [address, tag] = params;
 
-            break;
-          }
-          case RequestMethod.METAMASK.ETH_GET_BLOCK_BY_NUMBER: {
-            const [tag, refresh] = params ?? [];
-
-            if (tag && refresh) {
-              rpcProvider
-                .getBlock(String(tag), Boolean(refresh))
-                .then((block) => resolve(block?.toJSON()))
-                .catch(reject);
-            }
-
-            break;
-          }
-          case RequestMethod.METAMASK.ETH_GAS_PRICE: {
+          if (address && tag) {
             rpcProvider
-              .getFeeData()
-              .then(({ gasPrice }) =>
-                resolve((gasPrice ?? BigInt(0)).toString())
-              )
+              .getBalance(String(address), String(tag))
+              .then((value) => resolve(value.toString()))
               .catch(reject);
-
-            break;
+          } else {
+            reject();
           }
-          case RequestMethod.METAMASK.ETH_MAX_PRIORITY_FEE_PER_GAS: {
+        } else {
+          reject();
+        }
+
+        break;
+      }
+      case RequestMethod.METAMASK.ETH_GET_BLOCK_BY_NUMBER: {
+        if (Array.isArray(params)) {
+          const [tag, refresh] = params;
+
+          if (tag && refresh) {
             rpcProvider
-              .getFeeData()
-              .then(({ maxPriorityFeePerGas }) =>
-                resolve((maxPriorityFeePerGas ?? BigInt(0)).toString())
-              )
+              .getBlock(String(tag), Boolean(refresh))
+              .then((block) => resolve(block?.toJSON()))
               .catch(reject);
-
-            break;
+          } else {
+            reject();
           }
-          case RequestMethod.METAMASK.ETH_CALL: {
-            const [transaction] = params as ITransaction.METAMASK[];
+        } else {
+          reject();
+        }
 
-            transaction ? resolve(rpcProvider.call(transaction)) : reject();
+        break;
+      }
+      case RequestMethod.METAMASK.ETH_GAS_PRICE: {
+        rpcProvider
+          .getFeeData()
+          .then(({ gasPrice }) => resolve(gasPrice!.toString()))
+          .catch(reject);
 
-            break;
-          }
-          case RequestMethod.METAMASK.ETH_GET_TRANSACTION_RECEIPT: {
-            const [transaction] = params as ITransaction.METAMASK[];
+        break;
+      }
+      case RequestMethod.METAMASK.ETH_MAX_PRIORITY_FEE_PER_GAS: {
+        rpcProvider
+          .getFeeData()
+          .then(({ maxPriorityFeePerGas }) =>
+            resolve(maxPriorityFeePerGas!.toString())
+          )
+          .catch(reject);
 
+        break;
+      }
+      // Double Check
+      case RequestMethod.METAMASK.ETH_CALL: {
+        if (Array.isArray(params)) {
+          const [transaction] = params as ITransaction.METAMASK[];
+
+          transaction ? resolve(rpcProvider.call(transaction)) : reject();
+        } else {
+          reject();
+        }
+
+        break;
+      }
+      case RequestMethod.METAMASK.ETH_GET_TRANSACTION_RECEIPT: {
+        if (Array.isArray(params)) {
+          const [transaction] = params as ITransaction.METAMASK[];
+
+          rpcProvider
+            .getTransactionReceipt(String(transaction))
+            .then((receipt) => resolve(receipt?.toJSON()))
+            .catch(reject);
+        } else {
+          reject();
+        }
+
+        break;
+      }
+      case RequestMethod.METAMASK.ETH_GET_CODE: {
+        if (Array.isArray(params)) {
+          const [address, tag] = params;
+
+          if (address && tag) {
             rpcProvider
-              .getTransactionReceipt(String(transaction))
-              .then((receipt) => resolve(receipt?.toJSON()))
-              .catch(reject);
-
-            break;
-          }
-          case "net_version": {
-            resolve("1");
-
-            break;
-          }
-          default: {
-            // _emit(EventMethod.ERROR, new Error(`Unsupported method: ${method}`));
-            reject(`Unsupported method: ${method}`);
-
-            break;
-          }
-        }
-      }
-    });
-  });
-};
-
-const handleLitecoinCashRequest = (
-  body: Messaging.Chain.Request,
-  sender: chrome.runtime.MessageSender
-): Promise<Messaging.Chain.Response> => {
-  return new Promise((resolve, reject) => {
-    const { method, params } = body;
-    const chain = chains.find((chain) => chain.name == ChainKey.LITECOIN);
-
-    if (chain && sender.origin) {
-      switch (method) {
-        case RequestMethod.VULTISIG.REQUEST_ACCOUNTS: {
-          handleGetAccounts(ChainKey.LITECOIN, sender.origin).then((accounts) =>
-            resolve(accounts)
-          );
-
-          break;
-        }
-        case RequestMethod.VULTISIG.SEND_TRANSACTION: {
-          const [transaction] = params as ITransaction.METAMASK[];
-
-          if (transaction) {
-            handleSendTransaction(transaction, chain)
-              .then(resolve)
+              .getCode(String(address), String(tag))
+              .then((value) => resolve(value.toString()))
               .catch(reject);
           } else {
             reject();
           }
-
-          break;
+        } else {
+          reject();
         }
-        default: {
-          reject(`Unsupported method: ${method}`);
 
-          break;
-        }
+        break;
       }
-    }
-  });
-};
+      case RequestMethod.METAMASK.PERSONAL_SIGN: {
+        if (Array.isArray(params)) {
+          const [message, address] = params;
 
-const handleMayaRequest = (
-  body: Messaging.Chain.Request,
-  sender: chrome.runtime.MessageSender
-): Promise<Messaging.Chain.Response> => {
-  return new Promise((resolve, reject) => {
-    const { method, params } = body;
-    const chain = chains.find((chain) => chain.name == ChainKey.MAYACHAIN);
-
-    if (chain && sender.origin) {
-      switch (method) {
-        case RequestMethod.VULTISIG.REQUEST_ACCOUNTS: {
-          handleGetAccounts(ChainKey.MAYACHAIN, sender.origin).then(
-            (accounts) => resolve(accounts)
-          );
-
-          break;
+          handleSendTransaction(
+            {
+              customMessage: {
+                address: String(address),
+                message: String(message),
+              },
+              isCustomMessage: true,
+              chain: chain,
+              data: "",
+              from: String(address),
+              id: "",
+              status: "default",
+              to: "",
+              isDeposit: false,
+            },
+            chain
+          )
+            .then((result) => resolve(result.txHash))
+            .catch(reject);
+        } else {
+          reject();
         }
-        case RequestMethod.VULTISIG.SEND_TRANSACTION: {
-          const [transaction] = params as ITransaction.METAMASK[];
 
-          if (transaction) {
-            handleSendTransaction(transaction, chain)
-              .then(resolve)
+        break;
+      }
+      case RequestMethod.METAMASK.NET_VERSION: {
+        resolve("1");
+
+        break;
+      }
+      case RequestMethod.CTRL.DEPOSIT: {
+        if (Array.isArray(params)) {
+          const [_transaction] = params as ITransaction.CTRL[];
+
+          if (_transaction) {
+            const transaction = {
+              data: _transaction.memo,
+              from: _transaction.from,
+              gasLimit: _transaction.gasLimit,
+              to: _transaction.recipient,
+              value: _transaction.amount.amount.toString(),
+            } as ITransaction.METAMASK;
+
+            handleSendTransaction(transaction, chain, true)
+              .then((result) => resolve(result.txHash))
               .catch(reject);
           } else {
             reject();
           }
-
-          break;
+        } else {
+          reject();
         }
-        default: {
-          reject(`Unsupported method: ${method}`);
 
-          break;
-        }
+        break;
       }
-    }
-  });
-};
-
-const handleSolanaRequest = (
-  body: Messaging.Chain.Request,
-  sender: chrome.runtime.MessageSender
-): Promise<Messaging.Chain.Response> => {
-  return new Promise((resolve, reject) => {
-    const { method, params } = body;
-    const chain = chains.find((chain) => chain.name == ChainKey.SOLANA);
-
-    if (chain && sender.origin) {
-      switch (method) {
-        case RequestMethod.VULTISIG.REQUEST_ACCOUNTS: {
-          handleGetAccounts(ChainKey.SOLANA, sender.origin).then((accounts) =>
-            resolve(accounts)
-          );
-
-          break;
-        }
-        case RequestMethod.VULTISIG.SEND_TRANSACTION: {
-          const [transaction] = params as ITransaction.METAMASK[];
-
-          if (transaction) {
-            handleSendTransaction(transaction, chain)
-              .then(resolve)
-              .catch(reject);
-          } else {
-            reject();
-          }
-
-          break;
-        }
-        default: {
-          reject(`Unsupported method: ${method}`);
-
-          break;
-        }
-      }
-    }
-  });
-};
-
-const handleThorRequest = (
-  body: Messaging.Chain.Request,
-  sender: chrome.runtime.MessageSender
-): Promise<Messaging.Chain.Response> => {
-  return new Promise((resolve, reject) => {
-    const { method, params } = body;
-    const chain = chains.find((chain) => chain.name == ChainKey.THORCHAIN);
-
-    if (chain && sender.origin) {
-      switch (method) {
-        // VULTISIG Methods
-        case RequestMethod.VULTISIG.REQUEST_ACCOUNTS: {
-          handleGetAccounts(ChainKey.THORCHAIN, sender.origin).then(resolve);
-
-          break;
-        }
-        case RequestMethod.VULTISIG.SEND_TRANSACTION: {
-          const [transaction] = params as ITransaction.METAMASK[];
-
-          if (transaction) {
-            handleSendTransaction(transaction, chain)
-              .then(resolve)
-              .catch(reject);
-          } else {
-            reject();
-          }
-
-          break;
-        }
-        case RequestMethod.VULTISIG.GET_TRANSACTION_BY_HASH: {
-          const [hash] = params;
-          const path = rpcUrl[chain.name];
-
-          if (path && typeof hash === "string")
-            api.getTransactionByHash(path, hash).then(resolve);
-
-          break;
-        }
-        // CTRL Methods
-        case RequestMethod.CTRL.TRANSFER: {
+      case RequestMethod.CTRL.TRANSFER: {
+        if (Array.isArray(params)) {
           const [_transaction] = params as ITransaction.CTRL[];
 
           if (_transaction) {
@@ -907,41 +718,33 @@ const handleThorRequest = (
             } as ITransaction.METAMASK;
 
             handleSendTransaction(transaction, chain)
-              .then(resolve)
+              .then((result) => resolve(result.txHash))
               .catch(reject);
           } else {
             reject();
           }
-
-          break;
+        } else {
+          reject();
         }
-        case RequestMethod.CTRL.DEPOSIT: {
-          const [_transaction] = params as ITransaction.CTRL[];
 
-          if (_transaction) {
-            const transaction = {
-              data: _transaction.memo,
-              from: _transaction.from,
-              gasLimit: _transaction.gasLimit,
-              to: _transaction.recipient,
-              value: _transaction.amount.amount.toString(),
-            } as ITransaction.METAMASK;
-
-            handleSendTransaction(transaction, chain) //send isDeposit as boolean
-              .then(resolve)
-              .catch(reject);
-          } else {
-            reject();
-          }
-
-          break;
-        }
-        default: {
-          reject(`Unsupported method: ${method}`);
-
-          break;
-        }
+        break;
       }
+      default: {
+        reject(`Unsupported method: ${method}`);
+
+        break;
+      }
+    }
+  });
+};
+
+const handleSetPriority = (body: Messaging.SetPriority.Request) => {
+  return new Promise(async (resolve) => {
+    if (body.priority) {
+      setIsPriority(body.priority);
+      resolve(body.priority);
+    } else {
+      resolve(await getIsPriority());
     }
   });
 };
@@ -952,49 +755,208 @@ chrome.runtime.onMessage.addListener(
     sender,
     sendResponse
   ) => {
+    const { origin = "" } = sender;
+
     switch (type) {
       case MessageKey.BITCOIN_REQUEST: {
-        handleBitcoinRequest(message, sender).then(sendResponse);
+        handleRequest(message, chains[ChainKey.BITCOIN], origin)
+          .then(sendResponse)
+          .catch((error) => sendResponse({ error }));
 
         break;
       }
       case MessageKey.BITCOIN_CASH_REQUEST: {
-        handleBitcoinCashRequest(message, sender).then(sendResponse);
+        handleRequest(message, chains[ChainKey.BITCOINCASH], origin)
+          .then(sendResponse)
+          .catch((error) => sendResponse({ error }));
 
         break;
       }
       case MessageKey.COSMOS_REQUEST: {
-        handleCosmosRequest(message, sender).then(sendResponse);
+        getStoredChains().then((storedChains) => {
+          const chain = storedChains.find(
+            (chain) => chain.active && cosmosChains.includes(chain.name)
+          );
+
+          if (chain) {
+            handleRequest(message, chain, origin)
+              .then((response) => {
+                if (
+                  message.method === RequestMethod.VULTISIG.REQUEST_ACCOUNTS
+                ) {
+                  try {
+                    getStoredVaults().then((vaults) => {
+                      const vault = vaults.find((vault) => {
+                        return (
+                          vault.chains.find(({ name }) => name === chain.name)
+                            ?.address === response
+                        );
+                      });
+
+                      const storedChain = vault!.chains.find(
+                        ({ name }) => name === chain.name
+                      )!;
+                      const derivationKey = storedChain.derivationKey;
+                      if (!derivationKey) {
+                        throw new Error("Derivation key is missing!");
+                      }
+
+                      const keyBytes = Uint8Array.from(
+                        Buffer.from(derivationKey, "hex")
+                      );
+
+                      const account = [
+                        {
+                          address: response,
+                          algo: "secp256k1",
+                          pubkey: Array.from(keyBytes),
+                        },
+                      ];
+                      sendResponse(account);
+                    });
+                  } catch (e) {
+                    console.error(e);
+                  }
+                } else {
+                  sendResponse(response);
+                }
+              })
+              .catch((error) => sendResponse({ error }));
+          } else {
+            handleRequest(
+              {
+                method: RequestMethod.VULTISIG.WALLET_ADD_CHAIN,
+                params: [{ chainId: chains[ChainKey.GAIACHAIN].id }],
+              },
+              chains[ChainKey.GAIACHAIN],
+              origin
+            )
+              .then(() =>
+                handleRequest(message, chains[ChainKey.GAIACHAIN], origin)
+                  .then((response) => {
+                    if (
+                      message.method === RequestMethod.VULTISIG.REQUEST_ACCOUNTS
+                    ) {
+                      getStoredVaults().then((vaults) => {
+                        const vault = vaults.find((vault) => {
+                          return (
+                            vault.chains.find(
+                              ({ name }) => name === ChainKey.GAIACHAIN
+                            )?.address === response
+                          );
+                        });
+                        const storedChain = vault!.chains.find(
+                          ({ name }) => name === ChainKey.GAIACHAIN
+                        )!;
+                        const derivationKey = storedChain.derivationKey;
+                        if (!derivationKey) {
+                          throw new Error("Derivation key is missing!");
+                        }
+                        try {
+                          const keyBytes = Uint8Array.from(
+                            Buffer.from(derivationKey, "hex")
+                          );
+
+                          const account = [
+                            {
+                              address: response,
+                              algo: "secp256k1",
+                              pubkey: Array.from(keyBytes),
+                            },
+                          ];
+
+                          sendResponse(account);
+                        } catch (e) {
+                          console.error(e);
+                        }
+                      });
+                    } else {
+                      sendResponse(response);
+                    }
+                  })
+
+                  .catch((error) => sendResponse({ error }))
+              )
+              .catch((error) => sendResponse({ error }));
+          }
+        });
+
+        break;
+      }
+      case MessageKey.DASH_REQUEST: {
+        handleRequest(message, chains[ChainKey.DASH], origin)
+          .then(sendResponse)
+          .catch((error) => sendResponse({ error }));
 
         break;
       }
       case MessageKey.DOGECOIN_REQUEST: {
-        handleDogecoinCashRequest(message, sender).then(sendResponse);
+        handleRequest(message, chains[ChainKey.DOGECOIN], origin)
+          .then(sendResponse)
+          .catch((error) => sendResponse({ error }));
 
         break;
       }
       case MessageKey.ETHEREUM_REQUEST: {
-        handleEthereumRequest(message, sender).then(sendResponse);
+        getStoredChains().then((storedChains) => {
+          const chain = storedChains.find(
+            (chain) => chain.active && evmChains.indexOf(chain.name) >= 0
+          );
+
+          if (chain) {
+            handleRequest(message, chain, origin)
+              .then(sendResponse)
+              .catch((error) => sendResponse({ error }));
+          } else {
+            handleRequest(
+              {
+                method: RequestMethod.METAMASK.WALLET_SWITCH_ETHEREUM_CHAIN,
+                params: [{ chainId: chains[ChainKey.ETHEREUM].id }],
+              },
+              chains[ChainKey.ETHEREUM],
+              origin
+            )
+              .then(() =>
+                handleRequest(message, chains[ChainKey.ETHEREUM], origin)
+                  .then(sendResponse)
+                  .catch((error) => sendResponse({ error }))
+              )
+              .catch((error) => sendResponse({ error }));
+          }
+        });
 
         break;
       }
       case MessageKey.LITECOIN_REQUEST: {
-        handleLitecoinCashRequest(message, sender).then(sendResponse);
+        handleRequest(message, chains[ChainKey.LITECOIN], origin)
+          .then(sendResponse)
+          .catch((error) => sendResponse({ error }));
 
         break;
       }
       case MessageKey.MAYA_REQUEST: {
-        handleMayaRequest(message, sender).then(sendResponse);
+        handleRequest(message, chains[ChainKey.MAYACHAIN], origin)
+          .then(sendResponse)
+          .catch((error) => sendResponse({ error }));
 
         break;
       }
       case MessageKey.SOLANA_REQUEST: {
-        handleSolanaRequest(message, sender).then(sendResponse);
+        handleRequest(message, chains[ChainKey.SOLANA], origin)
+          .then(sendResponse)
+          .catch((error) => sendResponse({ error }));
 
         break;
       }
       case MessageKey.THOR_REQUEST: {
-        handleThorRequest(message, sender).then(sendResponse);
+        handleRequest(message, chains[ChainKey.THORCHAIN], origin)
+          .then(sendResponse)
+          .catch((error) => sendResponse({ error }));
+
+        break;
+      }
+      case MessageKey.PRIORITY: {
+        handleSetPriority(message).then(sendResponse);
 
         break;
       }

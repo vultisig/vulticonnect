@@ -8,6 +8,11 @@ import EVMTransactionProvider from "utils/transaction-provider/evm";
 import GaiaTransactionProvider from "utils/transaction-provider/gaia";
 import MayaTransactionProvider from "utils/transaction-provider/maya";
 import ThorchainTransactionProvider from "utils/transaction-provider/thorchain";
+import DydxTransactionProvider from "./dydx";
+import KujiraTransactionProvider from "./kujira";
+import OsmosisTransactionProvider from "./osmosis";
+import UTXOTransactionProvider from "./utxo";
+import SolanaTransactionProvider from "./solana";
 
 export {
   BaseTransactionProvider,
@@ -18,10 +23,14 @@ export {
   ThorchainTransactionProvider,
 };
 
+interface ChainRef {
+  [chainKey: string]: CoinType;
+}
+
 export class TransactionProvider {
   static createProvider(
     chainKey: ChainKey,
-    chainRef: { [chainKey: string]: CoinType },
+    chainRef: ChainRef,
     dataEncoder: (data: Uint8Array) => Promise<string>,
     walletCore: WalletCore
   ) {
@@ -50,8 +59,44 @@ export class TransactionProvider {
           walletCore
         );
       }
-      case ChainKey.OPTIMISM: {
-        return new GaiaTransactionProvider(
+      case ChainKey.OSMOSIS: {
+        return new OsmosisTransactionProvider(
+          chainKey,
+          chainRef,
+          dataEncoder,
+          walletCore
+        );
+      }
+      case ChainKey.KUJIRA: {
+        return new KujiraTransactionProvider(
+          chainKey,
+          chainRef,
+          dataEncoder,
+          walletCore
+        );
+      }
+      case ChainKey.DYDX: {
+        return new DydxTransactionProvider(
+          chainKey,
+          chainRef,
+          dataEncoder,
+          walletCore
+        );
+      }
+      case ChainKey.SOLANA: {
+        return new SolanaTransactionProvider(
+          chainKey,
+          chainRef,
+          dataEncoder,
+          walletCore
+        );
+      }
+      case ChainKey.BITCOINCASH:
+      case ChainKey.DASH:
+      case ChainKey.DOGECOIN:
+      case ChainKey.LITECOIN:
+      case ChainKey.BITCOIN: {
+        return new UTXOTransactionProvider(
           chainKey,
           chainRef,
           dataEncoder,

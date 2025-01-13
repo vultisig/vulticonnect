@@ -59,8 +59,11 @@ export default {
   // S
   [messageKeys.SAVE]: "Save",
   [messageKeys.SCAN_QR_WITH_DEVICE]: "Scan QR code with pair device",
+  [messageKeys.SCAN_FIRST]:
+    "Please first scan the QR code with your device and Join Keysign",
   [messageKeys.SETTINGS]: "Settings",
   [messageKeys.SIGN]: "Sign",
+  [messageKeys.SIGNATURE]: "Signature",
   [messageKeys.SIGNING]: "Signing",
   [messageKeys.SIGNING_TIMEOUT_DESCRIPTION]:
     "Signing process has exceeded time limit. Please retry!",

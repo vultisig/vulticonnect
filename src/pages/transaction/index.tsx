@@ -1,6 +1,6 @@
 import { FC, StrictMode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Button, QRCode, message } from "antd";
+import { Button, QRCode, message, Form, Input } from "antd";
 import { formatUnits, toUtf8String } from "ethers";
 import { create } from "@bufbuild/protobuf";
 import ReactDOM from "react-dom/client";
@@ -8,12 +8,17 @@ import html2canvas from "html2canvas";
 
 import { CoinSchema } from "protos/coin_pb";
 
-import { ChainKey, EVMChain, explorerUrl } from "utils/constants";
-import { parseMemo, splitString } from "utils/functions";
+import { evmChains, explorerUrl, TssKeysignType } from "utils/constants";
 import {
+  formatDisplayNumber,
+  getTssKeysignType,
+  parseMemo,
+  splitString,
+} from "utils/functions";
+import {
+  ITransaction,
   ParsedMemo,
   SignatureProps,
-  TransactionProps,
   VaultProps,
 } from "utils/interfaces";
 import {
@@ -25,10 +30,11 @@ import {
 } from "utils/storage";
 import {
   EVMTransactionProvider,
-  GaiaTransactionProvider,
   MayaTransactionProvider,
   TransactionProvider,
   ThorchainTransactionProvider,
+  CosmosTransactionProvider,
+  BaseTransactionProvider,
 } from "utils/transaction-provider";
 import i18n from "i18n/config";
 import api from "utils/api";
@@ -38,10 +44,10 @@ import WalletCoreProvider from "utils/wallet-core-provider";
 
 import {
   ArrowLeft,
-  ArrowRounded,
-  Copy,
   LinkExternal,
   QRCodeBorder,
+  SquareArrow,
+  SquareBehindSquare,
 } from "icons";
 import ConfigProvider from "components/config-provider";
 import MiddleTruncate from "components/middle-truncate";
@@ -51,18 +57,19 @@ import VultiError from "components/vulti-error";
 import "styles/index.scss";
 import "pages/transaction/index.scss";
 import "utils/prototypes";
+import UTXOTransactionProvider from "utils/transaction-provider/utxo";
+
+interface FormProps {
+  password: string;
+}
 
 interface InitialState {
   fastSign?: boolean;
   loading?: boolean;
   sendKey?: string;
   step: number;
-  transaction?: TransactionProps;
-  txProvider?:
-    | EVMTransactionProvider
-    | GaiaTransactionProvider
-    | MayaTransactionProvider
-    | ThorchainTransactionProvider;
+  transaction?: ITransaction.METAMASK;
+  txProvider?: BaseTransactionProvider;
   parsedMemo?: ParsedMemo;
   vault?: VaultProps;
   hasError?: boolean;
@@ -72,12 +79,15 @@ interface InitialState {
 
 const Component: FC = () => {
   const { t } = useTranslation();
-  const RETRY_TIMEOUT = 120000; //2min
-  const CLOSE_TIMEOUT = 60000; //1min
+  const RETRY_TIMEOUT_MS = 120000;
+  const CLOSE_TIMEOUT_MS = 60000;
   const initialState: InitialState = { step: 1, hasError: false };
+  const [connectedDevices, setConnectedDevices] = useState(0);
+  const [form] = Form.useForm();
   const [state, setState] = useState(initialState);
   const {
     loading,
+    fastSign,
     sendKey,
     step,
     transaction,
@@ -152,7 +162,7 @@ const Component: FC = () => {
             errorDescription: t(messageKeys.SIGNING_TIMEOUT_DESCRIPTION),
           });
         });
-      }, RETRY_TIMEOUT);
+      }, RETRY_TIMEOUT_MS);
 
       const attemptTransaction = (): void => {
         api.transaction
@@ -167,19 +177,20 @@ const Component: FC = () => {
                 transaction,
                 vault,
               })
-              .then((txHash) => {
+              .then(({ txHash, raw }) => {
                 setStoredTransaction({
                   ...transaction,
                   status: "success",
                   txHash,
+                  raw,
                 }).then(() => {
                   setState((prevState) => ({
                     ...prevState,
-                    step: 4,
-                    transaction: { ...transaction, txHash },
+                    step: 5,
+                    transaction: { ...transaction, txHash, raw },
                   }));
 
-                  initCloseTimer(CLOSE_TIMEOUT);
+                  initCloseTimer(CLOSE_TIMEOUT_MS);
                 });
               })
               .catch(() => {});
@@ -206,31 +217,120 @@ const Component: FC = () => {
     }
   };
 
+  const handleCustomMessagePending = (): void => {
+    if (!transaction || !txProvider) return;
+    const retryTimeout = setTimeout(() => {
+      setStoredTransaction({ ...transaction, status: "error" }).then(() => {
+        setState({
+          ...state,
+          hasError: true,
+          errorTitle: t(messageKeys.TIMEOUT_ERROR),
+          errorDescription: t(messageKeys.SIGNING_TIMEOUT_DESCRIPTION),
+        });
+      });
+    }, RETRY_TIMEOUT_MS);
+
+    const attemptTransaction = (): void => {
+      api.transaction
+        .getComplete(transaction.id)
+        .then((data) => {
+          clearTimeout(retryTimeout);
+
+          setStoredTransaction({
+            ...transaction,
+            status: "success",
+            customSignature: txProvider.getEncodedSignature(
+              data as SignatureProps
+            ),
+          }).then(() => {
+            setState((prevState) => ({
+              ...prevState,
+              step: 4,
+              transaction: {
+                ...transaction,
+                customSignature: txProvider.getEncodedSignature(
+                  data as SignatureProps
+                ),
+              },
+            }));
+            initCloseTimer(CLOSE_TIMEOUT_MS);
+          });
+        })
+        .catch(({ status }) => {
+          if (status === 404) {
+            setTimeout(() => {
+              attemptTransaction();
+            }, 1000);
+          } else {
+            clearTimeout(retryTimeout);
+            setStoredTransaction({ ...transaction, status: "error" }).then(
+              () => {
+                messageApi.open({
+                  type: "error",
+                  content: t(messageKeys.RETRY_ERROR),
+                });
+              }
+            );
+          }
+        });
+    };
+    attemptTransaction();
+  };
+
   const handleStart = (): void => {
     if (transaction && txProvider) {
       api.transaction
         .getDevices(transaction.id)
         .then(({ data }) => {
+          setConnectedDevices(data?.length);
           if (data?.length > 1) {
-            api.transaction.setStart(transaction.id, data).then(() => {
-              setStoredTransaction({ ...transaction, status: "pending" }).then(
-                () => {
-                  txProvider
-                    .getPreSignedInputData()
-                    .then((preSignedInputData) => {
+            api.transaction
+              .setStart(transaction.id, data)
+              .then(() => {
+                setStoredTransaction({ ...transaction, status: "pending" })
+                  .then(() => {
+                    if (transaction.isCustomMessage) {
+                      setState((prevState) => ({
+                        ...prevState,
+                        step: 4,
+                      }));
+                      handleCustomMessagePending();
+                    } else {
                       txProvider
-                        .getPreSignedImageHash(preSignedInputData)
-                        .then((preSignedImageHash) => {
-                          setState((prevState) => ({ ...prevState, step: 3 }));
-
-                          handlePending(preSignedImageHash, preSignedInputData);
+                        .getPreSignedInputData()
+                        .then((preSignedInputData) => {
+                          txProvider
+                            .getPreSignedImageHash(preSignedInputData)
+                            .then((preSignedImageHash) => {
+                              setState((prevState) => ({
+                                ...prevState,
+                                step: 4,
+                              }));
+                              handlePending(
+                                preSignedImageHash,
+                                preSignedInputData
+                              );
+                            })
+                            .catch((err) => {
+                              console.error(err);
+                            });
+                        })
+                        .catch((err) => {
+                          console.error(err);
                         });
-                    });
-                }
-              );
-            });
+                    }
+                  })
+                  .catch((err) => {
+                    console.log(err);
+                  });
+              })
+              .catch((err) => {
+                console.log(err);
+              });
           } else {
-            setTimeout(handleStart, 1000);
+            setTimeout(() => {
+              handleStart();
+            }, 1000);
           }
         })
         .catch(() => {
@@ -251,32 +351,62 @@ const Component: FC = () => {
           setState((prevState) => ({ ...prevState, step }));
         } else if (transaction && txProvider && vault) {
           setState((prevState) => ({ ...prevState, loading: true }));
+          if (transaction.isCustomMessage) {
+            txProvider
+              .getTransactionKey(
+                vault.publicKeyEcdsa,
+                transaction,
+                vault.hexChainCode
+              )
+              .then((sendKey) => {
+                api.checkVaultExist(vault.publicKeyEcdsa).then((fastSign) => {
+                  setState((prevState) => ({
+                    ...prevState,
+                    fastSign,
+                    loading: false,
+                    sendKey,
+                    step,
+                  }));
 
-          txProvider
-            .getKeysignPayload(transaction, vault)
-            .then(() => {
-              txProvider
-                .getTransactionKey(vault.publicKeyEcdsa, transaction.id)
-                .then((sendKey) => {
-                  api.checkVaultExist(vault.publicKeyEcdsa).then((fastSign) => {
-                    setState((prevState) => ({
-                      ...prevState,
-                      fastSign,
-                      loading: false,
-                      sendKey,
-                      step,
-                    }));
-
-                    handleStart();
-                  });
-                })
-                .catch(() => {
-                  setState((prevState) => ({ ...prevState, loading: false }));
+                  handleStart();
                 });
-            })
-            .catch(() => {
-              setState((prevState) => ({ ...prevState, loading: false }));
-            });
+              })
+              .catch(() => {
+                setState((prevState) => ({ ...prevState, loading: false }));
+              });
+          } else {
+            txProvider
+              .getKeysignPayload(transaction, vault)
+              .then(() => {
+                txProvider
+                  .getTransactionKey(
+                    vault.publicKeyEcdsa,
+                    transaction,
+                    vault.hexChainCode
+                  )
+                  .then((sendKey) => {
+                    api
+                      .checkVaultExist(vault.publicKeyEcdsa)
+                      .then((fastSign) => {
+                        setState((prevState) => ({
+                          ...prevState,
+                          fastSign,
+                          loading: false,
+                          sendKey,
+                          step,
+                        }));
+
+                        handleStart();
+                      });
+                  })
+                  .catch(() => {
+                    setState((prevState) => ({ ...prevState, loading: false }));
+                  });
+              })
+              .catch(() => {
+                setState((prevState) => ({ ...prevState, loading: false }));
+              });
+          }
         }
 
         break;
@@ -287,6 +417,59 @@ const Component: FC = () => {
         break;
       }
     }
+  };
+  const handleFastSign = (): void => {
+    if (connectedDevices >= 1) handleStep(3);
+    else
+      messageApi.open({
+        type: "warning",
+        content: t(messageKeys.SCAN_FIRST),
+      });
+  };
+
+  const handleSubmitFastSignPassword = (): void => {
+    txProvider?.getPreSignedInputData().then((preSignedInputData) => {
+      txProvider
+        .getPreSignedImageHash(preSignedInputData)
+        .then((preSignedImageHash) => {
+          if (transaction) {
+            const tssType = getTssKeysignType(transaction.chain.name);
+            form
+              .validateFields()
+              .then(({ password }: FormProps) => {
+                api.fastVault
+                  .signWithServer({
+                    vault_password: password,
+                    hex_encryption_key: vault?.hexChainCode ?? "",
+                    is_ecdsa:
+                      getTssKeysignType(transaction.chain.name) ===
+                      TssKeysignType.ECDSA,
+                    derive_path: txProvider.getDerivePath(
+                      transaction.chain.name
+                    ),
+                    messages: [preSignedImageHash],
+                    public_key:
+                      tssType === TssKeysignType.ECDSA
+                        ? vault?.publicKeyEcdsa ?? ""
+                        : vault?.publicKeyEddsa ?? "",
+                    session: transaction.id,
+                  })
+                  .then(() => {
+                    setState((prevState) => ({ ...prevState, step: 4 }));
+                    handlePending(preSignedImageHash, preSignedInputData);
+                  })
+                  .catch((err) => {
+                    console.error(err);
+                    messageApi.open({
+                      type: "error",
+                      content: t(messageKeys.SIGNING_ERROR),
+                    });
+                  });
+              })
+              .catch(() => {});
+          }
+        });
+    });
   };
 
   const componentDidMount = (): void => {
@@ -323,31 +506,26 @@ const Component: FC = () => {
             );
 
             // Improve
-            if (
-              (Object.values(EVMChain) as unknown as ChainKey[]).includes(
-                transaction.chain.name
-              )
-            ) {
+            if (evmChains.indexOf(transaction.chain.name) >= 0) {
               parseMemo(transaction.data)
                 .then((memo) => {
                   setState({ ...state, parsedMemo: memo });
                 })
-                .catch(() => {});
+                .catch();
 
               (txProvider as EVMTransactionProvider).getFeeData().then(() => {
                 (txProvider as EVMTransactionProvider)
                   .getEstimateTransactionFee(transaction.chain.cmcId, currency)
                   .then((gasPrice) => {
                     transaction.gasPrice = gasPrice;
-
                     try {
                       transaction.memo = toUtf8String(transaction.data);
                     } catch (err) {}
-
                     setStoredTransaction(transaction).then(() => {
                       setState((prevState) => ({
                         ...prevState,
                         currency,
+                        loaded: true,
                         transaction,
                         txProvider,
                         vault,
@@ -365,25 +543,31 @@ const Component: FC = () => {
                 isNativeToken: true,
                 logo: transaction.chain.ticker.toLowerCase(),
               });
+
               (
                 txProvider as
                   | ThorchainTransactionProvider
                   | MayaTransactionProvider
+                  | CosmosTransactionProvider
+                  | UTXOTransactionProvider
               )
                 .getSpecificTransactionInfo(coin)
                 .then((blockchainSpecific) => {
-                  transaction.gasPrice = String(blockchainSpecific.gasPrice);
-
+                  transaction.gasPrice = blockchainSpecific.gasPrice
+                    .toFixed(coin.decimals)
+                    .toLocaleString();
                   try {
                     transaction.memo = toUtf8String(transaction.data);
                   } catch (err) {
-                    if (!parsedMemo) transaction.memo = transaction.data;
+                    if (!parsedMemo) {
+                      transaction.memo = transaction.data;
+                    }
                   }
-
                   setStoredTransaction(transaction).then(() => {
                     setState((prevState) => ({
                       ...prevState,
                       currency,
+                      loaded: true,
                       transaction,
                       txProvider,
                       vault,
@@ -424,7 +608,7 @@ const Component: FC = () => {
                 {t(
                   step === 1
                     ? messageKeys.VERIFY_SEND
-                    : step === 4
+                    : step === 5
                     ? messageKeys.TRANSACTION_SUCCESSFUL
                     : messageKeys.SIGN_TRANSACTION
                 )}
@@ -488,7 +672,12 @@ const Component: FC = () => {
                       <span className="label">
                         {t(messageKeys.NETWORK_FEE)}
                       </span>
-                      <span className="extra">{transaction.gasPrice}</span>
+                      <span className="extra">
+                        {formatDisplayNumber(
+                          transaction.gasPrice!,
+                          transaction.chain.ticker
+                        )}
+                      </span>
                     </div>
                     {parsedMemo && (
                       <>
@@ -540,14 +729,20 @@ const Component: FC = () => {
                       <QRCode
                         bordered
                         size={275}
-                        value={sendKey ?? ""}
+                        value={sendKey || ""}
                         color="white"
                       />
                     </div>
                   </div>
                 </div>
                 <div className="footer">
-                  <Button type="primary" shape="round" disabled block>
+                  <Button
+                    onClick={handleFastSign}
+                    type="primary"
+                    shape="round"
+                    disabled={!fastSign}
+                    block
+                  >
                     {t(messageKeys.FAST_SIGN)}
                   </Button>
                   <Button
@@ -563,6 +758,32 @@ const Component: FC = () => {
             ) : step === 3 ? (
               <>
                 <div className="content">
+                  <div className="content">
+                    <Form form={form}>
+                      <Form.Item name="password" rules={[{ required: true }]}>
+                        <Input
+                          placeholder="FastSign Password"
+                          type="password"
+                        />
+                      </Form.Item>
+                      <Button htmlType="submit" />
+                    </Form>
+                  </div>
+                  <div className="footer">
+                    <Button
+                      onClick={handleSubmitFastSignPassword}
+                      type="primary"
+                      shape="round"
+                      block
+                    >
+                      Submit
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : step === 4 ? (
+              <>
+                <div className="content">
                   <VultiLoading />
                   <span className="message">{t(messageKeys.SIGNING)}</span>
                 </div>
@@ -570,65 +791,76 @@ const Component: FC = () => {
             ) : (
               <>
                 <div className="content">
-                  <div className="list">
-                    <div className="list-item">
-                      <span className="label">
-                        {t(messageKeys.TRANSACTION)}
-                      </span>
-                      <MiddleTruncate text={transaction.txHash ?? ""} />
-                      <div className="actions">
-                        <a
-                          href={`${explorerUrl[transaction.chain.name]}/tx/${
-                            transaction.txHash
-                          }`}
-                          rel="noopener noreferrer"
-                          target="_blank"
-                          className="btn"
-                        >
-                          <ArrowRounded />
-                          {t(messageKeys.VIEW_TX)}
-                        </a>
-                        <span className="btn" onClick={() => handleCopy()}>
-                          <Copy />
-                          {t(messageKeys.COPY_TX)}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="list-item">
-                      <span className="label">{t(messageKeys.TO)}</span>
-                      <MiddleTruncate text={transaction.to} />
-                    </div>
-                    {transaction.value && (
+                  {!transaction.isCustomMessage ? (
+                    <div className="list">
                       <div className="list-item">
-                        <span className="label">{t(messageKeys.AMOUNT)}</span>
-                        <span className="extra">{`${formatUnits(
-                          transaction.value,
-                          transaction.chain.decimals
-                        )} ${transaction.chain.ticker}`}</span>
-                      </div>
-                    )}
-
-                    {transaction.memo && !parsedMemo && (
-                      <div className="memo-item">
-                        <span className="label">{t(messageKeys.MEMO)}</span>
-                        <span className="extra">
-                          <div>
-                            {splitString(transaction.memo, 32).map(
-                              (str, index) => (
-                                <div key={index}>{str}</div>
-                              )
-                            )}
-                          </div>
+                        <span className="label">
+                          {t(messageKeys.TRANSACTION)}
                         </span>
+                        <MiddleTruncate text={transaction.txHash!} />
+                        <div className="actions">
+                          <a
+                            href={`${explorerUrl[transaction.chain.name]}/tx/${
+                              transaction.txHash
+                            }`}
+                            rel="noopener noreferrer"
+                            target="_blank"
+                            className="btn"
+                          >
+                            <SquareArrow />
+                            {t(messageKeys.VIEW_TX)}
+                          </a>
+                          <span className="btn" onClick={() => handleCopy()}>
+                            <SquareBehindSquare />
+                            {t(messageKeys.COPY_TX)}
+                          </span>
+                        </div>
                       </div>
-                    )}
-                    <div className="list-item">
-                      <span className="label">
-                        {t(messageKeys.NETWORK_FEE)}
-                      </span>
-                      <span className="extra">{transaction.gasPrice}</span>
+                      <div className="list-item">
+                        <span className="label">{t(messageKeys.TO)}</span>
+                        <MiddleTruncate text={transaction.to} />
+                      </div>
+                      {transaction.value && (
+                        <div className="list-item">
+                          <span className="label">{t(messageKeys.AMOUNT)}</span>
+                          <span className="extra">{`${formatUnits(
+                            transaction.value,
+                            transaction.chain.decimals
+                          )} ${transaction.chain.ticker}`}</span>
+                        </div>
+                      )}
+
+                      {transaction.memo && !parsedMemo && (
+                        <div className="memo-item">
+                          <span className="label">{t(messageKeys.MEMO)}</span>
+                          <span className="extra">
+                            <div>
+                              {splitString(transaction.memo, 32).map(
+                                (str, index) => (
+                                  <div key={index}>{str}</div>
+                                )
+                              )}
+                            </div>
+                          </span>
+                        </div>
+                      )}
+                      <div className="list-item">
+                        <span className="label">
+                          {t(messageKeys.NETWORK_FEE)}
+                        </span>
+                        <span className="extra">{transaction.gasPrice}</span>
+                      </div>
                     </div>
-                  </div>
+                  ) : (
+                    <div className="list">
+                      <div className="list-item">
+                        <span className="label">
+                          {t(messageKeys.SIGNATURE)}
+                        </span>
+                        <MiddleTruncate text={transaction.customSignature!} />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="footer">
                   <Button

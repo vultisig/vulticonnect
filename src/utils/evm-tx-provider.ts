@@ -22,11 +22,7 @@ import {
 } from "protos/keysign_message_pb";
 
 import { ChainKey, Currency, rpcUrl } from "utils/constants";
-import {
-  SignedTransaction,
-  TransactionProps,
-  VaultProps,
-} from "utils/interfaces";
+import { ITransaction, SignedTransaction, VaultProps } from "utils/interfaces";
 import { checkERC20Function } from "utils/functions";
 import api from "utils/api";
 
@@ -116,7 +112,7 @@ export default class EVMTransactionProvider {
   };
 
   public getKeysignPayload = (
-    transaction: TransactionProps,
+    transaction: ITransaction.METAMASK,
     vault: VaultProps
   ): Promise<KeysignPayload> => {
     return new Promise((resolve, reject) => {

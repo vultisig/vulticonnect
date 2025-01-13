@@ -5,8 +5,8 @@ import { Button, Upload, UploadProps } from "antd";
 import { ReaderOptions, readBarcodesFromImageFile } from "zxing-wasm";
 import { UAParser } from "ua-parser-js";
 
-import { toCamelCase } from "utils/functions";
-import { chains, errorKey } from "utils/constants";
+import { calculateWindowPosition, toCamelCase } from "utils/functions";
+import { ChainKey, chains, errorKey } from "utils/constants";
 import { getStoredVaults, setStoredVaults } from "utils/storage";
 import { VaultProps } from "utils/interfaces";
 import useGoBack from "hooks/go-back";
@@ -65,13 +65,12 @@ const Component: FC = () => {
             .then(({ chainRef, walletCore }) => {
               const addressProvider = new AddressProvider(chainRef, walletCore);
 
-              const modifiedChains = chains.filter(({ id }) => !!id);
-              const promises = modifiedChains.map(({ name }) =>
-                addressProvider.getAddress(name, vault)
+              const promises = Object.keys(chains).map((key) =>
+                addressProvider.getAddress(key as ChainKey, vault)
               );
 
               Promise.all(promises).then((props) => {
-                vault.chains = modifiedChains.map((chain, index) => ({
+                vault.chains = Object.values(chains).map((chain, index) => ({
                   ...chain,
                   ...props[index],
                 }));
@@ -193,20 +192,8 @@ const Component: FC = () => {
 
       chrome.windows.getCurrent({ populate: true }, (currentWindow) => {
         let createdWindowId: number;
-        const height = 639;
-        const width = 376;
-        let left = 0;
-        let top = 0;
-
-        if (
-          currentWindow &&
-          currentWindow.left !== undefined &&
-          currentWindow.top !== undefined &&
-          currentWindow.width !== undefined
-        ) {
-          left = currentWindow.left + currentWindow.width - width;
-          top = currentWindow.top;
-        }
+        const { height, left, top, width } =
+          calculateWindowPosition(currentWindow);
 
         chrome.windows.create(
           {

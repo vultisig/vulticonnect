@@ -64,10 +64,13 @@ export default keyMirror({
   // S
   SAVE: true,
   SCAN_QR_WITH_DEVICE: true,
+  SCAN_FIRST: true,
   SELECT_A_VAULT: true,
   SETTINGS: true,
   SIGN: true,
+  SIGNATURE: true,
   SIGNING: true,
+  SIGNING_ERROR: true,
   SIGNING_TIMEOUT_DESCRIPTION: true,
   SIGN_TRANSACTION: true,
   START: true,

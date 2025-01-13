@@ -17,10 +17,10 @@ import {
 
 import { ChainKey } from "utils/constants";
 import {
+  ITransaction,
   SignatureProps,
   SignedTransaction,
   SpecificThorchain,
-  TransactionProps,
   VaultProps,
 } from "utils/interfaces";
 import api from "utils/api";
@@ -66,7 +66,7 @@ export default class MayaTransactionProvider extends BaseTransactionProvider {
   };
 
   public getKeysignPayload = (
-    transaction: TransactionProps,
+    transaction: ITransaction.METAMASK,
     vault: VaultProps
   ): Promise<KeysignPayload> => {
     return new Promise((resolve) => {
@@ -199,7 +199,7 @@ export default class MayaTransactionProvider extends BaseTransactionProvider {
     inputData,
     signature,
     vault,
-  }: SignedTransaction): Promise<string> => {
+  }: SignedTransaction): Promise<{ txHash: string; raw: any }> => {
     return new Promise((resolve, reject) => {
       if (inputData && vault) {
         const pubkeyMaya = vault.chains.find(
@@ -237,7 +237,7 @@ export default class MayaTransactionProvider extends BaseTransactionProvider {
             undefined
           );
 
-          resolve(result.transactionHash);
+          resolve({ txHash: result.transactionHash, raw: serializedData });
         } else {
           reject();
         }

@@ -2,7 +2,7 @@ import { ChainKey, chains, Currency, Language } from "utils/constants";
 import {
   AccountsProps,
   ChainProps,
-  TransactionProps,
+  ITransaction,
   VaultProps,
 } from "utils/interfaces";
 import i18n from "i18n/config";
@@ -22,7 +22,7 @@ export interface LocalStorage {
   vaults?: VaultProps[];
   isPriority?: boolean;
   ethProviderState?: EthProviderState;
-  transactions?: TransactionProps[];
+  transactions?: ITransaction.METAMASK[];
 }
 export type LocalStorageKeys = keyof LocalStorage;
 
@@ -54,9 +54,7 @@ export const getStoredChains = (): Promise<ChainProps[]> => {
       if (res.chains?.length) {
         resolve(res.chains);
       } else {
-        const defaultChain = chains.find(
-          ({ name }) => name === ChainKey.ETHEREUM
-        );
+        const defaultChain = chains[ChainKey.ETHEREUM];
 
         resolve(defaultChain ? [{ ...defaultChain, active: true }] : []);
       }
@@ -137,7 +135,7 @@ export const setStoredVaults = (vaults: VaultProps[]): Promise<void> => {
 };
 
 export const setStoredTransaction = (
-  transaction: TransactionProps
+  transaction: ITransaction.METAMASK
 ): Promise<void> => {
   return new Promise((resolve) => {
     getStoredTransactions().then((transactions) => {
@@ -196,7 +194,7 @@ export const setStoredEthProviderState = (
   });
 };
 
-export const getStoredTransactions = (): Promise<TransactionProps[]> => {
+export const getStoredTransactions = (): Promise<ITransaction.METAMASK[]> => {
   const keys: LocalStorageKeys[] = ["transactions"];
 
   return new Promise((resolve) => {
@@ -207,7 +205,7 @@ export const getStoredTransactions = (): Promise<TransactionProps[]> => {
 };
 
 export const setStoredTransactions = (
-  transactions: TransactionProps[]
+  transactions: ITransaction.METAMASK[]
 ): Promise<void> => {
   const vals: LocalStorage = { transactions };
 

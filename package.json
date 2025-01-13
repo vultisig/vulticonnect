@@ -1,7 +1,7 @@
 {
-  "name": "vulticonnect",
+  "name": "Vulticonnect",
   "private": true,
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "VultiConnect is a Chrome extension that integrates Vultisig into web applications, enabling users to securely sign transactions.",
   "author": {
     "name": "Vultisig",
@@ -20,9 +20,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@keplr-wallet/provider": "^0.12.169",
     "7z-wasm": "^1.1.0",
     "antd": "^5.22.2",
     "axios": "^1.7.7",
+    "bs58": "^6.0.0",
     "ethers": "^6.13.4",
     "html2canvas": "^1.4.1",
     "i18next": "^24.0.2",
@@ -40,10 +42,13 @@
     "@bufbuild/buf": "^1.47.2",
     "@bufbuild/protobuf": "^2.2.2",
     "@bufbuild/protoc-gen-es": "^2.2.2",
+    "@cosmjs/tendermint-rpc": "^0.32.4",
     "@eslint/js": "^9.9.0",
     "@fontsource/montserrat": "^5.1.0",
     "@fontsource/roboto-mono": "^5.1.0",
-    "@trustwallet/wallet-core": "^4.1.20",
+    "@keplr-wallet/types": "^0.12.169",
+    "@solana/web3.js": "^1.98.0",
+    "@trustwallet/wallet-core": "^4.1.21",
     "@types/chrome": "^0.0.287",
     "@types/keymirror": "^0.1.4",
     "@types/node": "^22.7.4",

@@ -16,7 +16,7 @@ window.addEventListener(
     data,
     source,
   }: MessageEvent<{
-    identifier: string;
+    id: string;
     message: any;
     sender: SenderKey;
     type: MessageKey;
@@ -24,7 +24,7 @@ window.addEventListener(
     if (
       source !== window ||
       data.sender !== SenderKey.PAGE ||
-      !data.identifier ||
+      !data.id ||
       !data.type
     ) {
       return;
@@ -34,6 +34,7 @@ window.addEventListener(
       case MessageKey.BITCOIN_REQUEST:
       case MessageKey.BITCOIN_CASH_REQUEST:
       case MessageKey.COSMOS_REQUEST:
+      case MessageKey.DASH_REQUEST:
       case MessageKey.DOGECOIN_REQUEST:
       case MessageKey.ETHEREUM_REQUEST:
       case MessageKey.LITECOIN_REQUEST:
@@ -46,7 +47,7 @@ window.addEventListener(
         ).then((result) => {
           window.postMessage(
             {
-              identifier: data.identifier,
+              id: data.id,
               message: result,
               sender: SenderKey.RELAY,
               type: data.type,
@@ -57,14 +58,14 @@ window.addEventListener(
 
         break;
       }
-      case MessageKey.SET_PRIORITY: {
+      case MessageKey.PRIORITY: {
         sendToBackground<
           Messaging.SetPriority.Request,
           Messaging.SetPriority.Response
         >(data.type, data.message).then((result) => {
           window.postMessage(
             {
-              identifier: data.identifier,
+              id: data.id,
               message: result,
               sender: SenderKey.RELAY,
               type: data.type,
@@ -82,7 +83,7 @@ window.addEventListener(
         >(data.type, data.message).then((result) => {
           window.postMessage(
             {
-              identifier: data.identifier,
+              id: data.id,
               message: result,
               sender: SenderKey.RELAY,
               type: data.type,

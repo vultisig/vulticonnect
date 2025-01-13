@@ -19,10 +19,10 @@ import {
 import { ChainKey } from "utils/constants";
 import {
   CosmosAccountData,
+  ITransaction,
   SignatureProps,
   SignedTransaction,
   SpecificCosmos,
-  TransactionProps,
   VaultProps,
 } from "utils/interfaces";
 import { SignedTransactionResult } from "utils/signed-transaction-result";
@@ -77,7 +77,7 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
   };
 
   public getKeysignPayload = (
-    transaction: TransactionProps,
+    transaction: ITransaction.METAMASK,
     vault: VaultProps
   ): Promise<KeysignPayload> => {
     return new Promise((resolve) => {
@@ -190,7 +190,7 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
     signature,
     transaction,
     vault,
-  }: SignedTransaction): Promise<string> => {
+  }: SignedTransaction): Promise<{ txHash: string; raw: any }> => {
     return new Promise((resolve, reject) => {
       if (inputData && transaction && vault) {
         const pubkeyCosmos = vault.chains.find(
@@ -228,7 +228,7 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
             undefined
           );
 
-          resolve(result.transactionHash);
+          resolve({ txHash: result.transactionHash, raw: serializedData });
         } else {
           reject;
         }

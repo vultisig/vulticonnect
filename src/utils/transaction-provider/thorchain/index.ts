@@ -1,5 +1,5 @@
 import { Buffer } from "buffer";
-import { sha256 } from "ethers";
+import { formatUnits, sha256 } from "ethers";
 import { create } from "@bufbuild/protobuf";
 import { TW, WalletCore } from "@trustwallet/wallet-core";
 import { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
@@ -17,10 +17,10 @@ import { CoinSchema, Coin } from "protos/coin_pb";
 
 import { ChainKey } from "utils/constants";
 import type {
+  ITransaction,
   SignatureProps,
   SignedTransaction,
   SpecificThorchain,
-  TransactionProps,
   VaultProps,
 } from "utils/interfaces";
 import api from "utils/api";
@@ -46,17 +46,18 @@ export default class ThorchainTransactionProvider extends BaseTransactionProvide
   }
 
   public getSpecificTransactionInfo = (
-    coin: Coin
+    coin: Coin,
+    isDeposit?: boolean
   ): Promise<SpecificThorchain> => {
     return new Promise<SpecificThorchain>((resolve) => {
       api.thorchain.fetchAccountNumber(coin.address).then((accountData) => {
         this.calculateFee(coin).then((fee) => {
           const specificThorchain: SpecificThorchain = {
             fee,
-            gasPrice: fee,
+            gasPrice: Number(formatUnits(fee, coin.decimals)),
             accountNumber: Number(accountData?.accountNumber),
             sequence: Number(accountData.sequence ?? 0),
-            isDeposit: false,
+            isDeposit: isDeposit ?? false,
           } as SpecificThorchain;
 
           resolve(specificThorchain);
@@ -66,7 +67,7 @@ export default class ThorchainTransactionProvider extends BaseTransactionProvide
   };
 
   public getKeysignPayload = (
-    transaction: TransactionProps,
+    transaction: ITransaction.METAMASK,
     vault: VaultProps
   ): Promise<KeysignPayload> => {
     return new Promise((resolve) => {
@@ -82,33 +83,35 @@ export default class ThorchainTransactionProvider extends BaseTransactionProvide
         logo: transaction.chain.ticker.toLowerCase(),
       });
 
-      this.getSpecificTransactionInfo(coin).then((specificData) => {
-        const thorchainSpecific = create(THORChainSpecificSchema, {
-          accountNumber: BigInt(specificData.accountNumber),
-          fee: BigInt(specificData.fee),
-          isDeposit: specificData.isDeposit,
-          sequence: BigInt(specificData.sequence),
-        });
+      this.getSpecificTransactionInfo(coin, transaction.isDeposit).then(
+        (specificData) => {
+          const thorchainSpecific = create(THORChainSpecificSchema, {
+            accountNumber: BigInt(specificData.accountNumber),
+            fee: BigInt(specificData.fee),
+            isDeposit: specificData.isDeposit,
+            sequence: BigInt(specificData.sequence),
+          });
 
-        const keysignPayload = create(KeysignPayloadSchema, {
-          toAddress: transaction.to,
-          toAmount: transaction.value
-            ? BigInt(parseInt(transaction.value)).toString()
-            : "0",
-          memo: transaction.data,
-          vaultPublicKeyEcdsa: vault.publicKeyEcdsa,
-          vaultLocalPartyId: "VultiConnect",
-          coin,
-          blockchainSpecific: {
-            case: "thorchainSpecific",
-            value: thorchainSpecific,
-          },
-        });
+          const keysignPayload = create(KeysignPayloadSchema, {
+            toAddress: transaction.to,
+            toAmount: transaction.value
+              ? BigInt(parseInt(transaction.value)).toString()
+              : "0",
+            memo: transaction.data,
+            vaultPublicKeyEcdsa: vault.publicKeyEcdsa,
+            vaultLocalPartyId: "VultiConnect",
+            coin,
+            blockchainSpecific: {
+              case: "thorchainSpecific",
+              value: thorchainSpecific,
+            },
+          });
 
-        this.keysignPayload = keysignPayload;
+          this.keysignPayload = keysignPayload;
 
-        resolve(keysignPayload);
-      });
+          resolve(keysignPayload);
+        }
+      );
     });
   };
 
@@ -204,7 +207,7 @@ export default class ThorchainTransactionProvider extends BaseTransactionProvide
     inputData,
     signature,
     vault,
-  }: SignedTransaction): Promise<string> => {
+  }: SignedTransaction): Promise<{ txHash: string; raw: any }> => {
     return new Promise((resolve, reject) => {
       if (inputData && vault) {
         const pubkeyThorchain = vault.chains.find(
@@ -242,7 +245,7 @@ export default class ThorchainTransactionProvider extends BaseTransactionProvide
             undefined
           );
 
-          resolve(result.transactionHash);
+          resolve({ txHash: result.transactionHash, raw: serializedData });
         } else {
           reject();
         }

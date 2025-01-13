@@ -1,7 +1,7 @@
 import keyMirror from "keymirror";
 
 import type {
-  ChainProps,
+  ChainObjRef,
   ChainStrRef,
   CurrencyRef,
   LanguageRef,
@@ -30,41 +30,26 @@ export enum ChainKey {
   POLYGON = "Polygon",
   SOLANA = "Solana",
   SUI = "Sui",
+  TERRA = "Terra",
+  TERRACLASSIC = "TerraClassic",
   THORCHAIN = "THORChain",
+  TON = "TON",
+  XRP = "XRP",
   ZKSYNC = "Zksync",
-}
-
-export enum CosmosChain {
-  THORChain = ChainKey.THORCHAIN,
-  Gaia = ChainKey.GAIACHAIN,
-  MayaChain = ChainKey.MAYACHAIN,
-  Dydx = ChainKey.DYDX,
-  Kujira = ChainKey.KUJIRA,
-  Osmosis = ChainKey.OSMOSIS,
-}
-
-export enum EVMChain {
-  AVALANCHE = ChainKey.AVALANCHE,
-  ARBITRUM = ChainKey.ARBITRUM,
-  BASE = ChainKey.BASE,
-  BSCCHAIN = ChainKey.BSCCHAIN,
-  CRONOSCHAIN = ChainKey.CRONOSCHAIN,
-  ETHEREUM = ChainKey.ETHEREUM,
-  OPTIMISM = ChainKey.OPTIMISM,
-  POLYGON = ChainKey.POLYGON,
 }
 
 export enum MessageKey {
   BITCOIN_REQUEST = "bitcoin-request",
   BITCOIN_CASH_REQUEST = "bitcoin-cash-request",
   COSMOS_REQUEST = "cosmos-request",
+  DASH_REQUEST = "dash-request",
   DOGECOIN_REQUEST = "dogecoin-request",
   ETHEREUM_REQUEST = "ethereum-request",
   LITECOIN_REQUEST = "litecoin-request",
   MAYA_REQUEST = "maya-request",
   SOLANA_REQUEST = "solana-request",
   THOR_REQUEST = "thor-request",
-  SET_PRIORITY = "set-priority",
+  PRIORITY = "priority",
   VAULTS = "vaults",
 }
 
@@ -86,6 +71,12 @@ export enum Currency {
   USD = "USD",
 }
 
+export enum Instance {
+  ACCOUNTS = "accounts",
+  TRANSACTION = "transaction",
+  VAULTS = "vaults",
+}
+
 export enum Language {
   CROATIA = "hr",
   DUTCH = "nl",
@@ -105,6 +96,11 @@ export enum EventMethod {
   ERROR = "ERROR",
   MESSAGE = "MESSAGE",
   NETWORK_CHANGED = "networkChanged",
+}
+
+export enum TssKeysignType {
+  ECDSA = "ECDSA",
+  EdDSA = "EdDSA",
 }
 
 export namespace RequestMethod {
@@ -162,6 +158,7 @@ export namespace RequestMethod {
     ETH_SYNCING = "eth_syncing",
     ETH_UNINSTALL_FILTER = "eth_uninstallFilter",
     ETH_UNSUBSCRIBE = "eth_unsubscribe",
+    NET_VERSION = "net_version",
     PERSONAL_SIGN = "personal_sign",
     WALLET_ADD_ETHEREUM_CHAIN = "wallet_addEthereumChain",
     WALLET_GET_PERMISSIONS = "wallet_getPermissions",
@@ -175,12 +172,12 @@ export namespace RequestMethod {
   }
 
   export enum VULTISIG {
+    ACCOUNTS = "accounts",
     CHAIN_ID = "chain_id",
+    DEPOSIT_TRANSACTION = "deposit_transaction",
     GET_TRANSACTION_BY_HASH = "get_transaction_by_hash",
-    GET_ACCOUNTS = "get_accounts",
     REQUEST_ACCOUNTS = "request_accounts",
     SEND_TRANSACTION = "send_transaction",
-    TRANSFER = "transfer",
     WALLET_ADD_CHAIN = "wallet_add_chain",
     WALLET_SWITCH_CHAIN = "wallet_switch_chain",
   }
@@ -266,7 +263,11 @@ export const explorerUrl: ChainStrRef = {
   [ChainKey.POLYGON]: "https://polygonscan.com",
   [ChainKey.SOLANA]: "https://explorer.solana.com",
   [ChainKey.SUI]: "",
+  [ChainKey.TERRA]: "",
+  [ChainKey.TERRACLASSIC]: "",
   [ChainKey.THORCHAIN]: "https://thorchain.net",
+  [ChainKey.TON]: "https://tonscan.org/",
+  [ChainKey.XRP]: "",
   [ChainKey.ZKSYNC]: "https://explorer.zksync.io",
 };
 
@@ -281,284 +282,192 @@ export const rpcUrl: ChainStrRef = {
   [ChainKey.CRONOSCHAIN]: "https://cronos-evm-rpc.publicnode.com",
   [ChainKey.DASH]: "",
   [ChainKey.DOGECOIN]: "",
-  [ChainKey.DYDX]: "",
+  [ChainKey.DYDX]: "https://dydx-rpc.publicnode.com",
   [ChainKey.ETHEREUM]: "https://ethereum-rpc.publicnode.com",
-  [ChainKey.GAIACHAIN]: "",
-  [ChainKey.KUJIRA]: "",
+  [ChainKey.GAIACHAIN]: "https://cosmos-rpc.publicnode.com",
+  [ChainKey.KUJIRA]: "https://kujira-rpc.publicnode.com",
   [ChainKey.LITECOIN]: "",
   [ChainKey.MAYACHAIN]: "",
   [ChainKey.OPTIMISM]: "https://optimism-rpc.publicnode.com",
-  [ChainKey.OSMOSIS]: "",
+  [ChainKey.OSMOSIS]: "https://osmosis-rpc.publicnode.com",
   [ChainKey.POLKADOT]: "",
   [ChainKey.POLYGON]: "https://polygon-bor-rpc.publicnode.com",
-  [ChainKey.SOLANA]: "",
+  [ChainKey.SOLANA]: "https://solana-rpc.publicnode.com",
   [ChainKey.SUI]: "",
+  [ChainKey.TERRA]: "",
+  [ChainKey.TERRACLASSIC]: "",
   [ChainKey.THORCHAIN]: "https://rpc.ninerealms.com/",
+  [ChainKey.TON]: "",
+  [ChainKey.XRP]: "https://rpc.ninerealms.com/",
   [ChainKey.ZKSYNC]: "https://mainnet.era.zksync.io",
 };
 
-export const chains: ChainProps[] = [
-  {
+export const chains: ChainObjRef = {
+  [ChainKey.ARBITRUM]: {
     cmcId: 1027,
     decimals: 18,
     id: "0xa4b1",
     name: ChainKey.ARBITRUM,
     ticker: "ETH",
   },
-  {
+  [ChainKey.AVALANCHE]: {
     cmcId: 5805,
     decimals: 18,
     id: "0xa86a",
     name: ChainKey.AVALANCHE,
     ticker: "AVAX",
   },
-  {
+  [ChainKey.BASE]: {
     cmcId: 1027,
     decimals: 18,
     id: "0x2105",
     name: ChainKey.BASE,
     ticker: "ETH",
   },
-  {
+  [ChainKey.BITCOIN]: {
     cmcId: 1,
     decimals: 8,
     id: "0x1f96",
     name: ChainKey.BITCOIN,
     ticker: "BTC",
   },
-  {
+  [ChainKey.BITCOINCASH]: {
     cmcId: 1831,
     decimals: 8,
     id: "0x2710",
     name: ChainKey.BITCOINCASH,
     ticker: "BCH",
   },
-  {
+  [ChainKey.BLAST]: {
     cmcId: 1027,
     decimals: 18,
     id: "0x13e31",
     name: ChainKey.BLAST,
     ticker: "ETH",
   },
-  {
+  [ChainKey.BSCCHAIN]: {
     cmcId: 1839,
     decimals: 18,
     id: "0x38",
     name: ChainKey.BSCCHAIN,
     ticker: "BNB",
   },
-  {
+  [ChainKey.CRONOSCHAIN]: {
     cmcId: 3635,
     decimals: 18,
     id: "0x19",
     name: ChainKey.CRONOSCHAIN,
     ticker: "CRO",
   },
-  {
+  [ChainKey.DOGECOIN]: {
     cmcId: 74,
     decimals: 8,
     id: "0x7d0",
     name: ChainKey.DOGECOIN,
     ticker: "DOGE",
   },
-  {
+  [ChainKey.DYDX]: {
     cmcId: 28324,
     decimals: 18,
     id: "dydx-1",
     name: ChainKey.DYDX,
     ticker: "DYDX",
   },
-  {
+  [ChainKey.ETHEREUM]: {
+    cmcId: 1027,
+    decimals: 18,
+    id: "0x1",
+    name: ChainKey.ETHEREUM,
+    ticker: "ETH",
+  },
+  [ChainKey.DASH]: {
     cmcId: 131,
     decimals: 8,
-    id: "",
+    id: "Dash_dash",
     name: ChainKey.DASH,
     ticker: "DASH",
   },
-  {
-    cmcId: 1027,
-    decimals: 18,
-    id: "0x1",
-    name: ChainKey.ETHEREUM,
-    ticker: "ETH",
-  },
-  {
+  [ChainKey.GAIACHAIN]: {
     cmcId: 3794,
     decimals: 6,
     id: "cosmoshub-4",
     name: ChainKey.GAIACHAIN,
     ticker: "ATOM",
   },
-  {
+  [ChainKey.KUJIRA]: {
     cmcId: 15185,
     decimals: 6,
     id: "kaiyo-1",
     name: ChainKey.KUJIRA,
     ticker: "KUJI",
   },
-  {
+  [ChainKey.LITECOIN]: {
     cmcId: 2,
     decimals: 8,
-    id: "",
+    id: "Litecoin_litecoin",
     name: ChainKey.LITECOIN,
     ticker: "LTC",
   },
-  {
+  [ChainKey.MAYACHAIN]: {
     cmcId: 23534,
     decimals: 10,
     id: "MayaChain-1",
     name: ChainKey.MAYACHAIN,
     ticker: "CACAO",
   },
-  {
+  [ChainKey.OPTIMISM]: {
     cmcId: 1027,
     decimals: 18,
-    id: "",
+    id: "Optimism_optimism",
     name: ChainKey.OPTIMISM,
     ticker: "ETH",
   },
-  {
+  [ChainKey.OSMOSIS]: {
     cmcId: 12220,
     decimals: 6,
     id: "osmosis-1",
     name: ChainKey.OSMOSIS,
     ticker: "OSMO",
   },
-  {
-    cmcId: 6636,
-    decimals: 10,
-    id: "",
-    name: ChainKey.POLKADOT,
-    ticker: "DOT",
-  },
-  {
+  [ChainKey.POLYGON]: {
     cmcId: 3890,
     decimals: 18,
     id: "0x89",
     name: ChainKey.POLYGON,
     ticker: "MATIC",
   },
-  {
+  [ChainKey.SOLANA]: {
     cmcId: 5426,
     decimals: 9,
-    id: "",
+    id: "Solana_mainnet-beta",
     name: ChainKey.SOLANA,
     ticker: "SOL",
   },
-  {
+  [ChainKey.THORCHAIN]: {
     cmcId: 4157,
     decimals: 8,
     id: "Thorchain_1",
     name: ChainKey.THORCHAIN,
     ticker: "RUNE",
   },
+};
+
+export const cosmosChains: ChainKey[] = [
+  ChainKey.DYDX,
+  ChainKey.KUJIRA,
+  ChainKey.GAIACHAIN,
+  ChainKey.MAYACHAIN,
+  ChainKey.OSMOSIS,
+  ChainKey.THORCHAIN,
 ];
 
-export const allSupportedChains: ChainProps[] = [
-  {
-    cmcId: 1027,
-    decimals: 18,
-    id: "0x1",
-    name: ChainKey.ETHEREUM,
-    ticker: "ETH",
-  },
-  {
-    cmcId: 1027,
-    decimals: 18,
-    id: "0xa4b1",
-    name: ChainKey.ARBITRUM,
-    ticker: "ETH",
-  },
-  {
-    cmcId: 5805,
-    decimals: 18,
-    id: "0xa86a",
-    name: ChainKey.AVALANCHE,
-    ticker: "AVAX",
-  },
-  {
-    cmcId: 1027,
-    decimals: 18,
-    id: "0x2105",
-    name: ChainKey.BASE,
-    ticker: "ETH",
-  },
-  {
-    cmcId: 1839,
-    decimals: 18,
-    id: "0x38",
-    name: ChainKey.BSCCHAIN,
-    ticker: "BNB",
-  },
-  {
-    cmcId: 3635,
-    decimals: 18,
-    id: "0x19",
-    name: ChainKey.CRONOSCHAIN,
-    ticker: "CRO",
-  },
-
-  {
-    cmcId: 1027,
-    decimals: 18,
-    id: "0x13e31",
-    name: ChainKey.BLAST,
-    ticker: "ETH",
-  },
-  {
-    cmcId: 1027,
-    decimals: 18,
-    id: "",
-    name: ChainKey.OPTIMISM,
-    ticker: "ETH",
-  },
-  {
-    cmcId: 3890,
-    decimals: 18,
-    id: "0x89",
-    name: ChainKey.POLYGON,
-    ticker: "MATIC",
-  },
-  {
-    cmcId: 23534,
-    decimals: 10,
-    id: "MayaChain-1",
-    name: ChainKey.MAYACHAIN,
-    ticker: "CACAO",
-  },
-  {
-    cmcId: 4157,
-    decimals: 8,
-    id: "Thorchain_1",
-    name: ChainKey.THORCHAIN,
-    ticker: "RUNE",
-  },
-  {
-    cmcId: 12220,
-    decimals: 6,
-    id: "osmosis-1",
-    name: ChainKey.OSMOSIS,
-    ticker: "OSMO",
-  },
-  {
-    cmcId: 3794,
-    decimals: 6,
-    id: "cosmoshub-4",
-    name: ChainKey.GAIACHAIN,
-    ticker: "ATOM",
-  },
-  {
-    cmcId: 28324,
-    decimals: 18,
-    id: "dydx-1",
-    name: ChainKey.DYDX,
-    ticker: "DYDX",
-  },
-  {
-    cmcId: 15185,
-    decimals: 6,
-    id: "kaiyo-1",
-    name: ChainKey.KUJIRA,
-    ticker: "KUJI",
-  },
+export const evmChains: ChainKey[] = [
+  ChainKey.ARBITRUM,
+  ChainKey.AVALANCHE,
+  ChainKey.BASE,
+  ChainKey.BSCCHAIN,
+  ChainKey.CRONOSCHAIN,
+  ChainKey.ETHEREUM,
+  ChainKey.OPTIMISM,
+  ChainKey.POLYGON,
 ];

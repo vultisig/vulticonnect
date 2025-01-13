@@ -3,7 +3,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button, Empty, message, Modal, Select, Switch, Tooltip } from "antd";
 
-import { allSupportedChains, chains } from "utils/constants";
+import { chains } from "utils/constants";
 import { VaultProps } from "utils/interfaces";
 import {
   getIsPriority,
@@ -23,6 +23,7 @@ import {
   SettingsTwo,
   Vultisig,
 } from "icons";
+import { findChainByProp } from "utils/functions";
 
 interface SelectOption {
   value: string;
@@ -101,14 +102,17 @@ const Component: FC = () => {
     });
   };
 
-  const handleChangeNetwork = (value: string) => {
+  const handleChangeNetwork = (value: any) => {
     const selectedNetwork = networkOptions.find(
       (option) => option.value === value
     );
 
     if (selectedNetwork) {
       setStoredChains(
-        chains.map((chain) => ({ ...chain, active: chain.id === value }))
+        Object.values(chains).map((chain) => ({
+          ...chain,
+          active: chain.id === value,
+        }))
       ).then(() => {
         setState((prevState) => ({ ...prevState, selectedNetwork }));
       });
@@ -135,8 +139,8 @@ const Component: FC = () => {
       const vault = vaults.find(({ active }) => active);
 
       if (vault) {
-        const supportedChains = vault.chains.filter((vaultChain) =>
-          allSupportedChains.some((chain) => chain.id === vaultChain.id)
+        const supportedChains = vault.chains.filter(
+          ({ id }) => !!findChainByProp(chains, "id", id)
         );
 
         const networkOptions = supportedChains.map((chain) => ({
@@ -198,7 +202,7 @@ const Component: FC = () => {
               className="select"
               options={networkOptions}
               value={selectedNetwork}
-              onChange={({ value }) => handleChangeNetwork(value)}
+              onChange={(value) => handleChangeNetwork(value)}
             />
           </div>
           <span className="divider">{t(messageKeys.CONNECTED_DAPPS)}</span>

@@ -3,9 +3,7 @@ import {
   JsonRpcProvider,
   Transaction,
   formatUnits,
-  hexlify,
   keccak256,
-  toUtf8Bytes,
   toUtf8String,
 } from "ethers";
 import { create } from "@bufbuild/protobuf";
@@ -23,12 +21,8 @@ import {
 } from "protos/keysign_message_pb";
 
 import { ChainKey, Currency, rpcUrl } from "utils/constants";
-import { checkERC20Function } from "utils/functions";
-import {
-  SignedTransaction,
-  TransactionProps,
-  VaultProps,
-} from "utils/interfaces";
+import { bigintToByteArray, checkERC20Function } from "utils/functions";
+import { ITransaction, SignedTransaction, VaultProps } from "utils/interfaces";
 import BaseTransactionProvider from "utils/transaction-provider/base";
 import api from "utils/api";
 
@@ -101,12 +95,11 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
   };
 
   public getGasLimit = (): number => {
-    //TODO: update gaslimit based on chain and transaction type
     return 600000;
   };
 
   public getKeysignPayload = (
-    transaction: TransactionProps,
+    transaction: ITransaction.METAMASK,
     vault: VaultProps
   ): Promise<KeysignPayload> => {
     return new Promise((resolve, reject) => {
@@ -173,7 +166,11 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
 
   public getPreSignedInputData = (): Promise<Uint8Array> => {
     return new Promise((resolve, reject) => {
-      const blockchainSpecific = this.keysignPayload?.blockchainSpecific as
+      if (!this.keysignPayload) {
+        reject("Invalid keysign payload");
+        return;
+      }
+      const blockchainSpecific = this.keysignPayload.blockchainSpecific as
         | { case: "ethereumSpecific"; value: EthereumSpecific }
         | undefined;
 
@@ -186,80 +183,53 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
         reject("Invalid coin");
       }
 
-      const {
-        gasLimit = String(BigInt(0)),
-        maxFeePerGasWei = String(BigInt(0)),
-        nonce = String(BigInt(0)),
-        priorityFee = String(BigInt(0)),
-      } = blockchainSpecific?.value ?? {};
+      if (!blockchainSpecific) {
+        reject("Invalid blockchain specific");
+        return;
+      }
+
+      const { gasLimit, maxFeePerGasWei, nonce, priorityFee } =
+        blockchainSpecific.value;
 
       const chainId: bigint = BigInt(
         this.walletCore.CoinTypeExt.chainId(this.chainRef[this.chainKey])
       );
 
-      const chainIdHex = Buffer.from(
-        this.stripHexPrefix(chainId.toString(16).padStart(2, "0")),
-        "hex"
-      );
+      const chainIdHex = bigintToByteArray(BigInt(chainId));
 
-      // Nonce: converted to hexadecimal, stripped of '0x', and padded
-      const nonceHex = Buffer.from(
-        this.stripHexPrefix(
-          hexlify(toUtf8Bytes(nonce?.toString())).padStart(2, "0")
-        ),
-        "hex"
-      );
+      const nonceHex = bigintToByteArray(BigInt(nonce));
 
-      // Gas limit: converted to hexadecimal, stripped of '0x'
-      const gasLimitHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(gasLimit))),
-        "hex"
-      );
+      const gasLimitHex = bigintToByteArray(BigInt(gasLimit));
 
-      // Max fee per gas: converted to hexadecimal, stripped of '0x'
-      const maxFeePerGasHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(maxFeePerGasWei))),
-        "hex"
-      );
+      const maxFeePerGasHex = bigintToByteArray(BigInt(maxFeePerGasWei));
 
-      // Max inclusion fee per gas (priority fee): converted to hexadecimal, stripped of '0x'
-      const maxInclusionFeePerGasHex = Buffer.from(
-        this.stripHexPrefix(hexlify(toUtf8Bytes(priorityFee))),
-        "hex"
-      );
+      const maxInclusionFeePerGasHex = bigintToByteArray(BigInt(priorityFee));
 
-      // Amount: converted to hexadecimal, stripped of '0x'
-      const amountHex = Buffer.from(
-        this.stripHexPrefix(
-          hexlify(toUtf8Bytes(this.keysignPayload?.toAmount ?? "0"))
-        ),
-        "hex"
-      );
-
-      // Send native tokens
-      let toAddress = this.keysignPayload?.toAddress;
+      const amountHex = bigintToByteArray(BigInt(this.keysignPayload.toAmount));
+      let toAddress = this.keysignPayload.toAddress;
       let evmTransaction = TW.Ethereum.Proto.Transaction.create({
         transfer: TW.Ethereum.Proto.Transaction.Transfer.create({
           amount: amountHex,
           data: Buffer.from(
-            this.stripHexPrefix(this.keysignPayload?.memo ?? "") ?? "",
+            this.keysignPayload.memo
+              ? this.stripHexPrefix(this.keysignPayload.memo)
+              : "",
             "utf8"
           ),
         }),
       });
-
-      // Send ERC20 tokens, it will replace the transaction object
-      if (!this.keysignPayload?.coin?.isNativeToken) {
-        toAddress = this.keysignPayload?.coin?.contractAddress;
+      if (
+        this.keysignPayload?.coin &&
+        !this.keysignPayload.coin.isNativeToken
+      ) {
+        toAddress = this.keysignPayload.coin.contractAddress;
         evmTransaction = TW.Ethereum.Proto.Transaction.create({
           erc20Transfer: TW.Ethereum.Proto.Transaction.ERC20Transfer.create({
             amount: amountHex,
-            to: this.keysignPayload?.toAddress,
+            to: this.keysignPayload.toAddress,
           }),
         });
       }
-
-      // Create the signing input with the constants
       const input = TW.Ethereum.Proto.SigningInput.create({
         toAddress: toAddress,
         chainId: chainIdHex,
@@ -278,7 +248,7 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
   public getSignedTransaction = ({
     signature,
     transaction,
-  }: SignedTransaction): Promise<string> => {
+  }: SignedTransaction): Promise<{ txHash: string; raw: any }> => {
     return new Promise((resolve, reject) => {
       if (transaction) {
         const props = {
@@ -302,7 +272,7 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
 
         const txHash = keccak256(Transaction.from(tx).serialized);
 
-        resolve(txHash);
+        resolve({ txHash: txHash, raw: Transaction.from(tx).serialized });
       } else {
         reject();
       }
