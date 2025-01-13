@@ -246,7 +246,7 @@ const Component: FC = () => {
           }).then(() => {
             setState((prevState) => ({
               ...prevState,
-              step: 4,
+              step: 5,
               transaction: {
                 ...transaction,
                 customSignature: txProvider.getEncodedSignature(
@@ -292,7 +292,7 @@ const Component: FC = () => {
                   if (transaction.isCustomMessage) {
                     setState((prevState) => ({
                       ...prevState,
-                      step: 3,
+                      step: 4,
                     }));
                     handleCustomMessagePending();
                   } else {
@@ -304,7 +304,7 @@ const Component: FC = () => {
                           .then((preSignedImageHash) => {
                             setState((prevState) => ({
                               ...prevState,
-                              step: 3,
+                              step: 4,
                             }));
                             handlePending(
                               preSignedImageHash,
