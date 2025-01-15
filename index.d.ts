@@ -1,17 +1,18 @@
 interface Window {
-  ethereum: any;
-  vultiConnect: { getVaults: () => Promise<VaultProps[]> };
-  maya: any;
-  cosmos: any;
-  vultisig: any;
-  thorchain: any;
   bitcoin: any;
-  litecoin: any;
   bitcoincash: any;
+  cosmos: any;
   dash: any;
   dogecoin: any;
+  ethereum: any;
+  litecoin: any;
   lodash: unknown;
+  maya: any;
+  thorchain: any;
   providers: EthereumProvider[];
+  vultisig: any;
+  keplr: any;
+  vultiConnect: { getVaults: () => Promise<VaultProps[]> };
   vultiConnectRouter: {
     vultisigProvider: EthereumProvider;
     lastInjectedProvider?: EthereumProvider;
@@ -20,4 +21,10 @@ interface Window {
     setDefaultProvider: (vultiAsDefault: boolean) => void;
     addProvider: (provider: EthereumProvider) => void;
   };
+  xfi: any;
+  ctrlKeplrProviders: any;
+  ctrlEthProviders: any;
+  isCtrl: boolean;
+  windowKeplr: any;
+  keplrRequestAccountsCallback: any;
 }
