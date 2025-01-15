@@ -24,6 +24,8 @@ interface Window {
   };
   xfi: any;
   ctrlKeplrProviders: any;
+  ctrlEthProviders: any;
+  isCtrl: boolean;
   windowKeplr: any;
   keplrRequestAccountsCallback: any;
 }

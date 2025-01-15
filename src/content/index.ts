@@ -65,6 +65,78 @@ const sendToBackgroundViaRelay = <Request, Response>(
     window.addEventListener("message", callback);
   });
 };
+let isPending = false;
+
+const isValidKeplr = (keplr: any): boolean => !keplr.isCtrl;
+
+const waitForReady = async (): Promise<void> => {
+  return new Promise((resolve) => {
+    const interval = setInterval(() => {
+      if (!isPending) {
+        clearInterval(interval);
+        resolve();
+      }
+    }, 100);
+  });
+};
+class XDEFIMessageRequester {
+  constructor() {
+    this.sendMessage = this.sendMessage.bind(this);
+  }
+  public async sendMessage<T>(_message: any, params: any): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+      const messageData = {
+        providerType: "cosmos",
+        data: {
+          type: params.type(),
+          params: params,
+          route: params.route(),
+        },
+      };
+
+
+      waitForReady().then(() => {
+        if (!isValidKeplr(window.keplr)) return;
+
+        if (!window?.keplr?.isXDEFI) {
+          if (params.type() === "enable-access") {
+            const chainIds = messageData.data?.params?.chainIds;
+            window.keplr.enable(chainIds).then(resolve).catch(reject);
+            return;
+          }
+
+          if (params.type() === "get-cosmos-key") {
+            const chainId = messageData.data?.params?.chainId;
+            window.keplr.getKey(chainId).then(resolve).catch(reject);
+            return;
+          }
+          return;
+        }
+
+        const availableProviders = Object.keys(window.ctrlKeplrProviders);
+        const requiresAccounts = ["enable-access", "get-cosmos-key"].includes(
+          params.type()
+        );
+
+        if (requiresAccounts && window.windowKeplr) {
+          messageData.data.params = {
+            ...messageData.data.params,
+            providers: availableProviders,
+          };
+
+          isPending = true;
+          window.keplrRequestAccountsCallback = (result: any) => {
+            isPending = false;
+            window.keplrRequestAccountsCallback = undefined;
+            resolve(result);
+          };
+        }
+
+        resolve(messageData.data.params);
+      });
+    });
+  }
+}
 
 class XDEFIKeplrProvider extends Keplr {
   static instance: XDEFIKeplrProvider | null = null;
@@ -75,7 +147,7 @@ class XDEFIKeplrProvider extends Keplr {
       this.instance = new XDEFIKeplrProvider(
         "0.0.1",
         "extension",
-        {}
+        new XDEFIMessageRequester()
       );
     }
 
@@ -93,7 +165,7 @@ class XDEFIKeplrProvider extends Keplr {
     this.isVulticonnect = true;
     window.ctrlKeplrProviders["Ctrl Wallet"] = this;
   }
-  
+
   enable(_chainIds: string | string[]): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       cosmosProvider
@@ -144,18 +216,30 @@ class XDEFIKeplrProvider extends Keplr {
 }
 
 namespace Provider {
-  export class Bitcoin extends EventEmitter {
+  export class UTXO extends EventEmitter {
     public chainId: string;
     public network: string;
     public requestAccounts;
-
-    constructor() {
+    private providerType: MessageKey;
+    public static instances: Map<string, UTXO>;
+    constructor(providerType: string, chainId: string) {
       super();
-      this.chainId = "Bitcoin_bitcoin-mainnet";
+      this.providerType = providerType as MessageKey;
+      this.chainId = chainId;
       this.network = NetworkKey.MAINNET;
-
-      this.requestAccounts = this.getAccounts;
       this.request = this.request;
+      this.requestAccounts = this.getAccounts;
+    }
+
+    static getInstance(providerType: string, chainId: string): UTXO {
+      if (!UTXO.instances) {
+        UTXO.instances = new Map<string, UTXO>();
+      }
+
+      if (!UTXO.instances.has(providerType)) {
+        UTXO.instances.set(providerType, new UTXO(providerType, chainId));
+      }
+      return UTXO.instances.get(providerType)!;
     }
 
     async getAccounts() {
@@ -164,6 +248,7 @@ namespace Provider {
         params: [],
       });
     }
+
     async signPsbt() {
       return await this.request({
         method: RequestMethod.CTRL.SIGN_PSBT,
@@ -190,50 +275,7 @@ namespace Provider {
       return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
         Messaging.Chain.Response
-      >(MessageKey.BITCOIN_REQUEST, data)
-        .then((result) => {
-          if (callback) callback(null, result);
-
-          return result;
-        })
-        .catch((error) => {
-          if (callback) callback(error);
-
-          return error;
-        });
-    }
-  }
-
-  export class BitcoinCash extends EventEmitter {
-    public chainId: string;
-    public network: string;
-
-    constructor() {
-      super();
-      this.chainId = "Bitcoincash_bitcoincash";
-      this.network = NetworkKey.MAINNET;
-      this.request = this.request;
-    }
-
-    changeNetwork(network: NetworkKey) {
-      if (network !== NetworkKey.MAINNET && network !== NetworkKey.TESTNET)
-        throw Error(`Invalid network ${network}`);
-      else if (network === NetworkKey.TESTNET)
-        throw Error(`We only support the ${NetworkKey.MAINNET} network.`);
-
-      this.network = network;
-      this.emit(EventMethod.CHAIN_CHANGED, { chainId: this.chainId, network });
-    }
-
-    emitAccountsChanged() {
-      this.emit(EventMethod.ACCOUNTS_CHANGED, {});
-    }
-
-    async request(data: Messaging.Chain.Request, callback?: Callback) {
-      return await sendToBackgroundViaRelay<
-        Messaging.Chain.Request,
-        Messaging.Chain.Response
-      >(MessageKey.BITCOIN_CASH_REQUEST, data)
+      >(this.providerType, data)
         .then((result) => {
           if (callback) callback(null, result);
 
@@ -277,12 +319,20 @@ namespace Provider {
   export class Dash extends EventEmitter {
     public chainId: string;
     public network: string;
+    public static instance: Dash | null = null;
 
     constructor() {
       super();
       this.chainId = "Dash_dash";
       this.network = NetworkKey.MAINNET;
       this.request = this.request;
+    }
+
+    static getInstance(): Dash {
+      if (!Dash.instance) {
+        Dash.instance = new Dash();
+      }
+      return Dash.instance;
     }
 
     emitAccountsChanged() {
@@ -307,49 +357,6 @@ namespace Provider {
     }
   }
 
-  export class Dogecoin extends EventEmitter {
-    public chainId: string;
-    public network: string;
-
-    constructor() {
-      super();
-      this.chainId = "Dogecoin_dogecoin";
-      this.network = NetworkKey.MAINNET;
-      this.request = this.request;
-    }
-
-    changeNetwork(network: NetworkKey) {
-      if (network !== NetworkKey.MAINNET && network !== NetworkKey.TESTNET)
-        throw Error(`Invalid network ${network}`);
-      else if (network === NetworkKey.TESTNET)
-        throw Error(`We only support the ${NetworkKey.MAINNET} network.`);
-
-      this.network = network;
-      this.emit(EventMethod.CHAIN_CHANGED, { chainId: this.chainId, network });
-    }
-
-    emitAccountsChanged() {
-      this.emit(EventMethod.ACCOUNTS_CHANGED, {});
-    }
-
-    async request(data: Messaging.Chain.Request, callback?: Callback) {
-      return await sendToBackgroundViaRelay<
-        Messaging.Chain.Request,
-        Messaging.Chain.Response
-      >(MessageKey.DOGECOIN_REQUEST, data)
-        .then((result) => {
-          if (callback) callback(null, result);
-
-          return result;
-        })
-        .catch((error) => {
-          if (callback) callback(error);
-
-          return error;
-        });
-    }
-  }
-
   export class Ethereum extends EventEmitter {
     public chainId: string;
     public connected: boolean;
@@ -360,10 +367,11 @@ namespace Provider {
     public networkVersion: string;
     public selectedAddress: string;
     public sendAsync;
+    public static instance: Ethereum | null = null;
 
-    constructor() {
+    constructor(chainId: string) {
       super();
-      this.chainId = "0x1";
+      this.chainId = chainId;
       this.connected = false;
       this.isCtrl = true;
       this.isMetaMask = true;
@@ -374,6 +382,15 @@ namespace Provider {
 
       this.sendAsync = this.request;
       this.request = this.request;
+    }
+
+    static getInstance(chain: string): Ethereum {
+      if (!Ethereum.instance) {
+        Ethereum.instance = new Ethereum(chain);
+      }
+      window.ctrlEthProviders["Ctrl Wallet"] = Ethereum.instance;
+      window.isCtrl = true;
+      return Ethereum.instance;
     }
 
     async enable() {
@@ -475,49 +492,6 @@ namespace Provider {
     };
   }
 
-  export class Litecoin extends EventEmitter {
-    public chainId: string;
-    public network: string;
-
-    constructor() {
-      super();
-      this.chainId = "Litecoin_litecoin";
-      this.network = NetworkKey.MAINNET;
-      this.request = this.request;
-    }
-
-    changeNetwork(network: NetworkKey) {
-      if (network !== NetworkKey.MAINNET && network !== NetworkKey.TESTNET)
-        throw Error(`Invalid network ${network}`);
-      else if (network === NetworkKey.TESTNET)
-        throw Error(`We only support the ${NetworkKey.MAINNET} network.`);
-
-      this.network = network;
-      this.emit(EventMethod.CHAIN_CHANGED, { chainId: this.chainId, network });
-    }
-
-    emitAccountsChanged() {
-      this.emit(EventMethod.ACCOUNTS_CHANGED, {});
-    }
-
-    async request(data: Messaging.Chain.Request, callback?: Callback) {
-      return await sendToBackgroundViaRelay<
-        Messaging.Chain.Request,
-        Messaging.Chain.Response
-      >(MessageKey.LITECOIN_REQUEST, data)
-        .then((result) => {
-          if (callback) callback(null, result);
-
-          return result;
-        })
-        .catch((error) => {
-          if (callback) callback(error);
-
-          return error;
-        });
-    }
-  }
-
   export class Solana extends EventEmitter {
     public chainId: string;
     public isConnected: boolean;
@@ -525,6 +499,7 @@ namespace Provider {
     public isXDEFI: boolean;
     public network: string;
     public publicKey?: PublicKey;
+    public static instance: Solana | null = null;
 
     constructor() {
       super();
@@ -534,6 +509,13 @@ namespace Provider {
       this.isXDEFI = false;
       this.network = NetworkKey.MAINNET;
       this.request = this.request;
+    }
+
+    static getInstance(): Solana {
+      if (!Solana.instance) {
+        Solana.instance = new Solana();
+      }
+      return Solana.instance;
     }
 
     async signTransaction(transaction: Transaction) {
@@ -597,12 +579,19 @@ namespace Provider {
   export class MAYAChain extends EventEmitter {
     public chainId: string;
     public network: string;
-
+    public static instance: MAYAChain | null = null;
     constructor() {
       super();
       this.chainId = "Thorchain_mayachain";
       this.network = NetworkKey.MAINNET;
       this.request = this.request;
+    }
+
+    getInstace(): MAYAChain {
+      if (!MAYAChain.instance) {
+        MAYAChain.instance = new MAYAChain();
+      }
+      return MAYAChain.instance;
     }
 
     changeNetwork(network: NetworkKey) {
@@ -640,12 +629,19 @@ namespace Provider {
   export class THORChain extends EventEmitter {
     public chainId: string;
     public network: NetworkKey;
-
+    public static instance: THORChain | null = null;
     constructor() {
       super();
       this.chainId = "Thorchain_thorchain";
       this.network = NetworkKey.MAINNET;
       this.request = this.request;
+    }
+
+    static getInstance(): THORChain {
+      if (!THORChain.instance) {
+        THORChain.instance = new THORChain();
+      }
+      return THORChain.instance;
     }
 
     changeNetwork(network: NetworkKey) {
@@ -681,13 +677,28 @@ namespace Provider {
   }
 }
 
-const bitcoinProvider = new Provider.Bitcoin();
-const bitcoinCashProvider = new Provider.BitcoinCash();
+const bitcoinProvider = new Provider.UTXO(
+  MessageKey.BITCOIN_REQUEST,
+  "Bitcoin_bitcoin-mainnet"
+);
+
+const bitcoinCashProvider = new Provider.UTXO(
+  MessageKey.BITCOIN_CASH_REQUEST,
+  "Bitcoincash_bitcoincash"
+);
+
 const cosmosProvider = new Provider.Cosmos();
 const dashProvider = new Provider.Dash();
-const dogecoinProvider = new Provider.Dogecoin();
-const ethereumProvider = new Provider.Ethereum();
-const litecoinProvider = new Provider.Litecoin();
+const dogecoinProvider = new Provider.UTXO(
+  MessageKey.DOGECOIN_REQUEST,
+  "Dogecoin_dogecoin"
+);
+
+const ethereumProvider = new Provider.Ethereum("0x1");
+const litecoinProvider = new Provider.UTXO(
+  MessageKey.LITECOIN_REQUEST,
+  "Litecoin_litecoin"
+);
 const mayachainProvider = new Provider.MAYAChain();
 const solanaProvider = new Provider.Solana();
 const thorchainProvider = new Provider.THORChain();
@@ -700,7 +711,7 @@ const xfiProvider = {
   dogecoin: dogecoinProvider,
   ethereum: ethereumProvider,
   litecoin: litecoinProvider,
-  mayachain: mayachainProvider,
+  maya: mayachainProvider,
   solana: solanaProvider,
   thorchain: thorchainProvider,
   keplr: keplrProvider,

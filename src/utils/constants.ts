@@ -39,16 +39,16 @@ export enum ChainKey {
 }
 
 export enum MessageKey {
-  BITCOIN_REQUEST = "bitcoin-request",
-  BITCOIN_CASH_REQUEST = "bitcoin-cash-request",
-  COSMOS_REQUEST = "cosmos-request",
-  DASH_REQUEST = "dash-request",
-  DOGECOIN_REQUEST = "dogecoin-request",
-  ETHEREUM_REQUEST = "ethereum-request",
-  LITECOIN_REQUEST = "litecoin-request",
-  MAYA_REQUEST = "maya-request",
-  SOLANA_REQUEST = "solana-request",
-  THOR_REQUEST = "thor-request",
+  BITCOIN_REQUEST = "bitcoin",
+  BITCOIN_CASH_REQUEST = "bitcoincash",
+  COSMOS_REQUEST = "cosmos",
+  DASH_REQUEST = "dash",
+  DOGECOIN_REQUEST = "dogecoin",
+  ETHEREUM_REQUEST = "ethereum",
+  LITECOIN_REQUEST = "litecoin",
+  MAYA_REQUEST = "maya",
+  SOLANA_REQUEST = "solana",
+  THOR_REQUEST = "thor",
   PRIORITY = "priority",
   VAULTS = "vaults",
 }
