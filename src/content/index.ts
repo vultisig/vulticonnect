@@ -711,7 +711,7 @@ const xfiProvider = {
   dogecoin: dogecoinProvider,
   ethereum: ethereumProvider,
   litecoin: litecoinProvider,
-  maya: mayachainProvider,
+  mayachain: mayachainProvider,
   solana: solanaProvider,
   thorchain: thorchainProvider,
   keplr: keplrProvider,
