@@ -18,10 +18,12 @@ import { Messaging, VaultProps } from "utils/interfaces";
 import VULTI_ICON_RAW_SVG from "content/icon";
 import { CosmJSOfflineSigner, Keplr } from "@keplr-wallet/provider";
 import {
+  BroadcastMode,
   KeplrMode,
   KeplrSignOptions,
   OfflineAminoSigner,
   OfflineDirectSigner,
+  StdTx,
 } from "@keplr-wallet/types";
 enum NetworkKey {
   MAINNET = "mainnet",
@@ -130,7 +132,7 @@ class XDEFIMessageRequester {
             resolve(result);
           };
         }
-
+        // ToDo
         resolve(messageData.data.params);
       });
     });
@@ -141,17 +143,16 @@ class XDEFIKeplrProvider extends Keplr {
   static instance: XDEFIKeplrProvider | null = null;
   isXDEFI: boolean;
   isVulticonnect: boolean;
-  static getInstance(): XDEFIKeplrProvider {
-    if (!this.instance) {
-      this.instance = new XDEFIKeplrProvider(
+
+  public static getInstance(): XDEFIKeplrProvider {
+    if (!XDEFIKeplrProvider.instance) {
+      XDEFIKeplrProvider.instance = new XDEFIKeplrProvider(
         "0.0.1",
         "extension",
         new XDEFIMessageRequester()
       );
     }
-
-    window.ctrlKeplrProviders["Ctrl Wallet"] = this.instance;
-    return this.instance;
+    return XDEFIKeplrProvider.instance;
   }
 
   emitAccountsChanged(): void {
@@ -164,7 +165,6 @@ class XDEFIKeplrProvider extends Keplr {
     this.isVulticonnect = true;
     window.ctrlKeplrProviders["Ctrl Wallet"] = this;
   }
-
   enable(_chainIds: string | string[]): Promise<void> {
     return new Promise<void>((resolve, reject) => {
       cosmosProvider
@@ -176,10 +176,6 @@ class XDEFIKeplrProvider extends Keplr {
         .catch(reject);
     });
   }
-  async experimentalSuggestChain(_chainInfo: any) {
-    return;
-  }
-
   getOfflineSigner(
     chainId: string,
     _signOptions?: KeplrSignOptions
@@ -215,6 +211,36 @@ class XDEFIKeplrProvider extends Keplr {
     };
 
     return cosmSigner as OfflineAminoSigner & OfflineDirectSigner;
+  }
+  sendTx(
+    _chainId: string,
+    _tx: StdTx | Uint8Array,
+    _mode: BroadcastMode
+  ): Promise<Uint8Array> {
+    return new Promise<Uint8Array>((resolve, reject) => {
+      cosmosProvider
+        .request({
+          method: RequestMethod.VULTISIG.SEND_TRANSACTION,
+          params: [_tx],
+        })
+        .then((result) => {
+          resolve(result);
+        })
+        .catch(reject);
+    });
+  }
+  async sendMessage() {
+  }
+
+  async experimentalSuggestChain(_chainInfo: any) {
+    return;
+  }
+  async sendSimpleMessage(
+    _type: string,
+    _method: string,
+    _payload: any
+  ): Promise<any> {
+    return;
   }
 }
 
@@ -323,7 +349,6 @@ namespace Provider {
     public chainId: string;
     public network: string;
     public static instance: Dash | null = null;
-
     constructor() {
       super();
       this.chainId = "Dash_dash";
@@ -372,9 +397,9 @@ namespace Provider {
     public sendAsync;
     public static instance: Ethereum | null = null;
 
-    constructor(chainId: string) {
+    constructor() {
       super();
-      this.chainId = chainId;
+      this.chainId = "0x1";
       this.connected = false;
       this.isCtrl = true;
       this.isMetaMask = true;
@@ -387,9 +412,9 @@ namespace Provider {
       this.request = this.request;
     }
 
-    static getInstance(chain: string): Ethereum {
+    static getInstance(_chain: string): Ethereum {
       if (!Ethereum.instance) {
-        Ethereum.instance = new Ethereum(chain);
+        Ethereum.instance = new Ethereum();
       }
       window.ctrlEthProviders["Ctrl Wallet"] = Ethereum.instance;
       window.isCtrl = true;
@@ -503,7 +528,6 @@ namespace Provider {
     public network: string;
     public publicKey?: PublicKey;
     public static instance: Solana | null = null;
-
     constructor() {
       super();
       this.chainId = "Solana_mainnet-beta";
@@ -684,20 +708,17 @@ const bitcoinProvider = new Provider.UTXO(
   MessageKey.BITCOIN_REQUEST,
   "Bitcoin_bitcoin-mainnet"
 );
-
 const bitcoinCashProvider = new Provider.UTXO(
   MessageKey.BITCOIN_CASH_REQUEST,
   "Bitcoincash_bitcoincash"
 );
-
 const cosmosProvider = new Provider.Cosmos();
 const dashProvider = new Provider.Dash();
 const dogecoinProvider = new Provider.UTXO(
   MessageKey.DOGECOIN_REQUEST,
   "Dogecoin_dogecoin"
 );
-
-const ethereumProvider = new Provider.Ethereum("0x1");
+const ethereumProvider = new Provider.Ethereum();
 const litecoinProvider = new Provider.UTXO(
   MessageKey.LITECOIN_REQUEST,
   "Litecoin_litecoin"
