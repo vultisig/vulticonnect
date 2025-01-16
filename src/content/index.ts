@@ -67,74 +67,15 @@ const sendToBackgroundViaRelay = <Request, Response>(
     window.addEventListener("message", callback);
   });
 };
-let isPending = false;
 
-const isValidKeplr = (keplr: any): boolean => !keplr.isCtrl;
-
-const waitForReady = async (): Promise<void> => {
-  return new Promise((resolve) => {
-    const interval = setInterval(() => {
-      if (!isPending) {
-        clearInterval(interval);
-        resolve();
-      }
-    }, 100);
-  });
-};
 class XDEFIMessageRequester {
   constructor() {
     this.sendMessage = this.sendMessage.bind(this);
   }
-  public async sendMessage<T>(_message: any, params: any): Promise<T> {
-    return new Promise<T>((resolve, reject) => {
-      const messageData = {
-        providerType: "cosmos",
-        data: {
-          type: params.type(),
-          params: params,
-          route: params.route(),
-        },
-      };
-
-      waitForReady().then(() => {
-        if (!isValidKeplr(window.keplr)) return;
-
-        if (!window?.keplr?.isXDEFI) {
-          if (params.type() === "enable-access") {
-            const chainIds = messageData.data?.params?.chainIds;
-            window.keplr.enable(chainIds).then(resolve).catch(reject);
-            return;
-          }
-
-          if (params.type() === "get-cosmos-key") {
-            const chainId = messageData.data?.params?.chainId;
-            window.keplr.getKey(chainId).then(resolve).catch(reject);
-            return;
-          }
-          return;
-        }
-
-        const availableProviders = Object.keys(window.ctrlKeplrProviders);
-        const requiresAccounts = ["enable-access", "get-cosmos-key"].includes(
-          params.type()
-        );
-
-        if (requiresAccounts && window.windowKeplr) {
-          messageData.data.params = {
-            ...messageData.data.params,
-            providers: availableProviders,
-          };
-
-          isPending = true;
-          window.keplrRequestAccountsCallback = (result: any) => {
-            isPending = false;
-            window.keplrRequestAccountsCallback = undefined;
-            resolve(result);
-          };
-        }
-        // ToDo
-        resolve(messageData.data.params);
-      });
+  // Expected for Ctrl
+  public async sendMessage(_message: any, _params: any): Promise<void> {
+    return new Promise((resolve) => {
+      resolve();
     });
   }
 }
