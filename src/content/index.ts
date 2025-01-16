@@ -229,8 +229,7 @@ class XDEFIKeplrProvider extends Keplr {
         .catch(reject);
     });
   }
-  async sendMessage() {
-  }
+  async sendMessage() {}
 
   async experimentalSuggestChain(_chainInfo: any) {
     return;
@@ -757,7 +756,7 @@ const vultisigProvider = {
   dogecoin: dogecoinProvider,
   ethereum: ethereumProvider,
   litecoin: litecoinProvider,
-  mayachain: mayachainProvider,
+  maya: mayachainProvider,
   solana: solanaProvider,
   thorchain: thorchainProvider,
   getVaults: (): Promise<VaultProps[]> => {

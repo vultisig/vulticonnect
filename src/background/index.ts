@@ -291,7 +291,6 @@ const handleRequest = (
               case ChainKey.DYDX:
               case ChainKey.GAIACHAIN:
               case ChainKey.KUJIRA:
-              case ChainKey.MAYACHAIN:
               case ChainKey.OSMOSIS:
               case ChainKey.SOLANA: {
                 resolve(account);
