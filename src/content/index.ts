@@ -94,7 +94,6 @@ class XDEFIMessageRequester {
         },
       };
 
-
       waitForReady().then(() => {
         if (!isValidKeplr(window.keplr)) return;
 
@@ -177,6 +176,10 @@ class XDEFIKeplrProvider extends Keplr {
         .catch(reject);
     });
   }
+  async experimentalSuggestChain(_chainInfo: any) {
+    return;
+  }
+
   getOfflineSigner(
     chainId: string,
     _signOptions?: KeplrSignOptions
