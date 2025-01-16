@@ -258,7 +258,7 @@ const handleRequest = (
     const { method, params } = body;
 
     switch (method) {
-      case RequestMethod.VULTISIG.ACCOUNTS:
+      case RequestMethod.VULTISIG.GET_ACCOUNTS:
       case RequestMethod.METAMASK.ETH_ACCOUNTS: {
         handleFindAccounts(chain.name, sender)
           .then(([account]) => {
@@ -266,7 +266,6 @@ const handleRequest = (
               case ChainKey.DYDX:
               case ChainKey.GAIACHAIN:
               case ChainKey.KUJIRA:
-              case ChainKey.MAYACHAIN:
               case ChainKey.OSMOSIS: {
                 resolve(account);
 

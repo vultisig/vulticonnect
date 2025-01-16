@@ -126,6 +126,7 @@ class XDEFIKeplrProvider extends Keplr {
       window.keplr,
       _signOptions
     );
+
     cosmSigner.getAccounts = async () => {
       return cosmosProvider
         .request({ method: RequestMethod.VULTISIG.CHAIN_ID, params: [] })
@@ -159,6 +160,8 @@ class XDEFIKeplrProvider extends Keplr {
     _mode: BroadcastMode
   ): Promise<Uint8Array> {
     return new Promise<Uint8Array>((resolve, reject) => {
+      console.log("send Tx", _tx);
+
       cosmosProvider
         .request({
           method: RequestMethod.VULTISIG.SEND_TRANSACTION,
@@ -213,7 +216,7 @@ namespace Provider {
 
     async getAccounts() {
       return await this.request({
-        method: RequestMethod.VULTISIG.ACCOUNTS,
+        method: RequestMethod.VULTISIG.GET_ACCOUNTS,
         params: [],
       });
     }

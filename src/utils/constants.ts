@@ -172,7 +172,7 @@ export namespace RequestMethod {
   }
 
   export enum VULTISIG {
-    ACCOUNTS = "accounts",
+    GET_ACCOUNTS = "get_accounts",
     CHAIN_ID = "chain_id",
     DEPOSIT_TRANSACTION = "deposit_transaction",
     GET_TRANSACTION_BY_HASH = "get_transaction_by_hash",
