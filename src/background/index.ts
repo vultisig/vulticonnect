@@ -673,7 +673,7 @@ const handleRequest = (
         break;
       }
       case RequestMethod.METAMASK.NET_VERSION: {
-        resolve("1");
+        resolve(String(parseInt(chain.id,16)));
 
         break;
       }

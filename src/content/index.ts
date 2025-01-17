@@ -160,7 +160,6 @@ class XDEFIKeplrProvider extends Keplr {
     _mode: BroadcastMode
   ): Promise<Uint8Array> {
     return new Promise<Uint8Array>((resolve, reject) => {
-      console.log("send Tx", _tx);
 
       cosmosProvider
         .request({
