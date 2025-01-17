@@ -1,4 +1,4 @@
-import { FC, StrictMode, useEffect } from "react";
+import { StrictMode, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 
 import { getStoredLanguage } from "utils/storage";
@@ -10,7 +10,7 @@ import Routing from "pages/popup/routes";
 import "styles/index.scss";
 import "pages/popup/index.scss";
 
-const Component: FC = () => {
+const Component = () => {
   const componentDidMount = (): void => {
     getStoredLanguage().then((language) => {
       i18n.changeLanguage(language);

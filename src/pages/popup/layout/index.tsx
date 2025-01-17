@@ -1,4 +1,4 @@
-import { useEffect, useState, type FC } from "react";
+import { useEffect, useState } from "react";
 import { Outlet, useNavigate } from "react-router-dom";
 
 import { getStoredVaults } from "utils/storage";
@@ -8,7 +8,7 @@ interface InitialState {
   loaded: boolean;
 }
 
-const Component: FC = () => {
+const Component = () => {
   const initialState: InitialState = { loaded: false };
   const [state, setState] = useState(initialState);
   const { loaded } = state;

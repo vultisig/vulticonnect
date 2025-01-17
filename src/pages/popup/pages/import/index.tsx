@@ -1,4 +1,4 @@
-import { FC, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button, Upload, UploadProps } from "antd";
@@ -25,7 +25,7 @@ interface InitialState {
   vault?: VaultProps;
 }
 
-const Component: FC = () => {
+const Component = () => {
   const { t } = useTranslation();
   const initialState: InitialState = { isWindows: true, status: "default" };
   const [state, setState] = useState(initialState);

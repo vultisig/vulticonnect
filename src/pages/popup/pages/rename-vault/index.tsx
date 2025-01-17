@@ -1,4 +1,4 @@
-import { useEffect, FC } from "react";
+import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Form, Input } from "antd";
 
@@ -10,7 +10,7 @@ import routeKeys from "utils/route-keys";
 
 import { ArrowLeft } from "icons";
 
-const Component: FC = () => {
+const Component = () => {
   const { t } = useTranslation();
   const [form] = Form.useForm();
   const goBack = useGoBack();

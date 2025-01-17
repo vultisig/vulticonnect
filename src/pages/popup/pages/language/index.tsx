@@ -1,4 +1,4 @@
-import { useEffect, useState, type FC } from "react";
+import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { getStoredLanguage, setStoredLanguage } from "utils/storage";
@@ -13,7 +13,7 @@ interface InitialState {
   language: Language;
 }
 
-const Component: FC = () => {
+const Component = () => {
   const { t } = useTranslation();
   const initialState: InitialState = { language: Language.ENGLISH };
   const [state, setState] = useState(initialState);

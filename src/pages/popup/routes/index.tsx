@@ -1,4 +1,3 @@
-import { type FC } from "react";
 import {
   Navigate,
   RouterProvider,
@@ -122,6 +121,6 @@ const router = createHashRouter(processRoutes(routes), {
   basename: routerKeys.basePath,
 });
 
-const Component: FC = () => <RouterProvider router={router} />;
+const Component = () => <RouterProvider router={router} />;
 
 export default Component;

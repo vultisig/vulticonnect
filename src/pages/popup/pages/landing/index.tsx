@@ -1,4 +1,3 @@
-import { type FC } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { Button } from "antd";
@@ -6,7 +5,7 @@ import { Button } from "antd";
 import messageKeys from "utils/message-keys";
 import routeKeys from "utils/route-keys";
 
-const Component: FC = () => {
+const Component = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 

@@ -55,7 +55,7 @@ const ConnectedApp: FC<{ domain: string; onUnlink: () => void }> = ({
   );
 };
 
-const Component: FC = () => {
+const Component = () => {
   const { t } = useTranslation();
   const initialState: InitialState = { isPriority: false, networkOptions: [] };
   const [state, setState] = useState(initialState);
@@ -102,16 +102,16 @@ const Component: FC = () => {
     });
   };
 
-  const handleChangeNetwork = (value: any) => {
+  const handleChangeNetwork = (selectedOption: SelectOption) => {
     const selectedNetwork = networkOptions.find(
-      (option) => option.value === value
+      (option) => option.value === String(selectedOption)
     );
 
     if (selectedNetwork) {
       setStoredChains(
         Object.values(chains).map((chain) => ({
           ...chain,
-          active: chain.id === value,
+          active: chain.id === selectedOption,
         }))
       ).then(() => {
         setState((prevState) => ({ ...prevState, selectedNetwork }));

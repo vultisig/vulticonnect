@@ -1,4 +1,4 @@
-import { FC, StrictMode, useEffect } from "react";
+import { StrictMode, useEffect } from "react";
 import { Navigate, RouterProvider, createHashRouter } from "react-router-dom";
 import ReactDOM from "react-dom/client";
 
@@ -28,7 +28,7 @@ const router = createHashRouter(
   }
 );
 
-const Component: FC = () => {
+const Component = () => {
   const componentDidMount = (): void => {
     getStoredLanguage().then((language) => {
       i18n.changeLanguage(language);

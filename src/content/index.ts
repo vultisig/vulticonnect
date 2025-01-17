@@ -160,7 +160,6 @@ class XDEFIKeplrProvider extends Keplr {
     _mode: BroadcastMode
   ): Promise<Uint8Array> {
     return new Promise<Uint8Array>((resolve, reject) => {
-
       cosmosProvider
         .request({
           method: RequestMethod.VULTISIG.SEND_TRANSACTION,

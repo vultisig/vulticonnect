@@ -1,4 +1,4 @@
-import { FC, StrictMode, useEffect, useState } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Checkbox, Form } from "antd";
 import ReactDOM from "react-dom/client";
@@ -31,7 +31,7 @@ interface InitialState {
   vaults: VaultProps[];
 }
 
-const Component: FC = () => {
+const Component = () => {
   const { t } = useTranslation();
   const initialState: InitialState = { vaults: [] };
   const [state, setState] = useState(initialState);

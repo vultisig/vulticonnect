@@ -1,6 +1,5 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
-//import LanguageDetector from "i18next-browser-languagedetector";
 
 import { Language } from "utils/constants";
 
@@ -13,41 +12,38 @@ import itTranslation from "i18n/locales/it_IT";
 import ruTranslation from "i18n/locales/ru_RU";
 import ptTranslation from "i18n/locales/pt_PT";
 
-i18n
-  //.use(LanguageDetector)
-  .use(initReactI18next)
-  .init({
-    resources: {
-      [Language.CROATIA]: {
-        translation: hrTranslation,
-      },
-      [Language.DUTCH]: {
-        translation: nlTranslation,
-      },
-      [Language.ENGLISH]: {
-        translation: enTranslation,
-      },
-      [Language.GERMAN]: {
-        translation: deTranslation,
-      },
-      [Language.ITALIAN]: {
-        translation: itTranslation,
-      },
-      [Language.RUSSIAN]: {
-        translation: ruTranslation,
-      },
-      [Language.PORTUGUESE]: {
-        translation: ptTranslation,
-      },
-      [Language.SPANISH]: {
-        translation: esTranslation,
-      },
+i18n.use(initReactI18next).init({
+  resources: {
+    [Language.CROATIA]: {
+      translation: hrTranslation,
     },
-    fallbackLng: "en",
-    debug: false,
-    interpolation: {
-      escapeValue: false,
+    [Language.DUTCH]: {
+      translation: nlTranslation,
     },
-  });
+    [Language.ENGLISH]: {
+      translation: enTranslation,
+    },
+    [Language.GERMAN]: {
+      translation: deTranslation,
+    },
+    [Language.ITALIAN]: {
+      translation: itTranslation,
+    },
+    [Language.RUSSIAN]: {
+      translation: ruTranslation,
+    },
+    [Language.PORTUGUESE]: {
+      translation: ptTranslation,
+    },
+    [Language.SPANISH]: {
+      translation: esTranslation,
+    },
+  },
+  fallbackLng: "en",
+  debug: false,
+  interpolation: {
+    escapeValue: false,
+  },
+});
 
 export default i18n;

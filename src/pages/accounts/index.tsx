@@ -1,4 +1,4 @@
-import { FC, StrictMode, useEffect, useState } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Checkbox, Form } from "antd";
 import ReactDOM from "react-dom/client";
@@ -36,7 +36,7 @@ interface InitialState {
   vaults: VaultProps[];
 }
 
-const Component: FC = () => {
+const Component = () => {
   const { t } = useTranslation();
   const initialState: InitialState = { vaults: [] };
   const [state, setState] = useState(initialState);
@@ -49,32 +49,29 @@ const Component: FC = () => {
   };
 
   const handleSubmit = () => {
-    form
-      .validateFields()
-      .then(({ uids }: FormProps) => {
-        if (sender) {
-          getStoredVaults().then((vaults) => {
-            setStoredVaults(
-              vaults.map((vault) => ({
-                ...vault,
-                apps:
-                  uids.indexOf(vault.uid) >= 0
-                    ? [
-                        sender,
-                        ...(vault.apps?.filter((app) => app !== sender) ?? []),
-                      ]
-                    : vault.apps?.filter((app) => app !== sender) ?? [],
-              }))
-            ).then(() => {
-              handleClose();
-            });
+    form.validateFields().then(({ uids }: FormProps) => {
+      if (sender) {
+        getStoredVaults().then((vaults) => {
+          setStoredVaults(
+            vaults.map((vault) => ({
+              ...vault,
+              apps:
+                uids.indexOf(vault.uid) >= 0
+                  ? [
+                      sender,
+                      ...(vault.apps?.filter((app) => app !== sender) ?? []),
+                    ]
+                  : vault.apps?.filter((app) => app !== sender) ?? [],
+            }))
+          ).then(() => {
+            handleClose();
           });
-        }
-      })
-      .catch(() => {});
+        });
+      }
+    });
   };
 
-  const componentDidMount = (): void => {
+  useEffect(() => {
     getStoredLanguage().then((language) => {
       i18n.changeLanguage(language);
 
@@ -107,9 +104,7 @@ const Component: FC = () => {
         })
         .catch(() => {});
     });
-  };
-
-  useEffect(componentDidMount, []);
+  }, []);
 
   return (
     <ConfigProvider>

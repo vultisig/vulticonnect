@@ -1,4 +1,4 @@
-import { FC, StrictMode, useEffect, useState } from "react";
+import { StrictMode, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, QRCode, message, Form, Input } from "antd";
 import { formatUnits, toUtf8String } from "ethers";
@@ -77,7 +77,7 @@ interface InitialState {
   errorDescription?: string;
 }
 
-const Component: FC = () => {
+const Component = () => {
   const { t } = useTranslation();
   const RETRY_TIMEOUT_MS = 120000;
   const CLOSE_TIMEOUT_MS = 60000;

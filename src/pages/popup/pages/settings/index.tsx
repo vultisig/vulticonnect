@@ -1,4 +1,4 @@
-import { useEffect, useState, type FC } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { getStoredCurrency, getStoredLanguage } from "utils/storage";
@@ -24,7 +24,7 @@ interface InitialState {
   language: Language;
 }
 
-const Component: FC = () => {
+const Component = () => {
   const { t } = useTranslation();
   const initialState: InitialState = {
     currency: Currency.USD,

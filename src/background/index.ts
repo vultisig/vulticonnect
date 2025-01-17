@@ -673,8 +673,7 @@ const handleRequest = (
         break;
       }
       case RequestMethod.METAMASK.NET_VERSION: {
-        resolve(String(parseInt(chain.id,16)));
-
+        resolve(String(parseInt(chain.id, 16)));
         break;
       }
       case RequestMethod.CTRL.DEPOSIT: {
