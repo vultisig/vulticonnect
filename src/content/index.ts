@@ -9,6 +9,7 @@ import {
 import EventEmitter from "events";
 import base58 from "bs58";
 import {
+  CosmosMsgType,
   EventMethod,
   MessageKey,
   RequestMethod,
@@ -16,13 +17,20 @@ import {
 } from "utils/constants";
 import { Messaging, VaultProps } from "utils/interfaces";
 import VULTI_ICON_RAW_SVG from "content/icon";
-import { CosmJSOfflineSigner, Keplr } from "@keplr-wallet/provider";
 import {
+  CosmJSOfflineSigner,
+  CosmJSOfflineSignerOnlyAmino,
+  Keplr,
+} from "@keplr-wallet/provider";
+import {
+  AminoSignResponse,
   BroadcastMode,
   KeplrMode,
   KeplrSignOptions,
+  Key,
   OfflineAminoSigner,
   OfflineDirectSigner,
+  StdSignDoc,
   StdTx,
 } from "@keplr-wallet/types";
 enum NetworkKey {
@@ -123,7 +131,7 @@ class XDEFIKeplrProvider extends Keplr {
   ): OfflineAminoSigner & OfflineDirectSigner {
     const cosmSigner = new CosmJSOfflineSigner(
       chainId,
-      window.keplr,
+      window.xfi.keplr,
       _signOptions
     );
 
@@ -154,6 +162,45 @@ class XDEFIKeplrProvider extends Keplr {
 
     return cosmSigner as OfflineAminoSigner & OfflineDirectSigner;
   }
+
+  getOfflineSignerOnlyAmino(
+    chainId: string,
+    signOptions?: KeplrSignOptions
+  ): OfflineAminoSigner {
+    const cosmSigner = new CosmJSOfflineSignerOnlyAmino(
+      chainId,
+      window.xfi.keplr,
+      signOptions
+    );
+
+    cosmSigner.getAccounts = async () => {
+      return cosmosProvider
+        .request({ method: RequestMethod.VULTISIG.CHAIN_ID, params: [] })
+        .then(async (currentChainID) => {
+          if (currentChainID !== chainId) {
+            return await cosmosProvider
+              .request({
+                method: RequestMethod.VULTISIG.WALLET_SWITCH_CHAIN,
+                params: [{ chainId }],
+              })
+              .then(async () => {
+                return await cosmosProvider.request({
+                  method: RequestMethod.VULTISIG.REQUEST_ACCOUNTS,
+                  params: [],
+                });
+              });
+          } else {
+            return await cosmosProvider.request({
+              method: RequestMethod.VULTISIG.REQUEST_ACCOUNTS,
+              params: [],
+            });
+          }
+        });
+    };
+
+    return cosmSigner as OfflineAminoSigner;
+  }
+
   sendTx(
     _chainId: string,
     _tx: StdTx | Uint8Array,
@@ -173,6 +220,35 @@ class XDEFIKeplrProvider extends Keplr {
   }
   async sendMessage() {}
 
+  signAmino(
+    _chainId: string,
+    _signer: string,
+    signDoc: StdSignDoc,
+    _signOptions?: KeplrSignOptions
+  ): Promise<AminoSignResponse> {
+    return new Promise<AminoSignResponse>((resolve) => {
+      const txDetails = signDoc.msgs.map((msg) => {
+        if (msg.type === CosmosMsgType.MSG_SEND) {
+          return {
+            from: msg.value.from_address,
+            to: msg.value.to_address,
+            value: msg.value.amount[0].amount,
+            data: signDoc.memo || msg.value.memo,
+          };
+        }
+      });
+
+      cosmosProvider
+        .request({
+          method: RequestMethod.VULTISIG.SEND_TRANSACTION,
+          params: [txDetails[0]!],
+        })
+        .then((result) => {
+          resolve(result as any);
+        });
+    });
+  }
+
   async experimentalSuggestChain(_chainInfo: any) {
     return;
   }
@@ -182,6 +258,35 @@ class XDEFIKeplrProvider extends Keplr {
     _payload: any
   ): Promise<any> {
     return;
+  }
+
+  async getKey(chainId: string): Promise<Key> {
+    return cosmosProvider
+      .request({ method: RequestMethod.VULTISIG.CHAIN_ID, params: [] })
+      .then(async (currentChainID) => {
+        if (currentChainID !== chainId) {
+          return await cosmosProvider
+            .request({
+              method: RequestMethod.VULTISIG.WALLET_SWITCH_CHAIN,
+              params: [{ chainId }],
+            })
+            .then(async () => {
+              return (
+                await cosmosProvider.request({
+                  method: RequestMethod.VULTISIG.REQUEST_ACCOUNTS,
+                  params: [],
+                })
+              )[0];
+            });
+        } else {
+          return (
+            await cosmosProvider.request({
+              method: RequestMethod.VULTISIG.REQUEST_ACCOUNTS,
+              params: [],
+            })
+          )[0];
+        }
+      });
   }
 }
 
@@ -754,12 +859,22 @@ const intervalRef = setInterval(() => {
         );
 
         providerCopy.isMetaMask = false;
-
+        window.isCtrl = true;
+        window.xfi.installed = true;
         announceProvider({
           info: {
             icon: VULTI_ICON_RAW_SVG,
             name: "Vultisig",
             rdns: "me.vultisig",
+            uuid: uuidv4(),
+          },
+          provider: providerCopy as Provider.Ethereum as EIP1193Provider,
+        });
+        announceProvider({
+          info: {
+            icon: VULTI_ICON_RAW_SVG,
+            name: "Ctrl Wallet",
+            rdns: "io.xdefi",
             uuid: uuidv4(),
           },
           provider: providerCopy as Provider.Ethereum as EIP1193Provider,

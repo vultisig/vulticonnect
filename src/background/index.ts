@@ -599,7 +599,6 @@ const handleRequest = (
 
         break;
       }
-      // Double Check
       case RequestMethod.METAMASK.ETH_CALL: {
         if (Array.isArray(params)) {
           const [transaction] = params as ITransaction.METAMASK[];
@@ -804,9 +803,12 @@ chrome.runtime.onMessage.addListener(
 
                       const account = [
                         {
+                          pubkey: Array.from(keyBytes),
                           address: response,
                           algo: "secp256k1",
-                          pubkey: Array.from(keyBytes),
+                          bech32Address: response,
+                          isKeystone: false,
+                          isNanoLedger: false,
                         },
                       ];
                       sendResponse(account);

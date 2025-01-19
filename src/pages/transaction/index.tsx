@@ -553,9 +553,10 @@ const Component = () => {
               )
                 .getSpecificTransactionInfo(coin)
                 .then((blockchainSpecific) => {
-                  transaction.gasPrice = blockchainSpecific.gasPrice
-                    .toFixed(coin.decimals)
-                    .toLocaleString();
+                  transaction.gasPrice = formatUnits(
+                    blockchainSpecific.gasPrice,
+                    coin.decimals
+                  );
                   try {
                     transaction.memo = toUtf8String(transaction.data);
                   } catch (err) {

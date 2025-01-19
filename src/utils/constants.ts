@@ -7,6 +7,10 @@ import type {
   LanguageRef,
 } from "utils/interfaces";
 
+export enum CosmosMsgType {
+  MSG_SEND = "cosmos-sdk/MsgSend",
+}
+
 export enum ChainKey {
   ARBITRUM = "Arbitrum",
   AVALANCHE = "Avalanche",
