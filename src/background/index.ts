@@ -256,6 +256,9 @@ const handleRequest = (
 ): Promise<Messaging.Chain.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = body;
+    if (evmChains.includes(chain.name)) {
+      if (!rpcProvider) handleProvider(chain.name);
+    }
 
     switch (method) {
       case RequestMethod.VULTISIG.GET_ACCOUNTS:
@@ -422,6 +425,13 @@ const handleRequest = (
 
         break;
       }
+      case RequestMethod.METAMASK.ETH_GET_TRANSACTION_COUNT: {
+        const [address, tag] = params;
+        rpcProvider
+          .getTransactionCount(String(address), String(tag))
+          .then((count) => resolve(String(count)));
+        break;
+      }
       case RequestMethod.METAMASK.ETH_BLOCK_NUMBER: {
         rpcProvider
           .getBlock("latest")
@@ -564,20 +574,11 @@ const handleRequest = (
         break;
       }
       case RequestMethod.METAMASK.ETH_GET_BLOCK_BY_NUMBER: {
-        if (Array.isArray(params)) {
-          const [tag, refresh] = params;
-
-          if (tag && refresh) {
-            rpcProvider
-              .getBlock(String(tag), Boolean(refresh))
-              .then((block) => resolve(block?.toJSON()))
-              .catch(reject);
-          } else {
-            reject();
-          }
-        } else {
-          reject();
-        }
+        const [tag, refresh] = params;
+        rpcProvider
+          .getBlock(String(tag), Boolean(refresh))
+          .then((block) => resolve(block?.toJSON()))
+          .catch(reject);
 
         break;
       }
@@ -592,10 +593,7 @@ const handleRequest = (
       case RequestMethod.METAMASK.ETH_MAX_PRIORITY_FEE_PER_GAS: {
         rpcProvider
           .getFeeData()
-          .then(({ maxPriorityFeePerGas }) =>
-            resolve(maxPriorityFeePerGas!.toString())
-          )
-          .catch(reject);
+          .then(({ maxFeePerGas }) => resolve(maxFeePerGas!.toString()));
 
         break;
       }
