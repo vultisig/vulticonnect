@@ -5,6 +5,7 @@ export default keyMirror({
   ACTIVE: true,
   ADD_NEW_VAULT: true,
   ADD_VAULT_QRCODE: true,
+  ADDRESS:true,
   AMOUNT: true,
   // B
   // C
@@ -46,6 +47,7 @@ export default keyMirror({
   LANGUAGE: true,
   // M
   MEMO: true,
+  MESSAGE: true,
   // N
   NAME: true,
   NETWORK_FEE: true,

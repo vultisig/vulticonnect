@@ -5,6 +5,7 @@ export default {
   [messageKeys.ACTIVE]: "Active",
   [messageKeys.ADD_NEW_VAULT]: "Add New Vault",
   [messageKeys.ADD_VAULT_QRCODE]: "Add Vault QR Code",
+  [messageKeys.ADDRESS]: "Address",
   [messageKeys.AMOUNT]: "Amount",
   // C
   [messageKeys.CANCEL]: "Cancel",
@@ -43,6 +44,7 @@ export default {
   [messageKeys.LANGUAGE]: "Language",
   // M
   [messageKeys.MEMO]: "Memo",
+  [messageKeys.MESSAGE]: "Message",
   // N
   [messageKeys.NAME]: "Name",
   [messageKeys.NETWORK_FEE]: "Est. Network Fee",

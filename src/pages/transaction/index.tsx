@@ -245,7 +245,7 @@ const Component = () => {
           }).then(() => {
             setState((prevState) => ({
               ...prevState,
-              step: 4,
+              step: 5,
               transaction: {
                 ...transaction,
                 customSignature: txProvider.getEncodedSignature(
@@ -637,74 +637,90 @@ const Component = () => {
                   <span className="divider">
                     {t(messageKeys.TRANSACTION_DETAILS)}
                   </span>
-                  <div className="list">
-                    <div className="list-item">
-                      <span className="label">{t(messageKeys.FROM)}</span>
-                      <MiddleTruncate text={transaction.from} />
-                    </div>
-                    <div className="list-item">
-                      <span className="label">{t(messageKeys.TO)}</span>
-                      <MiddleTruncate text={transaction.to} />
-                    </div>
-                    {transaction.value && (
+                  {!transaction.isCustomMessage && (
+                    <div className="list">
                       <div className="list-item">
-                        <span className="label">{t(messageKeys.AMOUNT)}</span>
-                        <span className="extra">{`${formatUnits(
-                          transaction.value,
-                          transaction.chain.decimals
-                        )} ${transaction.chain.ticker}`}</span>
+                        <span className="label">{t(messageKeys.FROM)}</span>
+                        <MiddleTruncate text={transaction.from} />
                       </div>
-                    )}
-                    {transaction.memo && !parsedMemo && (
-                      <div className="memo-item">
-                        <span className="label">{t(messageKeys.MEMO)}</span>
+                      <div className="list-item">
+                        <span className="label">{t(messageKeys.TO)}</span>
+                        <MiddleTruncate text={transaction.to} />
+                      </div>
+                      {transaction.value && (
+                        <div className="list-item">
+                          <span className="label">{t(messageKeys.AMOUNT)}</span>
+                          <span className="extra">{`${formatUnits(
+                            transaction.value,
+                            transaction.chain.decimals
+                          )} ${transaction.chain.ticker}`}</span>
+                        </div>
+                      )}
+                      {transaction.memo && !parsedMemo && (
+                        <div className="memo-item">
+                          <span className="label">{t(messageKeys.MEMO)}</span>
+                          <span className="extra">
+                            <div>
+                              {splitString(transaction.memo, 32).map(
+                                (str, index) => (
+                                  <div key={index}>{str}</div>
+                                )
+                              )}
+                            </div>
+                          </span>
+                        </div>
+                      )}
+                      <div className="list-item">
+                        <span className="label">
+                          {t(messageKeys.NETWORK_FEE)}
+                        </span>
                         <span className="extra">
-                          <div>
-                            {splitString(transaction.memo, 32).map(
-                              (str, index) => (
-                                <div key={index}>{str}</div>
-                              )
-                            )}
-                          </div>
+                          {formatDisplayNumber(
+                            transaction.gasPrice!,
+                            transaction.chain.ticker
+                          )}
                         </span>
                       </div>
-                    )}
-                    <div className="list-item">
-                      <span className="label">
-                        {t(messageKeys.NETWORK_FEE)}
-                      </span>
-                      <span className="extra">
-                        {formatDisplayNumber(
-                          transaction.gasPrice!,
-                          transaction.chain.ticker
-                        )}
-                      </span>
-                    </div>
-                    {parsedMemo && (
-                      <>
-                        <div className="list-item">
-                          <span className="label">
-                            {t(messageKeys.FUNCTION_SIGNATURE)}
-                          </span>
-                          <div className="scrollable-x">
-                            {parsedMemo.signature}
+                      {parsedMemo && (
+                        <>
+                          <div className="list-item">
+                            <span className="label">
+                              {t(messageKeys.FUNCTION_SIGNATURE)}
+                            </span>
+                            <div className="scrollable-x">
+                              {parsedMemo.signature}
+                            </div>
                           </div>
-                        </div>
-                        <div className="list-item">
-                          <span className="label">
-                            {t(messageKeys.FUNCTION_INPUTS)}
-                          </span>
-                          <div className="scrollable-x monospace-text ">
-                            <div style={{ width: "max-content" }}>
-                              <div className="function-inputs">
-                                {parsedMemo.inputs}
+                          <div className="list-item">
+                            <span className="label">
+                              {t(messageKeys.FUNCTION_INPUTS)}
+                            </span>
+                            <div className="scrollable-x monospace-text ">
+                              <div style={{ width: "max-content" }}>
+                                <div className="function-inputs">
+                                  {parsedMemo.inputs}
+                                </div>
                               </div>
                             </div>
                           </div>
-                        </div>
-                      </>
-                    )}
-                  </div>
+                        </>
+                      )}
+                    </div>
+                  )}
+                  {transaction.isCustomMessage && (
+                    <div className="list">
+                      <div className="list-item">
+                        <span className="label">{t(messageKeys.ADDRESS)}</span>
+                        <MiddleTruncate text={transaction.from} />
+                      </div>
+                      <div className="list-item">
+                        <span className="label">{t(messageKeys.MESSAGE)}</span>
+                        <MiddleTruncate
+                          text={transaction.customMessage!.message}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
                 <div className="footer">
                   <Button
