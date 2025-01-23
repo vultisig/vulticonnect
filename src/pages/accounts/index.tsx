@@ -22,26 +22,17 @@ import VultiLoading from "components/vulti-loading";
 
 import "styles/index.scss";
 import "pages/accounts/index.scss";
+import { usePageInitialization } from "~src/hooks/usePageInitialization";
 
 interface FormProps {
   uids: string[];
 }
 
-interface InitialState {
-  chain?: ChainKey;
-  errorDescription?: string;
-  errorTitle?: string;
-  hasError?: boolean;
-  sender?: string;
-  vaults: VaultProps[];
-}
-
 const Component = () => {
   const { t } = useTranslation();
-  const initialState: InitialState = { vaults: [] };
-  const [state, setState] = useState(initialState);
-  const { chain, errorDescription, errorTitle, hasError, sender, vaults } =
-    state;
+  const { chain, sender, vaults, hasError, errorTitle, errorDescription } =
+    usePageInitialization(t);
+
   const [form] = Form.useForm();
 
   const handleClose = () => {

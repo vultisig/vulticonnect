@@ -472,7 +472,7 @@ const Component = () => {
     });
   };
 
-  const componentDidMount = (): void => {
+  useEffect(() => {
     Promise.all([
       getStoredCurrency(),
       getStoredLanguage(),
@@ -589,9 +589,7 @@ const Component = () => {
         });
       }
     });
-  };
-
-  useEffect(componentDidMount, []);
+  }, []);
 
   return (
     <ConfigProvider>

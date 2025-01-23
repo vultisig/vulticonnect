@@ -19,23 +19,16 @@ import VultiError from "components/vulti-error";
 
 import "styles/index.scss";
 import "pages/vaults/index.scss";
+import { usePageInitialization } from "~src/hooks/usePageInitialization";
 
 interface FormProps {
   uids: string[];
 }
 
-interface InitialState {
-  errorDescription?: string;
-  errorTitle?: string;
-  hasError?: boolean;
-  vaults: VaultProps[];
-}
-
 const Component = () => {
   const { t } = useTranslation();
-  const initialState: InitialState = { vaults: [] };
-  const [state, setState] = useState(initialState);
-  const { errorDescription, errorTitle, hasError, vaults } = state;
+  const { vaults, hasError, errorTitle, errorDescription } =
+    usePageInitialization(t);
   const [form] = Form.useForm();
 
   const handleClose = () => {
