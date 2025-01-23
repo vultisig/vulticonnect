@@ -1,13 +1,14 @@
-import SevenZip, { type SevenZipModule } from "7z-wasm";
+import { Buffer } from "buffer";
+import SevenZip, { SevenZipModule } from "7z-wasm";
 
-import { errorKey } from "~utils/constants";
+import { errorKey } from "utils/constants";
 
 export default class DataConverterProvider {
-  private sevenZip: SevenZipModule;
+  private sevenZip?: SevenZipModule;
 
   private getCompressor = (): Promise<SevenZipModule> => {
     return new Promise((resolve, reject) => {
-      if (this.sevenZip) {   
+      if (this.sevenZip) {
         resolve(this.sevenZip);
       } else {
         SevenZip()

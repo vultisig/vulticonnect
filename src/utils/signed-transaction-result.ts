@@ -1,7 +1,8 @@
-class SignedTransactionResult {
+export class SignedTransactionResult {
   rawTransaction: string;
   transactionHash: string;
   signature?: string;
+
   constructor(
     rawTransaction: string,
     transactionHash: string,
@@ -13,7 +14,7 @@ class SignedTransactionResult {
   }
 }
 
-class SignedTransactionType {
+export class SignedTransactionType {
   private constructor(
     public type: "regular" | "regularWithApprove",
     public approve?: SignedTransactionResult,
@@ -49,4 +50,3 @@ class SignedTransactionType {
     }
   }
 }
-export { SignedTransactionResult, SignedTransactionType };

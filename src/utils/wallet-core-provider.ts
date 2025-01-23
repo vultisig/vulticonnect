@@ -1,18 +1,18 @@
-import { initWasm, type WalletCore } from "@trustwallet/wallet-core";
-import type { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
+import { initWasm, WalletCore } from "@trustwallet/wallet-core";
+import { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
 
-import { ChainKey, errorKey } from "~utils/constants";
+import { ChainKey, errorKey } from "utils/constants";
 
 export default class WalletCoreProvider {
-  private chainRef: { [chainKey: string]: CoinType };
-  private walletCore: WalletCore;
+  private chainRef?: { [chainKey: string]: CoinType };
+  private walletCore?: WalletCore;
 
   public getCore = (): Promise<{
     chainRef: { [chainKey: string]: CoinType };
     walletCore: WalletCore;
   }> => {
     return new Promise((resolve, reject) => {
-      if (this.walletCore) {
+      if (this.chainRef && this.walletCore) {
         resolve({ chainRef: this.chainRef, walletCore: this.walletCore });
       } else {
         initWasm()

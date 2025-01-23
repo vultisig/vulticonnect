@@ -1,40 +1,41 @@
+import { Buffer } from "buffer";
+import { sha256 } from "ethers";
 import { create } from "@bufbuild/protobuf";
-import { TW, type WalletCore } from "@trustwallet/wallet-core";
-import type { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
+import { TW, WalletCore } from "@trustwallet/wallet-core";
+import { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
 import Long from "long";
+
 import {
   CosmosSpecificSchema,
   TransactionType,
-  type CosmosSpecific,
-} from "~protos/blockchain_specific_pb";
-import { CoinSchema, type Coin } from "~protos/coin_pb";
+  CosmosSpecific,
+} from "protos/blockchain_specific_pb";
+import { CoinSchema, Coin } from "protos/coin_pb";
 import {
   KeysignPayloadSchema,
-  type KeysignPayload,
-} from "~protos/keysign_message_pb";
+  KeysignPayload,
+} from "protos/keysign_message_pb";
+
+import { ChainKey } from "utils/constants";
+import {
+  CosmosAccountData,
+  ITransaction,
+  SignatureProps,
+  SignedTransaction,
+  SpecificCosmos,
+  VaultProps,
+} from "utils/interfaces";
+import { SignedTransactionResult } from "utils/signed-transaction-result";
+import BaseTransactionProvider from "utils/transaction-provider/base";
+import api from "utils/api";
+
 import SigningMode = TW.Cosmos.Proto.SigningMode;
 import BroadcastMode = TW.Cosmos.Proto.BroadcastMode;
-import { ChainKey } from "~utils/constants";
-import type {
-  CosmosAccountData,
-  SignatureProps,
-  SpecificCosmos,
-  TransactionProps,
-  VaultProps,
-} from "~utils/interfaces";
-import api from "../../api";
-import { createHash } from "crypto";
-import { SignedTransactionResult } from "../../signed-transaction-result";
-import { BaseTransactionProvider } from "../base-transaction-provider";
-
-interface ChainRef {
-  [chainKey: string]: CoinType;
-}
 
 export default class CosmosTransactionProvider extends BaseTransactionProvider {
   constructor(
     chainKey: ChainKey,
-    chainRef: ChainRef,
+    chainRef: { [chainKey: string]: CoinType },
     dataEncoder: (data: Uint8Array) => Promise<string>,
     walletCore: WalletCore
   ) {
@@ -47,10 +48,9 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
 
   public getSpecificTransactionInfo = (coin: Coin): Promise<SpecificCosmos> => {
     return new Promise<SpecificCosmos>(async (resolve) => {
-      let defaultGas = 7500;
-      if (coin.chain == ChainKey.DYDX) defaultGas = 2500000000000000;
+      const defaultGas = coin.chain == ChainKey.DYDX ? 2500000000000000 : 7500;
 
-      let result: SpecificCosmos = {
+      const result: SpecificCosmos = {
         gas: defaultGas,
         transactionType: 0,
         gasPrice: defaultGas,
@@ -61,6 +61,7 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
 
       try {
         const account = await this.getAccountData(coin.address);
+
         if (account) {
           result.accountNumber = Number(account.accountNumber);
           result.sequence = Number(account.sequence);
@@ -76,10 +77,10 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
   };
 
   public getKeysignPayload = (
-    transaction: TransactionProps,
+    transaction: ITransaction.METAMASK,
     vault: VaultProps
   ): Promise<KeysignPayload> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const coin = create(CoinSchema, {
         chain: transaction.chain.name,
         ticker: transaction.chain.ticker,
@@ -87,7 +88,7 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
         decimals: transaction.chain.decimals,
         hexPublicKey: vault.chains.find(
           (chain) => chain.name === transaction.chain.name
-        ).derivationKey,
+        )?.derivationKey,
         isNativeToken: true,
         logo: transaction.chain.ticker.toLowerCase(),
       });
@@ -120,16 +121,16 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
   };
 
   public getPreSignedInputData = (): Promise<Uint8Array> => {
-    return new Promise((resolve, reject) => {
-      const cosmosSpecific = this.keysignPayload.blockchainSpecific
+    return new Promise((resolve) => {
+      const cosmosSpecific = this.keysignPayload?.blockchainSpecific
         .value as unknown as CosmosSpecific;
       const coinType = this.chainRef[this.chainKey];
       const pubKeyData = Buffer.from(
-        this.keysignPayload.coin.hexPublicKey,
+        this.keysignPayload?.coin?.hexPublicKey ?? "",
         "hex"
       );
       const toAddr = this.walletCore.AnyAddress.createWithString(
-        this.keysignPayload.toAddress,
+        this.keysignPayload?.toAddress ?? "",
         coinType
       );
 
@@ -146,11 +147,11 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
       const message: TW.Cosmos.Proto.Message[] = [
         TW.Cosmos.Proto.Message.create({
           sendCoinsMessage: TW.Cosmos.Proto.Message.Send.create({
-            fromAddress: this.keysignPayload.coin.address,
-            toAddress: this.keysignPayload.toAddress,
+            fromAddress: this.keysignPayload?.coin?.address,
+            toAddress: this.keysignPayload?.toAddress,
             amounts: [
               TW.Cosmos.Proto.Amount.create({
-                amount: this.keysignPayload.toAmount,
+                amount: this.keysignPayload?.toAmount,
                 denom: denom,
               }),
             ],
@@ -167,7 +168,7 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
         mode: BroadcastMode.SYNC,
         memo:
           cosmosSpecific.transactionType !== TransactionType.VOTE
-            ? this.keysignPayload.memo || ""
+            ? this.keysignPayload?.memo ?? ""
             : "",
         messages: message,
         fee: TW.Cosmos.Proto.Fee.create({
@@ -184,46 +185,56 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
     });
   };
 
-  public getSignedTransaction = (
-    transaction: TransactionProps,
-    signature: SignatureProps,
-    inputData: Uint8Array,
-    vault: VaultProps
-  ): Promise<string> => {
-    return new Promise((resolve) => {
-      const coinType = this.walletCore.CoinType.thorchain;
-      const allSignatures = this.walletCore.DataVector.create();
-      const publicKeys = this.walletCore.DataVector.create();
-      const pubkeyCosmos = vault.chains.find(
-        (chain) => chain.name === transaction.chain.name
-      ).derivationKey;
-      const publicKeyData = Buffer.from(pubkeyCosmos, "hex");
-      const modifiedSig = this.getSignature(signature);
-      allSignatures.add(modifiedSig);
-      publicKeys.add(publicKeyData);
-      const compileWithSignatures =
-        this.walletCore.TransactionCompiler.compileWithSignatures(
-          coinType,
-          inputData,
-          allSignatures,
-          publicKeys
-        );
-      const output = TW.Cosmos.Proto.SigningOutput.decode(
-        compileWithSignatures
-      );
-      const serializedData = output.serialized;
-      const parsedData = JSON.parse(serializedData);
-      const txBytes = parsedData.tx_bytes;
-      const decodedTxBytes = Buffer.from(txBytes, "base64");
-      const hash = createHash("sha256")
-        .update(decodedTxBytes as any)
-        .digest("hex");
-      const result = new SignedTransactionResult(
-        serializedData,
-        hash,
-        undefined
-      );
-      resolve(result.transactionHash);
+  public getSignedTransaction = ({
+    inputData,
+    signature,
+    transaction,
+    vault,
+  }: SignedTransaction): Promise<{ txHash: string; raw: any }> => {
+    return new Promise((resolve, reject) => {
+      if (inputData && transaction && vault) {
+        const pubkeyCosmos = vault.chains.find(
+          (chain) => chain.name === transaction.chain.name
+        )?.derivationKey;
+
+        if (pubkeyCosmos) {
+          const coinType = this.walletCore.CoinType.thorchain;
+          const allSignatures = this.walletCore.DataVector.create();
+          const publicKeys = this.walletCore.DataVector.create();
+          const publicKeyData = Buffer.from(pubkeyCosmos, "hex");
+          const modifiedSig = this.getSignature(signature);
+
+          allSignatures.add(modifiedSig);
+          publicKeys.add(publicKeyData);
+
+          const compileWithSignatures =
+            this.walletCore.TransactionCompiler.compileWithSignatures(
+              coinType,
+              inputData,
+              allSignatures,
+              publicKeys
+            );
+          const output = TW.Cosmos.Proto.SigningOutput.decode(
+            compileWithSignatures
+          );
+          const serializedData = output.serialized;
+          const parsedData = JSON.parse(serializedData);
+          const txBytes = parsedData.tx_bytes;
+          const decodedTxBytes = Buffer.from(txBytes, "base64");
+          const hash = sha256(decodedTxBytes);
+          const result = new SignedTransactionResult(
+            serializedData,
+            hash,
+            undefined
+          );
+
+          resolve({ txHash: result.transactionHash, raw: serializedData });
+        } else {
+          reject;
+        }
+      } else {
+        reject();
+      }
     });
   };
 
@@ -246,6 +257,7 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
     address: string
   ): Promise<CosmosAccountData | null> {
     const url = this.accountNumberURL(address);
+
     if (!url) {
       return null;
     }
@@ -253,6 +265,7 @@ export default class CosmosTransactionProvider extends BaseTransactionProvider {
   }
 
   protected accountNumberURL(address: string): string | null {
+    address.toString(); // for skiping eslint
     throw new Error("must override");
   }
 

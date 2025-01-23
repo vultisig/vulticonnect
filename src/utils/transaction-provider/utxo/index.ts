@@ -1,32 +1,34 @@
 import { create } from "@bufbuild/protobuf";
 import Long from "long";
-import {
-  UTXOSpecificSchema,
-  type UTXOSpecific,
-} from "~protos/blockchain_specific_pb";
-import { CoinSchema, type Coin } from "~protos/coin_pb";
-import {
-  KeysignPayloadSchema,
-  type KeysignPayload,
-} from "~protos/keysign_message_pb";
-import { ChainKey } from "~utils/constants";
-import type {
-  SignatureProps,
-  SpecificUtxo,
-  SpecificUtxoInfo,
-  TransactionProps,
-  VaultProps,
-} from "~utils/interfaces";
+
 import api from "../../api";
 
 import { SignedTransactionResult } from "../../signed-transaction-result";
-import { BaseTransactionProvider } from "../base-transaction-provider";
-import { UtxoInfoSchema } from "~protos/utxo_info_pb";
+
 import type {
   CoinType,
   WalletCore,
 } from "@trustwallet/wallet-core/dist/src/wallet-core";
 import { TW } from "@trustwallet/wallet-core";
+import { BaseTransactionProvider } from "..";
+import { ChainKey } from "utils/constants";
+import {
+  ITransaction,
+  SignatureProps,
+  SpecificUtxo,
+  SpecificUtxoInfo,
+  VaultProps,
+} from "utils/interfaces";
+import { Coin, CoinSchema } from "protos/coin_pb";
+import {
+  KeysignPayload,
+  KeysignPayloadSchema,
+} from "protos/keysign_message_pb";
+import {
+  UTXOSpecific,
+  UTXOSpecificSchema,
+} from "protos/blockchain_specific_pb";
+import { UtxoInfoSchema } from "protos/utxo_info_pb";
 
 interface ChainRef {
   [chainKey: string]: CoinType;
@@ -50,7 +52,7 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
     return new Promise<SpecificUtxo>((resolve) => {
       this.calculateFee(coin).then(async (byteFeePrice) => {
         const specificTransactionInfo: SpecificUtxo = {
-          gasPrice: byteFeePrice,
+          gasPrice: byteFeePrice / 10 ** coin.decimals,
           fee: byteFeePrice,
           byteFee: byteFeePrice,
           sendMaxAmount: false,
@@ -62,10 +64,10 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
   };
 
   public getKeysignPayload = (
-    transaction: TransactionProps,
+    transaction: ITransaction.METAMASK,
     vault: VaultProps
   ): Promise<KeysignPayload> => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const coin = create(CoinSchema, {
         chain: transaction.chain.name,
         ticker: transaction.chain.ticker,
@@ -73,7 +75,7 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
         decimals: transaction.chain.decimals,
         hexPublicKey: vault.chains.find(
           (chain) => chain.name === transaction.chain.name
-        ).derivationKey,
+        )!.derivationKey,
         isNativeToken: true,
         logo: transaction.chain.ticker.toLowerCase(),
       });
@@ -92,7 +94,7 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
           vaultPublicKeyEcdsa: vault.publicKeyEcdsa,
           vaultLocalPartyId: "VultiConnect",
           coin,
-          utxoInfo: specificData.utxos.map((utxo) => {
+          utxoInfo: specificData.utxos.map((utxo: any) => {
             return create(UtxoInfoSchema, {
               hash: utxo.hash,
               amount: utxo.amount,
@@ -122,11 +124,12 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
       return TW.Bitcoin.Proto.SigningInput.encode(input).finish();
     } catch (err) {
       console.log(err);
+      throw new Error("Failed to get pre-signed input data");
     }
   }
 
   private getBitcoinSigningInput = (): TW.Bitcoin.Proto.SigningInput => {
-    const utxoSpecific = this.keysignPayload.blockchainSpecific as unknown as {
+    const utxoSpecific = this.keysignPayload!.blockchainSpecific as unknown as {
       case: "utxoSpecific";
       value: UTXOSpecific;
     };
@@ -134,22 +137,22 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
     const { byteFee, sendMaxAmount } = utxoSpecific.value;
     const input = TW.Bitcoin.Proto.SigningInput.create({
       hashType: this.walletCore.BitcoinScript.hashTypeForCoin(coinType),
-      amount: Long.fromString(this.keysignPayload.toAmount),
+      amount: Long.fromString(this.keysignPayload!.toAmount),
       useMaxAmount: sendMaxAmount,
-      toAddress: this.keysignPayload.toAddress,
-      changeAddress: this.keysignPayload.coin?.address,
+      toAddress: this.keysignPayload!.toAddress,
+      changeAddress: this.keysignPayload!.coin?.address,
       byteFee: Long.fromString(byteFee),
       coinType: coinType.value,
     });
 
     const encoder = new TextEncoder();
-    const memo = this.keysignPayload.memo || "";
+    const memo = this.keysignPayload!.memo || "";
     if (memo != "") {
-      input.outputOpReturn = encoder.encode(this.keysignPayload.memo);
+      input.outputOpReturn = encoder.encode(this.keysignPayload!.memo);
     }
-    for (const utxo of this.keysignPayload.utxoInfo) {
+    for (const utxo of this.keysignPayload!.utxoInfo) {
       const lockScript = this.walletCore.BitcoinScript.lockScriptForAddress(
-        this.keysignPayload.coin.address,
+        this.keysignPayload!.coin!.address,
         coinType
       );
       switch (coinType) {
@@ -197,19 +200,23 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
     return input;
   };
 
-  public getSignedTransaction = (
-    transaction: TransactionProps,
-    signature: SignatureProps,
-    inputData: Uint8Array,
-    vault: VaultProps
-  ): Promise<string> => {
+  public getSignedTransaction = ({
+    signature,
+    inputData,
+    vault,
+  }: {
+    transaction: ITransaction.METAMASK;
+    signature: SignatureProps;
+    inputData: Uint8Array;
+    vault: VaultProps;
+  }): Promise<{ txHash: string; raw: any }> => {
     return new Promise((resolve, reject) => {
       const coinType = this.chainRef[this.chainKey];
       const allSignatures = this.walletCore.DataVector.create();
       const publicKeys = this.walletCore.DataVector.create();
       const pubkeyUTXO = vault.chains.find(
         (chain) => chain.name === this.chainKey
-      ).derivationKey;
+      )!.derivationKey!;
       const publicKeyData = Buffer.from(pubkeyUTXO, "hex");
       const modifiedSig = this.getSignature(signature);
       try {
@@ -231,7 +238,12 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
           this.stripHexPrefix(this.walletCore.HexCoding.encode(output.encoded)),
           output.transactionId
         );
-        resolve(result.transactionHash);
+        resolve({
+          txHash: result.transactionHash,
+          raw: this.stripHexPrefix(
+            this.walletCore.HexCoding.encode(output.encoded)
+          ),
+        });
       } catch (err) {
         console.log(err);
         reject(err);
@@ -243,7 +255,7 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
     return this.walletCore.HexCoding.decode(signature.DerSignature);
   }
 
-  private calculateFee(_coin?: Coin): Promise<number> {
+  private calculateFee(_coin: Coin): Promise<number> {
     return new Promise((resolve, reject) => {
       api.utxo
         .blockchairStats(_coin.chain)
@@ -255,7 +267,10 @@ export default class UTXOTransactionProvider extends BaseTransactionProvider {
   }
 
   private async getUtxos(coin: Coin): Promise<SpecificUtxoInfo[]> {
-    const result = await api.utxo.blockchairDashboard(coin.address, coin.chain);
+    const result = (await api.utxo.blockchairDashboard(
+      coin.address,
+      coin.chain
+    )) as { [key: string]: { utxo: any[] } };
     return result[coin.address].utxo.map((utxo: any) => {
       return {
         hash: utxo.transactionHash,

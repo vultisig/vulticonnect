@@ -1,18 +1,17 @@
 import { Interface } from "ethers";
-import api from "./api";
-import { allSupportedChains, ChainKey, TssKeysignType } from "./constants";
-import type { ParsedMemo } from "./interfaces";
 
-const hexToAscii = (value: string): string => {
-  const hex: string = value.toString().replace("0x", "");
+import { ChainKey, TssKeysignType } from "utils/constants";
+import { ChainObjRef, ChainProps, ParsedMemo } from "utils/interfaces";
+import api from "utils/api";
 
-  let str: string = "";
+const getFunctionSignature = async (inputHex: string): Promise<string> => {
+  if (!inputHex || inputHex === "0x") {
+    return Promise.reject();
+  } else {
+    const functionSelector = inputHex.slice(0, 10); // "0x" + 8 hex chars
 
-  for (let n = 0; n < hex.length; n += 2) {
-    str += String.fromCharCode(parseInt(hex.substr(n, 2), 16));
+    return await api.getFunctionSelector(functionSelector);
   }
-
-  return str;
 };
 
 const isArray = (arr: any): arr is any[] => {
@@ -21,93 +20,6 @@ const isArray = (arr: any): arr is any[] => {
 
 const isObject = (obj: any): obj is Record<string, any> => {
   return obj === Object(obj) && !isArray(obj) && typeof obj !== "function";
-};
-
-const toCamel = (value: string): string => {
-  return value.replace(/([-_][a-z])/gi, ($1) => {
-    return $1.toUpperCase().replace("-", "").replace("_", "");
-  });
-};
-
-const toSnake = (value: string): string => {
-  return value.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
-};
-
-const toCamelCase = (obj: any): any => {
-  if (isObject(obj)) {
-    const n: Record<string, any> = {};
-
-    Object.keys(obj).forEach((k) => {
-      n[toCamel(k)] = toCamelCase(obj[k]);
-    });
-
-    return n;
-  } else if (isArray(obj)) {
-    return obj.map((i) => {
-      return toCamelCase(i);
-    });
-  }
-
-  return obj;
-};
-
-const toSnakeCase = (obj: any): any => {
-  if (isObject(obj)) {
-    const n: Record<string, any> = {};
-
-    Object.keys(obj).forEach((k) => {
-      n[toSnake(k)] = toSnakeCase(obj[k]);
-    });
-
-    return n;
-  } else if (isArray(obj)) {
-    return obj.map((i) => {
-      return toSnakeCase(i);
-    });
-  }
-
-  return obj;
-};
-
-const checkERC20Function = async (inputHex: string): Promise<boolean> => {
-  if (!inputHex || inputHex == "0x")
-    return new Promise((resolve) => resolve(false));
-  const functionSelector = inputHex.slice(0, 10); // "0x" + 8 hex chars
-
-  const res = await api.getIsFunctionSelector(functionSelector);
-  return res;
-};
-
-const getFunctionSignature = async (inputHex: string): Promise<string> => {
-  if (!inputHex || inputHex == "0x")
-    return new Promise((resolve, reject) => reject(""));
-  const functionSelector = inputHex.slice(0, 10); // "0x" + 8 hex chars
-
-  const res = await api.getFunctionSelector(functionSelector);
-  return res;
-};
-
-const parseMemo = async (memo: string) => {
-  return new Promise<ParsedMemo>((resolve, reject) => {
-    getFunctionSignature(memo)
-      .then((signature) => {
-        const abi = new Interface([`function ${signature}`]);
-        try {
-          const decodedData = abi.decodeFunctionData(
-            signature.split("(")[0],
-            memo
-          );
-          const processedData = processDecodedData(decodedData);
-          resolve({
-            signature: signature,
-            inputs: JSON.stringify(processedData, null, 2),
-          });
-        } catch (error) {
-          console.error("Error decoding input data:", error);
-        }
-      })
-      .catch(reject);
-  });
 };
 
 const processDecodedData = (data: any): any => {
@@ -127,19 +39,33 @@ const processDecodedData = (data: any): any => {
   return data;
 };
 
-const isSupportedChain = (chainId: string): boolean => {
-  return allSupportedChains.some((chain) => chain.id === chainId);
+const toCamel = (value: string): string => {
+  return value.replace(/([-_][a-z])/gi, ($1) =>
+    $1.toUpperCase().replace("-", "").replace("_", "")
+  );
 };
 
-function splitString(str: string, size: number): string[] {
-  const result: string[] = [];
-  for (let i = 0; i < str.length; i += size) {
-    result.push(str.slice(i, i + size));
-  }
-  return result;
-}
+const toSnake = (value: string): string => {
+  return value.replace(/[A-Z]/g, (letter) => `_${letter.toLowerCase()}`);
+};
 
-function calculateWindowPosition(currentWindow: chrome.windows.Window) {
+export const bigintToByteArray = (bigNumber: bigint): Uint8Array => {
+  if (typeof bigNumber !== "bigint" || bigNumber < 0n)
+    throw new Error("Input must be a non-negative BigInt.");
+
+  const bytes = [];
+
+  while (bigNumber > 0n) {
+    bytes.unshift(Number(bigNumber & 0xffn));
+    bigNumber = bigNumber >> 8n;
+  }
+
+  return new Uint8Array(bytes.length > 0 ? bytes : [0]);
+};
+
+export const calculateWindowPosition = (
+  currentWindow: chrome.windows.Window
+) => {
   const height = 639;
   const width = 376;
   let left = 0;
@@ -154,15 +80,31 @@ function calculateWindowPosition(currentWindow: chrome.windows.Window) {
     left = currentWindow.left + currentWindow.width - width;
     top = currentWindow.top;
   }
-  return { height, left, top, width };
-}
 
-const formatDisplayNumber = (_number: number | string, ticker: string) => {
+  return { height, left, top, width };
+};
+
+export const checkERC20Function = async (
+  inputHex: string
+): Promise<boolean> => {
+  if (!inputHex || inputHex === "0x")
+    return new Promise((resolve) => resolve(false));
+
+  const functionSelector = inputHex.slice(0, 10); // "0x" + 8 hex chars
+
+  return await api.getIsFunctionSelector(functionSelector);
+};
+
+export const formatDisplayNumber = (
+  _number: number | string,
+  ticker: string
+) => {
   if (String(_number).includes("$")) {
     // gasPrice is in usd and already formatted
     return _number;
   }
   const n = Number(_number);
+
   if (n === 0) {
     return "0";
   } else if (n < 0.0000001) {
@@ -190,40 +132,98 @@ const formatDisplayNumber = (_number: number | string, ticker: string) => {
   }
 };
 
-function getTssKeysignType(chain: ChainKey): TssKeysignType {
+export const findChainByProp = (
+  chains: ChainObjRef,
+  property: keyof ChainProps,
+  value: any
+): ChainProps | undefined => {
+  return (
+    (Object.entries(chains).find(
+      ([_key, chain]) => chain[property] === value
+    )?.[1] as ChainProps) ?? undefined
+  );
+};
+
+export const getTssKeysignType = (chain: ChainKey): TssKeysignType => {
   switch (chain) {
     case ChainKey.SOLANA:
     case ChainKey.POLKADOT:
     case ChainKey.SUI:
     case ChainKey.TON:
-      TssKeysignType.EdDSA;
+      return TssKeysignType.EdDSA;
     default:
       return TssKeysignType.ECDSA;
   }
-}
+};
 
-function bigintToByteArray(bigNumber: bigint): Uint8Array {
-  if (typeof bigNumber !== "bigint" || bigNumber < 0n) {
-    throw new Error("Input must be a non-negative BigInt.");
-  }
-  const bytes = [];
-  while (bigNumber > 0n) {
-    bytes.unshift(Number(bigNumber & 0xffn));
-    bigNumber = bigNumber >> 8n;
-  }
-  return new Uint8Array(bytes.length > 0 ? bytes : [0]);
-}
+export const parseMemo = (memo: string): Promise<ParsedMemo> => {
+  return new Promise((resolve, reject) => {
+    getFunctionSignature(memo)
+      .then((signature) => {
+        const abi = new Interface([`function ${signature}`]);
 
-export {
-  hexToAscii,
-  toCamelCase,
-  toSnakeCase,
-  checkERC20Function,
-  parseMemo,
-  isSupportedChain,
-  splitString,
-  calculateWindowPosition,
-  formatDisplayNumber,
-  bigintToByteArray,
-  getTssKeysignType
+        try {
+          const decodedData = abi.decodeFunctionData(
+            signature.split("(")[0],
+            memo
+          );
+
+          const processedData = processDecodedData(decodedData);
+
+          resolve({
+            signature: signature,
+            inputs: JSON.stringify(processedData, null, 2),
+          });
+        } catch (error) {
+          console.error("Error decoding input data:", error);
+        }
+      })
+      .catch(reject);
+  });
+};
+
+export const splitString = (str: string, size: number): string[] => {
+  const result: string[] = [];
+
+  for (let i = 0; i < str.length; i += size) {
+    result.push(str.slice(i, i + size));
+  }
+
+  return result;
+};
+
+export const toCamelCase = (obj: any): any => {
+  if (isObject(obj)) {
+    const n: Record<string, any> = {};
+
+    Object.keys(obj).forEach((k) => {
+      n[toCamel(k)] = toCamelCase(obj[k]);
+    });
+
+    return n;
+  } else if (isArray(obj)) {
+    return obj.map((i) => {
+      return toCamelCase(i);
+    });
+  }
+
+  return obj;
+};
+
+export const toSnakeCase = (obj: any): any => {
+  if (isObject(obj)) {
+    const n: Record<string, any> = {};
+
+    Object.keys(obj).forEach((k) => {
+      n[toSnake(k)] = toSnakeCase(obj[k]);
+    });
+
+    return n;
+  } else if (isArray(obj)) {
+    return obj.map((i) => {
+      return toSnakeCase(i);
+    });
+  }
+
+  return obj;
 };

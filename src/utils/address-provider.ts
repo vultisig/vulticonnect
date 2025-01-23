@@ -1,11 +1,9 @@
-import type {
-  CoinType,
-  WalletCore,
-} from "@trustwallet/wallet-core/dist/src/wallet-core";
+import { WalletCore } from "@trustwallet/wallet-core";
+import { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
 
-import { ChainKey, errorKey } from "~utils/constants";
-import type { VaultProps } from "~utils/interfaces";
-import api from "~utils/api";
+import { ChainKey, errorKey } from "utils/constants";
+import { VaultProps } from "utils/interfaces";
+import api from "utils/api";
 
 interface AddressProps {
   address: string;
@@ -57,8 +55,12 @@ export default class AddressProvider {
             )?.description();
           }
 
+
           address
-            ? resolve({ address, derivationKey })
+            ? resolve({
+                address,
+                derivationKey,
+              })
             : reject(errorKey.FAIL_TO_GET_ADDRESS);
         })
         .catch((error) => {
@@ -86,7 +88,9 @@ export default class AddressProvider {
         coin
       )?.description();
 
-      address ? resolve({ address }) : reject(errorKey.FAIL_TO_GET_ADDRESS);
+      address
+        ? resolve({ address, derivationKey: publicKey.description() })
+        : reject(errorKey.FAIL_TO_GET_ADDRESS);
     });
   };
 
