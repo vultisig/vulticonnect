@@ -1,17 +1,13 @@
-import { type WalletCore } from "@trustwallet/wallet-core";
-import type { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
-import { ChainKey } from "~utils/constants";
+import { WalletCore } from "@trustwallet/wallet-core";
+import { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
 
-import CosmosTransactionProvider from "../cosmos/cosmos-tx-provider";
-
-interface ChainRef {
-  [chainKey: string]: CoinType;
-}
+import { ChainKey } from "utils/constants";
+import CosmosTransactionProvider from "utils/transaction-provider/cosmos";
 
 export default class DydxTransactionProvider extends CosmosTransactionProvider {
   constructor(
     chainKey: ChainKey,
-    chainRef: ChainRef,
+    chainRef: { [chainKey: string]: CoinType },
     dataEncoder: (data: Uint8Array) => Promise<string>,
     walletCore: WalletCore
   ) {

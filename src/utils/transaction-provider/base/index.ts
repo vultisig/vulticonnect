@@ -1,28 +1,34 @@
-import { TW, type WalletCore } from "@trustwallet/wallet-core";
-import type { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
-import { ChainKey } from "~utils/constants";
-import type {
-  SignatureProps,
-  TransactionProps,
-  VaultProps,
-} from "~utils/interfaces";
 import { randomBytes } from "ethers";
-import { create, toBinary } from "@bufbuild/protobuf";
+import { TW, WalletCore } from "@trustwallet/wallet-core";
+import { CoinType } from "@trustwallet/wallet-core/dist/src/wallet-core";
+import { toBinary } from "@bufbuild/protobuf";
+
+import { ChainKey } from "utils/constants";
 import {
+  ITransaction,
+  SignatureProps,
+  SignedTransaction,
+  VaultProps,
+} from "utils/interfaces";
+
+import {
+  KeysignMessage,
   KeysignMessageSchema,
-  type KeysignPayload,
-} from "~protos/keysign_message_pb";
-import type { CustomMessagePayload } from "~protos/custom_message_payload_pb";
+  KeysignPayload,
+} from "protos/keysign_message_pb";
+import { CustomMessagePayload } from "protos/custom_message_payload_pb";
 
 interface ChainRef {
   [chainKey: string]: CoinType;
 }
-export abstract class BaseTransactionProvider {
+
+export default abstract class BaseTransactionProvider {
   protected chainKey: ChainKey;
   protected chainRef: ChainRef;
   protected dataEncoder: (data: Uint8Array) => Promise<string>;
   protected walletCore: WalletCore;
-  protected keysignPayload: KeysignPayload;
+  protected keysignPayload?: KeysignPayload;
+
   constructor(
     chainKey: ChainKey,
     chainRef: ChainRef,
@@ -35,6 +41,14 @@ export abstract class BaseTransactionProvider {
     this.walletCore = walletCore;
   }
 
+  protected encryptionKeyHex = (): string => {
+    const keyBytes = randomBytes(32);
+
+    return Array.from(keyBytes)
+      .map((byte) => byte.toString(16).padStart(2, "0"))
+      .join("");
+  };
+
   protected stripHexPrefix = (hex: string): string => {
     return hex.startsWith("0x") ? hex.slice(2) : hex;
   };
@@ -43,58 +57,50 @@ export abstract class BaseTransactionProvider {
     preSignedInputData: Uint8Array
   ): Promise<string> => {
     return new Promise((resolve, reject) => {
-      try {
-        const preHashes = this.walletCore.TransactionCompiler.preImageHashes(
-          this.chainRef[this.chainKey],
-          preSignedInputData
-        );
-        const preSigningOutput =
-          TW.TxCompiler.Proto.PreSigningOutput.decode(preHashes);
-        if (preSigningOutput.errorMessage !== "")
-          reject(preSigningOutput.errorMessage);
+      const preHashes = this.walletCore.TransactionCompiler.preImageHashes(
+        this.chainRef[this.chainKey],
+        preSignedInputData
+      );
 
-        const imageHash = this.stripHexPrefix(
-          this.walletCore.HexCoding.encode(preSigningOutput.dataHash)
-        );
-        resolve(imageHash);
-      } catch (err) {
-        console.error(`error getting preSignedImageHash: ${err}`);
-        reject(err);
-      }
+      const preSigningOutput =
+        TW.TxCompiler.Proto.PreSigningOutput.decode(preHashes);
+
+      if (preSigningOutput.errorMessage !== "")
+        reject(preSigningOutput.errorMessage);
+
+      const imageHash = this.walletCore.HexCoding.encode(
+        preSigningOutput.dataHash
+      )?.replace(/^0x/, "");
+
+      resolve(imageHash);
     });
   };
 
   public getTransactionKey = (
     publicKeyEcdsa: string,
-    transaction: TransactionProps,
+    transaction: ITransaction.METAMASK,
     hexChainCode: string
   ): Promise<string> => {
     return new Promise((resolve) => {
-      let messsage: {
-        sessionId: string;
-        serviceName: string;
-        encryptionKeyHex: string;
-        useVultisigRelay: boolean;
-        keysignPayload?: KeysignPayload;
-        customMessagePayload?: CustomMessagePayload;
-      } = {
+      let messsage: KeysignMessage = {
+        $typeName: "vultisig.keysign.v1.KeysignMessage",
         sessionId: transaction.id,
         serviceName: "VultiConnect",
         encryptionKeyHex: hexChainCode,
         useVultisigRelay: true,
+        payloadId: "",
       };
       if (transaction.isCustomMessage) {
         messsage.customMessagePayload = {
           $typeName: "vultisig.keysign.v1.CustomMessagePayload",
           method: "personal_sign",
-          message: transaction.customMessage?.message,
-        };
+          message: transaction.customMessage!.message,
+        } as CustomMessagePayload;
       } else {
         messsage.keysignPayload = this.keysignPayload;
       }
-      const keysignMessage = create(KeysignMessageSchema, messsage);
 
-      const binary = toBinary(KeysignMessageSchema, keysignMessage);
+      const binary = toBinary(KeysignMessageSchema, messsage);
 
       this.dataEncoder(binary).then((base64EncodedData) => {
         resolve(
@@ -105,27 +111,27 @@ export abstract class BaseTransactionProvider {
   };
 
   abstract getPreSignedInputData(): Promise<Uint8Array>;
-  abstract getSignedTransaction(
-    transaction: TransactionProps,
-    signature: SignatureProps,
-    inputData: Uint8Array,
-    vault: VaultProps
-  ): Promise<string>;
-
-  abstract getKeysignPayload(
-    transaction: TransactionProps,
-    vault: VaultProps
-  ): Promise<KeysignPayload>;
-
-  protected encodeData(data: Uint8Array): Promise<string> {
-    return this.dataEncoder(data);
-  }
 
   public getDerivePath = (chain: string) => {
     const coin = this.chainRef[chain];
     return this.walletCore.CoinTypeExt.derivationPath(coin);
   };
 
+  abstract getSignedTransaction({
+    inputData,
+    signature,
+    transaction,
+    vault,
+  }: SignedTransaction): Promise<{ txHash: string; raw: any }>;
+
+  abstract getKeysignPayload(
+    transaction: ITransaction.METAMASK,
+    vault: VaultProps
+  ): Promise<KeysignPayload>;
+
+  protected encodeData(data: Uint8Array): Promise<string> {
+    return this.dataEncoder(data);
+  }
   public getCustomMessageSignature(signature: SignatureProps): Uint8Array {
     const rData = this.walletCore.HexCoding.decode(signature.R).reverse();
     const sData = this.walletCore.HexCoding.decode(signature.S).reverse();
