@@ -1,7 +1,7 @@
 import { StrictMode, useEffect } from "react";
 import { Navigate, RouterProvider, createHashRouter } from "react-router-dom";
 import ReactDOM from "react-dom/client";
-import { useTranslation } from "react-i18next";
+
 import { getStoredLanguage } from "utils/storage";
 import i18n from "i18n/config";
 import routerKeys from "utils/route-keys";
@@ -11,7 +11,6 @@ import ImportPage from "pages/popup/pages/import";
 
 import "styles/index.scss";
 import "pages/popup/index.scss";
-import { usePageInitialization } from "~src/hooks/usePageInitialization";
 
 const router = createHashRouter(
   [
@@ -30,11 +29,13 @@ const router = createHashRouter(
 );
 
 const Component = () => {
-  const { t } = useTranslation();
+  const componentDidMount = (): void => {
+    getStoredLanguage().then((language) => {
+      i18n.changeLanguage(language);
+    });
+  };
 
-  useEffect(() => {
-    usePageInitialization(t);
-  }, []);
+  useEffect(componentDidMount, []);
 
   return (
     <ConfigProvider>
