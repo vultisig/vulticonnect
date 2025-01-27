@@ -1,3 +1,5 @@
+@use "~variables" as *;
+
 @keyframes loading-after {
   0% {
     left: rem(20);

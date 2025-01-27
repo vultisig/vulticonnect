@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FC } from "react";
+import { FC, useEffect, useRef, useState } from "react";
 
 interface ComponentProps {
   text: string;
@@ -21,24 +21,26 @@ const Component: FC<ComponentProps> = ({ text }) => {
   const elmRef = useRef<HTMLSpanElement>(null);
 
   const ellipsisDidUpdate = (): void => {
-    const [child] = elmRef.current.children;
-    const parentWidth = elmRef.current.clientWidth;
-    const childWidth = child?.clientWidth ?? 0;
+    if (elmRef.current) {
+      const [child] = elmRef.current.children;
+      const parentWidth = elmRef.current.clientWidth;
+      const childWidth = child?.clientWidth ?? 0;
 
-    if (childWidth > parentWidth) {
-      const chunkLen = Math.ceil(text.length / 2) - counter;
+      if (childWidth > parentWidth) {
+        const chunkLen = Math.ceil(text.length / 2) - counter;
 
-      setState((prevState) => ({
-        ...prevState,
-        counter: counter + 1,
-        ellipsis: `${text.slice(0, chunkLen)}...${text.slice(chunkLen * -1)}`,
-      }));
-    } else {
-      setState((prevState) => ({
-        ...prevState,
-        counter: 0,
-        truncating: false,
-      }));
+        setState((prevState) => ({
+          ...prevState,
+          counter: counter + 1,
+          ellipsis: `${text.slice(0, chunkLen)}...${text.slice(chunkLen * -1)}`,
+        }));
+      } else {
+        setState((prevState) => ({
+          ...prevState,
+          counter: 0,
+          truncating: false,
+        }));
+      }
     }
   };
 
