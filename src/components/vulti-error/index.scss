@@ -1,52 +1,42 @@
-@import "~/styles/_variables";
+@use "~variables" as *;
 
-.error-container {
-  display: flex;
+.vulti-error {
   align-items: center;
+  background-color: $blue-light;
+  border-radius: rem(12);
+  display: flex;
   flex-direction: column;
   justify-content: center;
+  padding: rem(32) rem(40);
   text-align: center;
-  height: 100vh;
-  padding: rem(20);
-  .content {
-    margin-block: auto;
-    margin-inline: rem(2);
-    border-radius: rem(12);
-    background-color: $blue-light;
-    padding: rem(40);
-    .title {
-      display: block;
-      font-size: rem(16);
-      line-height: rem(22);
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      font-weight: 700;
-    }
-    .description {
-      color: $gray-6;
-      line-height: rem(20);
-    }
-    .error-badge {
-      display: flex;
-      align-items: center;
-      margin-inline: auto;
-      margin-block: rem(5);
-      padding: rem(8);
-      gap: 5;
-      border-radius: rem(20);
-      background-color: $red-base;
-      width: max-content;
-      font-weight: 700;
-      margin-block: rem(20);
-    }
+
+  svg {
+    height: rem(16);
+    stroke-width: 3;
+    width: rem(16);
   }
-}
-.ant-btn-default {
-  background-color: $blue-base !important;
-  border-color: $cyan-base;
-  color: $cyan-base;
-  &:hover {
-    box-shadow: 0 0 rem(8) rgba($color: $cyan-base, $alpha: 0.2);
+
+  .badge {
+    align-items: center;
+    background-color: $red-base;
+    border-radius: rem(20);
+    display: inline-flex;
+    font-weight: 700;
+    gap: rem(8);
+    justify-content: center;
+    padding: rem(8) rem(16);
+  }
+
+  .title {
+    font-size: rem(16);
+    font-weight: 700;
+    line-height: rem(22);
+    margin-top: rem(32);
+  }
+
+  .description {
+    color: $gray-6;
+    line-height: rem(20);
+    margin-top: rem(4);
   }
 }

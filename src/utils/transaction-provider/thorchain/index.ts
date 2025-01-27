@@ -29,6 +29,8 @@ import BaseTransactionProvider from "utils/transaction-provider/base";
 
 import SigningMode = TW.Cosmos.Proto.SigningMode;
 import BroadcastMode = TW.Cosmos.Proto.BroadcastMode;
+//import TxCompiler = TW.TxCompiler;
+
 export default class ThorchainTransactionProvider extends BaseTransactionProvider {
   constructor(
     chainKey: ChainKey,
