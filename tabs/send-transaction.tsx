@@ -235,23 +235,22 @@ const Component: FC = () => {
       api.transaction
         .getCustomMessageComplete(transaction.id)
         .then((data) => {
+          const customSignature= txProvider.getEncodedSignature(
+            data as SignatureProps
+          )
           clearTimeout(retryTimeout);
 
           setStoredTransaction({
             ...transaction,
             status: "success",
-            customSignature: txProvider.getEncodedSignature(
-              data as SignatureProps
-            ),
+            customSignature,
           }).then(() => {
             setState((prevState) => ({
               ...prevState,
               step: 5,
               transaction: {
                 ...transaction,
-                customSignature: txProvider.getEncodedSignature(
-                  data as SignatureProps
-                ),
+                customSignature
               },
             }));
             initCloseTimer(CLOSE_TIMEOUT_MS);

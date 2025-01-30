@@ -1,5 +1,5 @@
 import type { MessagesMetadata, PlasmoMessaging } from "@plasmohq/messaging";
-import { JsonRpcProvider, type TransactionRequest } from "ethers";
+import { JsonRpcProvider, toUtf8String, type TransactionRequest } from "ethers";
 import {
   ChainKey,
   chains,
@@ -447,11 +447,12 @@ const handleRequest = (
         }
         case EVMRequestMethod.PERSONAL_SIGN: {
           const [message, address] = params;
+          const utf8Message = toUtf8String(String(message));
           sendTransaction(
             {
               customMessage: {
                 address: String(address),
-                message: String(message),
+                message: `\x19Ethereum Signed Message:\n${utf8Message.length}${utf8Message}`,
               },
               isCustomMessage: true,
               chain: activeChain,

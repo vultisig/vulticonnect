@@ -39,6 +39,9 @@ export abstract class BaseTransactionProvider {
     return hex.startsWith("0x") ? hex.slice(2) : hex;
   };
 
+  protected ensureHexPrefix = (hex: string): string => {
+    return hex.startsWith("0x") ? hex : "0x" + hex;
+  };
   public getPreSignedImageHash = (
     preSignedInputData: Uint8Array
   ): Promise<string> => {
@@ -127,16 +130,20 @@ export abstract class BaseTransactionProvider {
   };
 
   public getCustomMessageSignature(signature: SignatureProps): Uint8Array {
-    const rData = this.walletCore.HexCoding.decode(signature.R).reverse();
-    const sData = this.walletCore.HexCoding.decode(signature.S).reverse();
-    const combinedData = new Uint8Array(rData.length + sData.length);
+    const rData = this.walletCore.HexCoding.decode(signature.R);
+    const sData = this.walletCore.HexCoding.decode(signature.S);
+    const vByte = parseInt(signature.RecoveryID, 16); // Convert hex string to integer
+    const vData = new Uint8Array([vByte]); // Convert integer to Uint8Array
+
+    const combinedData = new Uint8Array(rData.length + sData.length+1);
     combinedData.set(rData);
     combinedData.set(sData, rData.length);
+    combinedData.set(vData, rData.length + sData.length); // Attach `v` at the end
     return combinedData;
   }
 
   public getEncodedSignature(signature: SignatureProps): string {
-    return this.stripHexPrefix(
+    return this.ensureHexPrefix(
       this.walletCore.HexCoding.encode(
         this.getCustomMessageSignature(signature)
       )
