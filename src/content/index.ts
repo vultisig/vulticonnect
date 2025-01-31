@@ -528,6 +528,7 @@ namespace Provider {
       }
     }
 
+    // TODO: use viem or similar to correctly infer window.ethereum typings
     async request(data: Messaging.Chain.Request, callback?: Callback) {
       return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
