@@ -347,7 +347,6 @@ const handleRequest = (
 
         break;
       }
-
       case RequestMethod.VULTISIG.DEPOSIT_TRANSACTION: {
         if (Array.isArray(params)) {
           const [transaction] = params as ITransaction.METAMASK[];
