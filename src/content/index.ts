@@ -33,6 +33,7 @@ import {
   StdSignDoc,
   StdTx,
 } from "@keplr-wallet/types";
+import { ThorchainRequest, ThorchainResponse  } from "../types/thorchain";
 enum NetworkKey {
   MAINNET = "mainnet",
   TESTNET = "testnet",
@@ -731,10 +732,13 @@ namespace Provider {
       this.emit(EventMethod.ACCOUNTS_CHANGED, {});
     }
 
-    async request(data: Messaging.Chain.Request, callback?: Callback) {
+    async request(
+      data: ThorchainRequest,
+      callback?: (error: Error | null, result?: ThorchainResponse) => void
+    ): Promise<ThorchainResponse> {
       return await sendToBackgroundViaRelay<
-        Messaging.Chain.Request,
-        Messaging.Chain.Response
+        ThorchainRequest,
+        ThorchainResponse
       >(MessageKey.THOR_REQUEST, data)
         .then((result) => {
           if (callback) callback(null, result);

@@ -271,6 +271,7 @@ const handleRequest = (
 
     switch (method) {
       case RequestMethod.VULTISIG.GET_ACCOUNTS:
+      case RequestMethod.THORCHAIN.GET_ACCOUNTS:
       case RequestMethod.METAMASK.ETH_ACCOUNTS: {
         handleFindAccounts(chain.name, sender)
           .then(([account]) => {
@@ -295,6 +296,7 @@ const handleRequest = (
         break;
       }
       case RequestMethod.VULTISIG.REQUEST_ACCOUNTS:
+      case RequestMethod.THORCHAIN.REQUEST_ACCOUNTS:
       case RequestMethod.METAMASK.ETH_REQUEST_ACCOUNTS: {
         handleGetAccounts(chain.name, sender)
           .then(([account]) => {
@@ -328,6 +330,7 @@ const handleRequest = (
         break;
       }
       case RequestMethod.VULTISIG.SEND_TRANSACTION:
+      case RequestMethod.THORCHAIN.SEND_TRANSACTION:
       case RequestMethod.METAMASK.ETH_SEND_TRANSACTION: {
         if (Array.isArray(params)) {
           const [transaction] = params as ITransaction.METAMASK[];
@@ -345,7 +348,9 @@ const handleRequest = (
 
         break;
       }
-      case RequestMethod.VULTISIG.DEPOSIT_TRANSACTION: {
+
+      case RequestMethod.VULTISIG.DEPOSIT_TRANSACTION:
+      case RequestMethod.THORCHAIN.DEPOSIT_TRANSACTION: {
         if (Array.isArray(params)) {
           const [transaction] = params as ITransaction.METAMASK[];
 
