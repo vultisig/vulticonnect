@@ -40,7 +40,7 @@ enum NetworkKey {
   TESTNET = "testnet",
 }
 window.ctrlKeplrProviders = {};
-type Callback = (error: Error | null, result?: string | string[]) => void;
+type Callback = (error: Error | null, result?: Messaging.Chain.Response) => void;
 
 const sendToBackgroundViaRelay = <Request, Response>(
   type: MessageKey,
@@ -348,6 +348,7 @@ namespace Provider {
       this.emit(EventMethod.ACCOUNTS_CHANGED, {});
     }
 
+    // TODO: UTXO-specific req/res typings
     async request(data: Messaging.Chain.Request, callback?: Callback) {
       return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
@@ -375,6 +376,7 @@ namespace Provider {
       this.request = this.request;
     }
 
+    // TODO: Cosmos-specific req/res typings
     async request(data: Messaging.Chain.Request, callback?: Callback) {
       return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
@@ -415,6 +417,7 @@ namespace Provider {
       this.emit(EventMethod.ACCOUNTS_CHANGED, {});
     }
 
+    // TODO: UTXO-specific req/res typings
     async request(data: Messaging.Chain.Request, callback?: Callback) {
       return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
@@ -633,6 +636,7 @@ namespace Provider {
       await Promise.resolve();
     }
 
+    // TODO: Solana-specific req/res typings
     async request(data: Messaging.Chain.Request, callback?: Callback) {
       return await sendToBackgroundViaRelay<
         Messaging.Chain.Request,
@@ -683,10 +687,13 @@ namespace Provider {
       this.emit(EventMethod.ACCOUNTS_CHANGED, {});
     }
 
-    async request(data: Messaging.Chain.Request, callback?: Callback) {
+    async request<T extends ThorchainProviderMethod>(
+      data: ThorchainProviderRequest<T>,
+      callback?: (error: Error | null, result?: ThorchainProviderResponse<T>) => void
+    ): Promise<ThorchainProviderResponse<T>> {
       return await sendToBackgroundViaRelay<
-        Messaging.Chain.Request,
-        Messaging.Chain.Response
+        ThorchainProviderRequest<T>,
+        ThorchainProviderResponse<T>
       >(MessageKey.MAYA_REQUEST, data)
         .then((result) => {
           if (callback) callback(null, result);

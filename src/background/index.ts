@@ -27,7 +27,6 @@ import {
   setStoredVaults,
 } from "utils/storage";
 import api from "utils/api";
-import { ThorchainProviderMethod, ThorchainProviderResponse } from "types/thorchain";
 
 let rpcProvider: JsonRpcProvider;
 
@@ -263,7 +262,7 @@ const handleRequest = (
   body: Messaging.Chain.Request,
   chain: ChainProps,
   sender: string
-): Promise<Messaging.Chain.Response | ThorchainProviderResponse<ThorchainProviderMethod>> => {
+): Promise<Messaging.Chain.Response> => {
   return new Promise((resolve, reject) => {
     const { method, params } = body;
     if (evmChains.includes(chain.name)) {
