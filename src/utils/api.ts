@@ -71,7 +71,7 @@ api.interceptors.response.use((response) => {
 });
 
 export default {
-  checkVaultExist: (ecdsa: string): Promise<boolean> => {
+  assertVaultExist: (ecdsa: string): Promise<boolean> => {
     return new Promise((resolve) => {
       api
         .get(`${apiRef.vultisig.api}vault/exist/${ecdsa}`)
