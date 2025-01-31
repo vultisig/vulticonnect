@@ -185,16 +185,6 @@ export namespace RequestMethod {
     WALLET_ADD_CHAIN = "wallet_add_chain",
     WALLET_SWITCH_CHAIN = "wallet_switch_chain",
   }
-
-  export enum THORCHAIN {
-    // Account Management
-    REQUEST_ACCOUNTS = "request_accounts",
-    GET_ACCOUNTS = "get_accounts",
-    // Transaction Management
-    SEND_TRANSACTION = "send_transaction",
-    DEPOSIT_TRANSACTION = "deposit_transaction",
-    GET_TRANSACTION_BY_HASH = "get_transaction_by_hash",
-  }
 }
 
 export const storageKey = keyMirror({
