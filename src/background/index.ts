@@ -27,6 +27,7 @@ import {
   setStoredVaults,
 } from "utils/storage";
 import api from "utils/api";
+import { ThorchainProviderMethod, ThorchainProviderResponse } from "types/thorchain";
 
 let rpcProvider: JsonRpcProvider;
 
@@ -98,7 +99,7 @@ const handleGetAccounts = (
 ): Promise<string[]> => {
   return new Promise((resolve) => {
     if (instance[Instance.ACCOUNTS]) {
-      const interval = setInterval(() => {
+      let interval = setInterval(() => {
         if (!instance[Instance.ACCOUNTS]) {
           clearInterval(interval);
 
@@ -262,7 +263,7 @@ const handleRequest = (
   body: Messaging.Chain.Request,
   chain: ChainProps,
   sender: string
-): Promise<Messaging.Chain.Response> => {
+): Promise<Messaging.Chain.Response | ThorchainProviderResponse<ThorchainProviderMethod>> => {
   return new Promise((resolve, reject) => {
     const { method, params } = body;
     if (evmChains.includes(chain.name)) {
