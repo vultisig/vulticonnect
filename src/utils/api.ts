@@ -71,6 +71,8 @@ api.interceptors.response.use((response) => {
 });
 
 export default {
+  // Asserts whether or not publicKeyECDSA exists in Vultiserver 
+  // 200s if happy, 400s if not found https://github.com/vultisig/VultiServer/blob/295e5eca55f4bbc9eb6879794030f42fd92240a8/api/server.go#L442
   assertVaultExist: (ecdsa: string): Promise<boolean> => {
     return new Promise((resolve) => {
       api

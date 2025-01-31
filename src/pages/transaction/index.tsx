@@ -360,6 +360,7 @@ const Component = () => {
                 api.assertVaultExist(vault.publicKeyEcdsa).then(() => {
                   setState((prevState) => ({
                     ...prevState,
+                    // publicKeyECDSA exists in vultiserver, we *can* fast sign
                     fastSign: true,
                     loading: false,
                     sendKey,
