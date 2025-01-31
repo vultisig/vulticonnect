@@ -296,7 +296,6 @@ const handleRequest = (
         break;
       }
       case RequestMethod.VULTISIG.REQUEST_ACCOUNTS:
-      case RequestMethod.THORCHAIN.REQUEST_ACCOUNTS:
       case RequestMethod.METAMASK.ETH_REQUEST_ACCOUNTS: {
         handleGetAccounts(chain.name, sender)
           .then(([account]) => {
