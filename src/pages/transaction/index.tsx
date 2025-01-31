@@ -357,7 +357,7 @@ const Component = () => {
                 vault.hexChainCode
               )
               .then((sendKey) => {
-                api.assertVaultExist(vault.publicKeyEcdsa).then(() => {
+                api.fastVault.assertVaultExist(vault.publicKeyEcdsa).then(() => {
                   setState((prevState) => ({
                     ...prevState,
                     // publicKeyECDSA exists in vultiserver, we *can* fast sign
@@ -385,6 +385,7 @@ const Component = () => {
                   )
                   .then((sendKey) => {
                     api
+                      .fastVault
                       .assertVaultExist(vault.publicKeyEcdsa)
                       .then(() => {
                         setState((prevState) => ({
