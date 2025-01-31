@@ -1,5 +1,5 @@
 import { v4 as uuidv4 } from "uuid";
-import { JsonRpcProvider, TransactionRequest } from "ethers";
+import { JsonRpcProvider, TransactionRequest, toUtf8String } from "ethers";
 import { Tendermint34Client } from "@cosmjs/tendermint-rpc";
 
 import {
@@ -178,7 +178,7 @@ const handleSendTransaction = (
   transaction: ITransaction.METAMASK,
   chain: ChainProps,
   isDeposit?: boolean
-): Promise<{ txHash: string; raw: any }> => {
+): Promise<{ txResponse: string; raw: any }> => {
   return new Promise((resolve, reject) => {
     getStoredTransactions().then((transactions) => {
       const uuid = uuidv4();
@@ -230,10 +230,19 @@ const handleSendTransaction = (
                           transactions: [transaction, ...vault.transactions],
                         }))
                       ).then(() => {
-                        resolve({
-                          txHash: transaction.txHash!,
-                          raw: transaction.raw,
-                        });
+                        if (transaction.customSignature) {
+                          resolve({
+                            txResponse: transaction.customSignature,
+                            raw: transaction.raw,
+                          });
+                        } else if (transaction.txHash) {
+                          resolve({
+                            txResponse: transaction.txHash,
+                            raw: transaction.raw,
+                          });
+                        } else {
+                          reject();
+                        }
                       });
                     });
                   }
@@ -325,7 +334,7 @@ const handleRequest = (
 
           if (transaction) {
             handleSendTransaction(transaction, chain)
-              .then((result) => resolve(result.txHash))
+              .then((result) => resolve(result.txResponse))
               .catch(reject);
           } else {
             reject();
@@ -344,8 +353,8 @@ const handleRequest = (
             handleSendTransaction(transaction, chain, true)
               .then((result) =>
                 chain.name === ChainKey.SOLANA
-                  ? resolve([result.txHash, result.raw])
-                  : resolve(result.txHash)
+                  ? resolve([result.txResponse, result.raw])
+                  : resolve(result.txResponse)
               )
               .catch(reject);
           } else {
@@ -643,12 +652,12 @@ const handleRequest = (
       case RequestMethod.METAMASK.PERSONAL_SIGN: {
         if (Array.isArray(params)) {
           const [message, address] = params;
-
+          const utf8Message = toUtf8String(String(message));
           handleSendTransaction(
             {
               customMessage: {
                 address: String(address),
-                message: String(message),
+                message: `\x19Ethereum Signed Message:\n${utf8Message.length}${utf8Message}`,
               },
               isCustomMessage: true,
               chain: chain,
@@ -661,7 +670,7 @@ const handleRequest = (
             },
             chain
           )
-            .then((result) => resolve(result.txHash))
+            .then((result) => resolve(result.txResponse))
             .catch(reject);
         } else {
           reject();
@@ -687,7 +696,7 @@ const handleRequest = (
             } as ITransaction.METAMASK;
 
             handleSendTransaction(transaction, chain, true)
-              .then((result) => resolve(result.txHash))
+              .then((result) => resolve(result.txResponse))
               .catch(reject);
           } else {
             reject();
@@ -712,7 +721,7 @@ const handleRequest = (
             } as ITransaction.METAMASK;
 
             handleSendTransaction(transaction, chain)
-              .then((result) => resolve(result.txHash))
+              .then((result) => resolve(result.txResponse))
               .catch(reject);
           } else {
             reject();
