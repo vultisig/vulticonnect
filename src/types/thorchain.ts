@@ -1,3 +1,5 @@
+// THORNode types
+
 export type ThorchainChain = 
   | 'BTC'
   | 'DOGE'
@@ -54,14 +56,33 @@ type ThornodeResponseError = { code: number; message: string; details: string[]}
 
 export type ThornodeTxResponse = ThornodeTxResponseSuccess | ThornodeResponseError;
 
-export type ThorchainMethod = 
+export type ThornodeNetworkResponse = {
+  bond_reward_rune: string;
+  total_bond_units: string;
+  effective_security_bond: string;
+  total_reserve: string;
+  vaults_migrating: boolean;
+  gas_spent_rune: string;
+  gas_withheld_rune: string;
+  outbound_fee_multiplier: string;
+  native_outbound_fee_rune: string;
+  native_tx_fee_rune: string;
+  tns_register_fee_rune: string;
+  tns_fee_per_block_rune: string;
+  rune_price_in_tor: string;
+  tor_price_in_rune: string;
+};
+
+// Provider-specific types
+
+export type ThorchainProviderMethod = 
   | 'request_accounts'
   | 'get_accounts'
   | 'send_transaction'
   | 'deposit_transaction'
   | 'get_transaction_by_hash';
 
-export type ThorchainMethodToParams = {
+export type ThorchainProviderMethodToParams = {
   'request_accounts': never[];
   'get_accounts': never[];
   'send_transaction': any[]; // TODO: Request types for every method
@@ -70,12 +91,12 @@ export type ThorchainMethodToParams = {
 };
 
 // Generic request type based on method
-export type ThorchainRequest<T extends ThorchainMethod> = {
+export type ThorchainProviderRequest<T extends ThorchainProviderMethod> = {
   method: T;
-  params: ThorchainMethodToParams[T];
+  params: ThorchainProviderMethodToParams[T];
 };
 
-export type ThorchainResponse<T extends ThorchainMethod> = 
+export type ThorchainProviderResponse<T extends ThorchainProviderMethod> = 
   T extends 'get_transaction_by_hash'
     ? ThornodeTxResponse
     // TODO: Response types for every method

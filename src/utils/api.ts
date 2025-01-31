@@ -11,7 +11,7 @@ import {
   SignatureProps,
   ThorchainAccountDataResponse,
 } from "utils/interfaces";
-import { ThornodeTxResponse, ThornodeTxResponseSuccess } from '../types/thorchain';
+import { ThornodeTxResponse, ThornodeTxResponseSuccess, ThornodeNetworkResponse } from '../types/thorchain';
 
 namespace CryptoCurrency {
   export interface Props {
@@ -222,14 +222,12 @@ export default {
           .catch(reject);
       });
     },
-    getFeeData: () => {
+    getFeeData(): Promise<string> {
       return new Promise((resolve, reject) => {
         const url = `${apiRef.nineRealms.thornode}thorchain/network`;
         api
-          .get(url)
-          .then((res) => {
-            resolve(res.data.nativeTxFeeRune);
-          })
+          .get<ThornodeNetworkResponse>(url)
+          .then(({ data }) => resolve(data.native_tx_fee_rune))
           .catch(reject);
       });
     },

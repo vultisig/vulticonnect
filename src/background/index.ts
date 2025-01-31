@@ -27,7 +27,7 @@ import {
   setStoredVaults,
 } from "utils/storage";
 import api from "utils/api";
-import { ThorchainMethod, ThorchainResponse } from "types/thorchain";
+import { ThorchainProviderMethod, ThorchainProviderResponse } from "types/thorchain";
 
 let rpcProvider: JsonRpcProvider;
 
@@ -263,7 +263,7 @@ const handleRequest = (
   body: Messaging.Chain.Request,
   chain: ChainProps,
   sender: string
-): Promise<Messaging.Chain.Response | ThorchainResponse<ThorchainMethod>> => {
+): Promise<Messaging.Chain.Response | ThorchainProviderResponse<ThorchainProviderMethod>> => {
   return new Promise((resolve, reject) => {
     const { method, params } = body;
     if (evmChains.includes(chain.name)) {
@@ -272,7 +272,6 @@ const handleRequest = (
 
     switch (method) {
       case RequestMethod.VULTISIG.GET_ACCOUNTS:
-      case RequestMethod.THORCHAIN.GET_ACCOUNTS:
       case RequestMethod.METAMASK.ETH_ACCOUNTS: {
         handleFindAccounts(chain.name, sender)
           .then(([account]) => {
@@ -331,7 +330,6 @@ const handleRequest = (
         break;
       }
       case RequestMethod.VULTISIG.SEND_TRANSACTION:
-      case RequestMethod.THORCHAIN.SEND_TRANSACTION:
       case RequestMethod.METAMASK.ETH_SEND_TRANSACTION: {
         if (Array.isArray(params)) {
           const [transaction] = params as ITransaction.METAMASK[];
@@ -350,8 +348,7 @@ const handleRequest = (
         break;
       }
 
-      case RequestMethod.VULTISIG.DEPOSIT_TRANSACTION:
-      case RequestMethod.THORCHAIN.DEPOSIT_TRANSACTION: {
+      case RequestMethod.VULTISIG.DEPOSIT_TRANSACTION: {
         if (Array.isArray(params)) {
           const [transaction] = params as ITransaction.METAMASK[];
 
