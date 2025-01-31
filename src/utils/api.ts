@@ -1,4 +1,5 @@
 import axios from "axios";
+import { TransactionResponse } from "ethers";
 
 import { toCamelCase, toSnakeCase } from "utils/functions";
 import { ChainKey, Currency } from "utils/constants";
@@ -186,9 +187,9 @@ export default {
     },
   },
   ethereum: {
-    async getTransactionByHash(path: string, hash: string) {
+    async getTransactionByHash(path: string, hash: string): Promise<TransactionResponse> {
       return await api
-        .post<{ result: string }>(path, {
+        .post<{ result: TransactionResponse }>(path, {
           id: 1,
           jsonrpc: "2.0",
           method: "eth_getTransactionByHash",
