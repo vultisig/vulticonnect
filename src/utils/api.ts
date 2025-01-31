@@ -235,10 +235,10 @@ export default {
     getTHORChainChainID(): Promise<string> {
       return new Promise((resolve, reject) => {
         api
-          .get<{ result: { nodeInfo: { network: string } } }>(
+          .get<{ result: { node_info: { network: string } } }>(
             `${apiRef.nineRealms.rpc}status`
           )
-          .then(({ data }) => resolve(data.result.nodeInfo.network))
+          .then(({ data }) => resolve(data.result.node_info.network))
           .catch(reject);
       });
     },
