@@ -133,3 +133,10 @@ dist
 
 #pnpm
 pnpm-lock.yaml
+package-lock.json
+popup/.DS_Store
+popup/pages/.DS_Store
+popup/pages/.DS_Store
+
+#vite 
+vite.config.ts.timestamp-*-*.mjs
