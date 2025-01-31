@@ -10,6 +10,7 @@ import {
   SignatureProps,
   ThorchainAccountDataResponse,
 } from "utils/interfaces";
+import { ThornodeTxResponse, ThornodeTxResponseSuccess } from '../types/thorchain';
 
 namespace CryptoCurrency {
   export interface Props {
@@ -242,11 +243,16 @@ export default {
           .catch(reject);
       });
     },
-    getTransactionByHash(hash: string): Promise<any> {
+    getTransactionByHash(hash: string): Promise<ThornodeTxResponseSuccess> {
       return new Promise((resolve, reject) => {
         api
-          .get<{ tx: string }>(`${apiRef.nineRealms.thornode}txs/${hash}`)
-          .then(({ data }) => resolve(data.tx))
+          .get<ThornodeTxResponse>(`${apiRef.nineRealms.thornode}thorchain/tx/${hash}`)
+          .then(({ data }) => {
+            if ('code' in data) {
+              throw new Error(data.message);
+            }
+            resolve(data)
+          })
           .catch(reject);
       });
     },
