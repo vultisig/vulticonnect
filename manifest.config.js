@@ -83,7 +83,7 @@ const manifestData = {
     64: "icon64.png",
     128: "icon128.png",
   },
-  permissions: ["activeTab", "scripting", "storage"],
+  permissions: ["storage"],
   web_accessible_resources: [
     {
       matches: ["<all_urls>"],
