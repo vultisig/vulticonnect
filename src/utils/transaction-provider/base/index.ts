@@ -57,6 +57,21 @@ export default abstract class BaseTransactionProvider {
     return hex.startsWith("0x") ? hex : "0x" + hex;
   };
 
+  protected ensurePriorityFeeValue = (
+    priorityFee: bigint,
+    chainKey: ChainKey
+  ): bigint => {
+    switch (chainKey) {
+      case ChainKey.AVALANCHE:
+      case ChainKey.ETHEREUM: {
+        const oneGwei = 1000000000n;
+        return priorityFee < oneGwei ? oneGwei : priorityFee;
+      }
+      default:
+        return priorityFee;
+    }
+  };
+
   public getPreSignedImageHash = (
     preSignedInputData: Uint8Array
   ): Promise<string> => {

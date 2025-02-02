@@ -117,7 +117,6 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
         .getTransactionCount(transaction.from)
         .then((nonce) => {
           this.nonce = BigInt(nonce);
-
           const ethereumSpecific = create(EthereumSpecificSchema, {
             gasLimit: this.getGasLimit().toString(),
             maxFeePerGasWei: (
@@ -125,10 +124,12 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
               BigInt(2)
             ).toString(),
             nonce: this.nonce,
-            priorityFee:
-              this.maxPriorityFeePerGas == null
-                ? this.gasPrice?.toString()
-                : this.maxPriorityFeePerGas.toString(),
+            priorityFee: this.ensurePriorityFeeValue(
+              !this.maxPriorityFeePerGas || this.maxPriorityFeePerGas === 0n
+                ? this.gasPrice!
+                : this.maxPriorityFeePerGas,
+              this.chainKey
+            ).toString(),
           });
           checkERC20Function(transaction.data).then((isMemoFunction) => {
             let modifiedMemo: string;
@@ -256,7 +257,12 @@ export default class EVMTransactionProvider extends BaseTransactionProvider {
           nonce: Number(this.nonce),
           gasLimit: this.getGasLimit().toString(),
           maxFeePerGas: ((this.gasPrice ?? BigInt(0)) * BigInt(5)) / BigInt(2),
-          maxPriorityFeePerGas: this.maxPriorityFeePerGas,
+          maxPriorityFeePerGas: this.ensurePriorityFeeValue(
+            !this.maxPriorityFeePerGas || this.maxPriorityFeePerGas === 0n
+              ? this.gasPrice!
+              : this.maxPriorityFeePerGas,
+            this.chainKey
+          ).toString(),
           to: transaction.to,
           value: transaction.value ? BigInt(transaction.value) : BigInt(0),
           signature: {
