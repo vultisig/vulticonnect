@@ -276,26 +276,26 @@ export const explorerUrl: ChainStrRef = {
 };
 
 export const rpcUrl: ChainStrRef = {
-  [ChainKey.ARBITRUM]: "https://arbitrum-one-rpc.publicnode.com",
-  [ChainKey.AVALANCHE]: "https://avalanche-c-chain-rpc.publicnode.com",
-  [ChainKey.BASE]: "https://base-rpc.publicnode.com",
+  [ChainKey.ARBITRUM]: "https://api.vultisig.com/arb/",
+  [ChainKey.AVALANCHE]: "https://api.vultisig.com/avax/",
+  [ChainKey.BASE]: "https://api.vultisig.com/base/",
   [ChainKey.BITCOIN]: "",
   [ChainKey.BITCOINCASH]: "",
-  [ChainKey.BLAST]: "https://rpc.ankr.com/blast",
-  [ChainKey.BSCCHAIN]: "https://bsc-rpc.publicnode.com",
+  [ChainKey.BLAST]: "https://api.vultisig.com/blast/",
+  [ChainKey.BSCCHAIN]: "https://api.vultisig.com/bnb/",
   [ChainKey.CRONOSCHAIN]: "https://cronos-evm-rpc.publicnode.com",
   [ChainKey.DASH]: "",
   [ChainKey.DOGECOIN]: "",
   [ChainKey.DYDX]: "https://dydx-rpc.publicnode.com",
-  [ChainKey.ETHEREUM]: "https://ethereum-rpc.publicnode.com",
+  [ChainKey.ETHEREUM]: "https://api.vultisig.com/eth/",
   [ChainKey.GAIACHAIN]: "https://cosmos-rpc.publicnode.com",
   [ChainKey.KUJIRA]: "https://kujira-rpc.publicnode.com",
   [ChainKey.LITECOIN]: "",
   [ChainKey.MAYACHAIN]: "",
-  [ChainKey.OPTIMISM]: "https://optimism-rpc.publicnode.com",
+  [ChainKey.OPTIMISM]: "https://api.vultisig.com/opt/",
   [ChainKey.OSMOSIS]: "https://osmosis-rpc.publicnode.com",
   [ChainKey.POLKADOT]: "",
-  [ChainKey.POLYGON]: "https://polygon-bor-rpc.publicnode.com",
+  [ChainKey.POLYGON]: "https://api.vultisig.com/polygon/",
   [ChainKey.SOLANA]: "https://solana-rpc.publicnode.com",
   [ChainKey.SUI]: "",
   [ChainKey.TERRA]: "",
@@ -303,7 +303,7 @@ export const rpcUrl: ChainStrRef = {
   [ChainKey.THORCHAIN]: "https://rpc.ninerealms.com/",
   [ChainKey.TON]: "",
   [ChainKey.XRP]: "https://rpc.ninerealms.com/",
-  [ChainKey.ZKSYNC]: "https://mainnet.era.zksync.io",
+  [ChainKey.ZKSYNC]: "https://api.vultisig.com/zksync/",
 };
 
 export const chains: ChainObjRef = {

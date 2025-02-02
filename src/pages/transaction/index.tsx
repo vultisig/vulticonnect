@@ -8,7 +8,12 @@ import html2canvas from "html2canvas";
 
 import { CoinSchema } from "protos/coin_pb";
 
-import { evmChains, explorerUrl, TssKeysignType } from "utils/constants";
+import {
+  chains,
+  evmChains,
+  explorerUrl,
+  TssKeysignType,
+} from "utils/constants";
 import {
   formatDisplayNumber,
   getTssKeysignType,
@@ -235,9 +240,9 @@ const Component = () => {
         .getComplete(transaction.id)
         .then((data) => {
           clearTimeout(retryTimeout);
-          const customSignature= txProvider.getEncodedSignature(
+          const customSignature = txProvider.getEncodedSignature(
             data as SignatureProps
-          )
+          );
           setStoredTransaction({
             ...transaction,
             status: "success",
@@ -551,10 +556,11 @@ const Component = () => {
               )
                 .getSpecificTransactionInfo(coin)
                 .then((blockchainSpecific) => {
-                  transaction.gasPrice = formatUnits(
-                    blockchainSpecific.gasPrice,
-                    coin.decimals
-                  );
+                  transaction.gasPrice =
+                    coin.ticker === chains.THORChain.ticker
+                      ? String(blockchainSpecific.gasPrice)
+                      : formatUnits(blockchainSpecific.gasPrice, coin.decimals);
+
                   try {
                     transaction.memo = toUtf8String(transaction.data);
                   } catch (err) {
@@ -641,10 +647,12 @@ const Component = () => {
                         <span className="label">{t(messageKeys.FROM)}</span>
                         <MiddleTruncate text={transaction.from} />
                       </div>
-                      <div className="list-item">
-                        <span className="label">{t(messageKeys.TO)}</span>
-                        <MiddleTruncate text={transaction.to} />
-                      </div>
+                      {transaction.to && (
+                        <div className="list-item">
+                          <span className="label">{t(messageKeys.TO)}</span>
+                          <MiddleTruncate text={transaction.to} />
+                        </div>
+                      )}
                       {transaction.value && (
                         <div className="list-item">
                           <span className="label">{t(messageKeys.AMOUNT)}</span>
