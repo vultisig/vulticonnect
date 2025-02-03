@@ -1,3 +1,5 @@
+# We are moving VultiConnect repository into https://github.com/vultisig/vultisig-windows , as a workspace , so vulticonnect and windows application can share some of the code
+
 # VultiConnect
 
 ## What is VultiConnect
